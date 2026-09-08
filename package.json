@@ -1,0 +1,27 @@
+{
+  "name": "voiceforge-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "YouTube AI Voice-Over Studio powered by Fish Audio TTS API",
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev": "concurrently \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "build:client": "npm --prefix client run build",
+    "build:server": "npm --prefix server run build",
+    "build": "npm --prefix client run build && npm --prefix server run build",
+    "start": "node server/dist/server/src/index.js",
+    "postinstall": "npm --prefix client install --include=dev && npm --prefix server install --include=dev",
+    "test": "node tests/runner.js"
+  },
+  "dependencies": {
+    "archiver": "^6.0.1"
+  },
+  "devDependencies": {
+    "@types/archiver": "^6.0.2",
+    "@types/node": "^20.11.19",
+    "concurrently": "^8.2.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

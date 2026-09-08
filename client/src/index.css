@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root, html.light {
+    --bg-studio-950: #f8f9fa;
+    --bg-studio-900: #ffffff;
+    --bg-studio-850: #ffffff;
+    --bg-studio-800: #f3f4f6;
+    --bg-studio-700: #e5e7eb;
+    --bg-studio-600: #d1d5db;
+    --border-studio: #e5e7eb;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+  }
+
+  html.dark {
+    --bg-studio-950: #111827;
+    --bg-studio-900: #1f2937;
+    --bg-studio-850: #1f2937;
+    --bg-studio-800: #374151;
+    --bg-studio-700: #4b5563;
+    --bg-studio-600: #6b7280;
+    --border-studio: #374151;
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
+  }
+
+  body {
+    background-color: var(--bg-studio-950);
+    color: var(--text-primary);
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.4);
+}
+
+/* Custom Studio UI elements matching minimalist screenshot aesthetic */
+.glass-panel {
+  background: var(--bg-studio-900);
+  border: 1px solid var(--border-studio);
+  box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
+}
+
+.glass-card {
+  background: var(--bg-studio-850);
+  border: 1px solid var(--border-studio);
+}
+
+.badge-pill {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.title-display {
+  font-family: 'Playfair Display', Georgia, serif;
+}

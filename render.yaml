@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: voiceforge-studio
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FISH_API_KEY
+        sync: false
+      - key: MAX_CONCURRENT_TTS
+        value: 2
