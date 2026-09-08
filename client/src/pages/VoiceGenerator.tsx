@@ -8,13 +8,17 @@ interface VoiceGeneratorProps {
   selectedVoice: Voice;
   onSelectVoice: (voice: Voice) => void;
   onAudioPlay: (url: string) => void;
+  onSaveCustomVoice?: (voice: Voice) => void;
+  onDeleteCustomVoice?: (voiceId: string) => void;
 }
 
 export const VoiceGenerator: React.FC<VoiceGeneratorProps> = ({
   voices,
   selectedVoice,
   onSelectVoice,
-  onAudioPlay
+  onAudioPlay,
+  onSaveCustomVoice,
+  onDeleteCustomVoice
 }) => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -34,6 +38,8 @@ export const VoiceGenerator: React.FC<VoiceGeneratorProps> = ({
           selectedVoice={selectedVoice}
           onSelectVoice={onSelectVoice}
           onAudioPlay={onAudioPlay}
+          onSaveCustomVoice={onSaveCustomVoice}
+          onDeleteCustomVoice={onDeleteCustomVoice}
         />
       </div>
     </div>

@@ -85,6 +85,26 @@ export function useProjectStore() {
       const voiceList = await ApiClient.getVoices();
       if (voiceList.length > 0) {
         setVoices(voiceList);
+        const serverCustom = voiceList.filter((v) => v.isCustom);
+        if (serverCustom.length > 0) {
+          setCustomVoices(serverCustom);
+        } else {
+          // If server has none yet, check if this browser has local custom voices and sync them to server
+          try {
+            const saved = localStorage.getItem('voiceforge_custom_voices_v1');
+            const localList: Voice[] = saved ? JSON.parse(saved) : [];
+            if (localList.length > 0) {
+              for (const v of localList) {
+                await ApiClient.saveCustomVoice(v).catch(() => {});
+              }
+              const reloaded = await ApiClient.getVoices();
+              setVoices(reloaded);
+              setCustomVoices(reloaded.filter((v) => v.isCustom));
+            }
+          } catch (syncErr) {
+            console.warn('Auto-sync of local custom voices failed:', syncErr);
+          }
+        }
       }
     } catch (e) {
       setApiHealth({
@@ -534,21 +554,42 @@ export function useProjectStore() {
     }
   }, [customVoices]);
 
-  const saveCustomVoice = useCallback((voice: Voice) => {
+  const saveCustomVoice = useCallback(async (voice: Voice) => {
+    const customVoice: Voice = { ...voice, isCustom: true };
+    // Optimistic local update
     setCustomVoices((prev) => {
-      const idx = prev.findIndex((v) => v.id === voice.id);
+      const idx = prev.findIndex((v) => v.id === customVoice.id);
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = voice;
+        next[idx] = customVoice;
         return next;
       }
-      return [voice, ...prev];
+      return [customVoice, ...prev];
     });
-    setVoice(voice);
+    setVoice(customVoice);
+
+    // Persist to backend server
+    try {
+      const updatedList = await ApiClient.saveCustomVoice(customVoice);
+      if (updatedList && updatedList.length > 0) {
+        setCustomVoices(updatedList);
+      }
+    } catch (err) {
+      console.error('Failed to persist custom voice to server:', err);
+    }
   }, [setVoice]);
 
-  const deleteCustomVoice = useCallback((voiceId: string) => {
+  const deleteCustomVoice = useCallback(async (voiceId: string) => {
+    // Optimistic local update
     setCustomVoices((prev) => prev.filter((v) => v.id !== voiceId));
+
+    // Delete on backend server
+    try {
+      const updatedList = await ApiClient.deleteCustomVoice(voiceId);
+      setCustomVoices(updatedList);
+    } catch (err) {
+      console.error('Failed to delete custom voice from server:', err);
+    }
   }, []);
 
   // Manual Chunking Actions
@@ -585,7 +626,10 @@ export function useProjectStore() {
   }, [updateActiveProject]);
 
   return {
-    voices: [...customVoices, ...voices],
+    voices: [
+      ...customVoices,
+      ...voices.filter((v) => !v.isCustom && !customVoices.some((cv) => cv.id === v.id))
+    ],
     customVoices,
     saveCustomVoice,
     deleteCustomVoice,

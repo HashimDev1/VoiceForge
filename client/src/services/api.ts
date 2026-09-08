@@ -17,6 +17,30 @@ export class ApiClient {
     return data.voices || [];
   }
 
+  public static async saveCustomVoice(voice: Voice): Promise<Voice[]> {
+    const res = await fetch('/api/voices/custom', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(voice)
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to save custom voice to server.');
+    }
+    return data.customVoices || [];
+  }
+
+  public static async deleteCustomVoice(voiceId: string): Promise<Voice[]> {
+    const res = await fetch(`/api/voices/custom/${encodeURIComponent(voiceId)}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to delete custom voice from server.');
+    }
+    return data.customVoices || [];
+  }
+
   public static async generateSingleTTS(params: {
     text: string;
     reference_id?: string;

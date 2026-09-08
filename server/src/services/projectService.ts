@@ -70,6 +70,9 @@ export class ProjectService {
 
     const files = await fs.promises.readdir(config.storageDir);
     for (const file of files) {
+      if (!file.endsWith('.mp3') && !file.endsWith('.zip')) {
+        continue;
+      }
       const filePath = path.join(config.storageDir, file);
       try {
         const stats = await fs.promises.stat(filePath);

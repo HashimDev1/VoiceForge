@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Voice } from '../../../shared/src/types';
+import { VoiceStorageService } from '../services/voiceStorageService';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -70,11 +72,97 @@ const CONFIGURED_VOICES: Voice[] = [
   }
 ];
 
-router.get('/voices', (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    voices: CONFIGURED_VOICES
-  });
+// GET /api/voices - returns both server-saved custom voices and built-in voices
+router.get('/voices', async (req: Request, res: Response) => {
+  try {
+    const customVoices = await VoiceStorageService.getCustomVoices();
+    res.json({
+      success: true,
+      voices: [...customVoices, ...CONFIGURED_VOICES],
+      customVoices,
+      configuredVoices: CONFIGURED_VOICES
+    });
+  } catch (error: any) {
+    logger.error('Failed to get voices:', error);
+    res.json({
+      success: true,
+      voices: CONFIGURED_VOICES,
+      customVoices: [],
+      configuredVoices: CONFIGURED_VOICES
+    });
+  }
+});
+
+// GET /api/voices/custom - returns custom voices saved on the server
+router.get('/voices/custom', async (req: Request, res: Response) => {
+  try {
+    const customVoices = await VoiceStorageService.getCustomVoices();
+    res.json({
+      success: true,
+      customVoices
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Failed to retrieve custom voices' });
+  }
+});
+
+// POST /api/voices/custom - save or update a custom reference ID voice on the server
+router.post('/voices/custom', async (req: Request, res: Response) => {
+  try {
+    const { id, name, language, style, gender, description, category } = req.body;
+    if (!id || !name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Voice ID (Fish Audio reference_id) and Voice Name are required.'
+      });
+    }
+
+    const voice: Voice = {
+      id: String(id).trim(),
+      name: String(name).trim(),
+      language: language || 'English',
+      style: style || 'Custom Reference',
+      gender: gender || 'Neutral',
+      description: description || 'Saved Fish Audio reference ID model.',
+      category: category || 'Documentary',
+      isCustom: true
+    };
+
+    const customVoices = await VoiceStorageService.saveCustomVoice(voice);
+    res.json({
+      success: true,
+      voice,
+      customVoices
+    });
+  } catch (error: any) {
+    logger.error('Failed to save custom voice:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to save custom voice'
+    });
+  }
+});
+
+// DELETE /api/voices/custom/:id - delete a custom voice from the server
+router.delete('/voices/custom/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, error: 'Voice ID is required.' });
+    }
+
+    const customVoices = await VoiceStorageService.deleteCustomVoice(id);
+    res.json({
+      success: true,
+      customVoices
+    });
+  } catch (error: any) {
+    logger.error('Failed to delete custom voice:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to delete custom voice'
+    });
+  }
 });
 
 export default router;

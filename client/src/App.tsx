@@ -164,6 +164,8 @@ export function App() {
               selectedVoice={activeProject.selectedVoice}
               onSelectVoice={setVoice}
               onAudioPlay={play}
+              onSaveCustomVoice={saveCustomVoice}
+              onDeleteCustomVoice={deleteCustomVoice}
             />
           )}
 
