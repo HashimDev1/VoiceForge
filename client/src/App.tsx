@@ -106,16 +106,18 @@ export function App() {
           sidebarCollapsed ? 'md:pl-20' : 'md:pl-64'
         }`}
       >
-        {/* Top Navbar Header */}
-        <Navbar
-          activeProject={activeProject}
-          onUpdateProjectName={(name) =>
-            setActiveProject((prev) => ({ ...prev, name }))
-          }
-          onGenerateAll={() => generateAllChunks(false)}
-          isGenerating={isGeneratingBatch}
-          onOpenMobileMenu={() => setMobileOpen(true)}
-        />
+        {/* Top Navbar Header - Only displayed on the Script Studio page */}
+        {activeTab === 'script-studio' && (
+          <Navbar
+            activeProject={activeProject}
+            onUpdateProjectName={(name) =>
+              setActiveProject((prev) => ({ ...prev, name }))
+            }
+            onGenerateAll={() => generateAllChunks(false)}
+            isGenerating={isGeneratingBatch}
+            onOpenMobileMenu={() => setMobileOpen(true)}
+          />
+        )}
 
         {/* Main Tab Viewport */}
         <main className="flex-1 p-4 sm:p-6 pb-28 md:pb-28 overflow-y-auto">
@@ -190,6 +192,8 @@ export function App() {
             <Settings
               apiHealth={apiHealth}
               onRefreshHealth={refreshBackendStatus}
+              theme={theme}
+              onToggleTheme={toggleTheme}
             />
           )}
         </main>

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { ApiHealthResponse } from '../../../shared/src/types';
-import { Settings as SettingsIcon, Radio, ShieldCheck, CheckCircle2, AlertCircle, Sparkles, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, Radio, ShieldCheck, CheckCircle2, AlertCircle, Sparkles, RefreshCw, Sun, Moon } from 'lucide-react';
 import { ApiClient } from '../services/api';
 
 interface SettingsProps {
   apiHealth: ApiHealthResponse;
   onRefreshHealth: () => void;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ apiHealth, onRefreshHealth }) => {
+export const Settings: React.FC<SettingsProps> = ({ apiHealth, onRefreshHealth, theme, onToggleTheme }) => {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -131,6 +133,23 @@ export const Settings: React.FC<SettingsProps> = ({ apiHealth, onRefreshHealth }
           )}
         </div>
       </div>
+
+      {/* Appearance Theme Card */}
+      {onToggleTheme && (
+        <div className="glass-panel rounded-2xl p-6 border border-studio-border flex items-center justify-between shadow-sm bg-white dark:bg-studio-900">
+          <div>
+            <h3 className="text-sm font-serif font-bold text-slate-900 dark:text-white">Appearance Theme</h3>
+            <p className="text-xs font-mono text-slate-500">Currently active: {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</p>
+          </div>
+          <button
+            onClick={onToggleTheme}
+            className="px-4 py-2 bg-slate-100 dark:bg-studio-850 border border-studio-border rounded-xl text-xs font-mono font-bold flex items-center gap-2 text-slate-800 dark:text-slate-200 hover:border-black transition"
+          >
+            {theme === 'dark' ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+            <span>Switch to {theme === 'dark' ? 'Light' : 'Dark'}</span>
+          </button>
+        </div>
+      )}
 
       {/* Security Best Practices Card */}
       <div className="glass-panel rounded-2xl p-6 border border-studio-border space-y-3 shadow-sm bg-white dark:bg-studio-900">

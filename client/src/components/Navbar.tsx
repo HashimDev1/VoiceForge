@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Project } from '../../../shared/src/types';
 import { Sparkles, Edit3, Check, Disc, Menu, Radio } from 'lucide-react';
 
@@ -19,6 +19,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [nameInput, setNameInput] = useState(activeProject.name);
+
+  useEffect(() => {
+    setNameInput(activeProject.name);
+  }, [activeProject.name]);
 
   const handleSaveName = () => {
     if (nameInput.trim()) {

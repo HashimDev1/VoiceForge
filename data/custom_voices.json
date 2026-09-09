@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "7dbd6537bee34b0eb61e73b225914f2f",
+    "name": "Blue Abyss",
+    "language": "English",
+    "style": "Custom Reference",
+    "gender": "Neutral",
+    "description": "Saved Fish Audio reference ID model.",
+    "category": "Documentary",
+    "isCustom": true
+  }
+]
