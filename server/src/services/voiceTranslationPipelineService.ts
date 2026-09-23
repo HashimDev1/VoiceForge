@@ -9,6 +9,7 @@ import {
 import { FFmpegHelper } from '../utils/ffmpegHelper';
 import { TranslationEngineService } from './translationEngineService';
 import { FishAudioService } from './fishAudioService';
+import { SpeechRecognitionService } from './speechRecognitionService';
 import { VoiceTranslationStorageService } from './voiceTranslationStorageService';
 import { SentenceDubbingService } from './sentenceDubbingService';
 import { NeuralTtsHelper } from './neuralTtsHelper';
@@ -111,7 +112,7 @@ export class VoiceTranslationPipelineService {
       let rawSegments: any[] = [];
 
       try {
-        const asrResult = await FishAudioService.transcribeAudio(
+        const asrResult = await SpeechRecognitionService.transcribeAudio(
           audioBuffer,
           project.sourceFile.originalName,
           project.sourceLanguage
@@ -119,8 +120,9 @@ export class VoiceTranslationPipelineService {
         recognizedText = asrResult.text || '';
         detectedLang = asrResult.language || detectedLang;
         rawSegments = asrResult.segments || [];
+        logger.info(`[Step 2/8] Speech recognition completed via ${asrResult.provider}: ${recognizedText.length} chars, ${rawSegments.length} segments.`);
       } catch (asrErr: any) {
-        logger.warn('Fish Audio ASR unavailable or offline, using fallback transcription:', asrErr.message);
+        logger.warn('[Step 2/8] ASR failed, using fallback transcription:', asrErr.message);
         recognizedText = 'Welcome to VoiceForge Studio. This is an original demonstration voice recording to show multilingual AI voice translation.';
       }
 

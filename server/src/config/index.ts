@@ -10,6 +10,9 @@ export const config = {
   port: parseInt(process.env.PORT || '5000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   fishApiKey: process.env.FISH_API_KEY || '',
+  groqApiKey: process.env.GROQ_API_KEY || '',
+  openaiApiKey: process.env.OPENAI_API_KEY || '',
+  huggingFaceApiKey: process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN || '',
   maxConcurrentTts: parseInt(process.env.MAX_CONCURRENT_TTS || '2', 10),
   storageDir: process.env.STORAGE_DIR
     ? path.resolve(process.cwd(), process.env.STORAGE_DIR)
