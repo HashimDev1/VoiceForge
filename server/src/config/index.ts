@@ -15,5 +15,6 @@ export const config = {
     ? path.resolve(process.cwd(), process.env.STORAGE_DIR)
     : path.resolve(process.cwd(), 'temp_storage'),
   fishApiBaseUrl: 'https://api.fish.audio/v1',
+  fishApiRootUrl: 'https://api.fish.audio',
   defaultModel: 's2.1-pro-free'
 };

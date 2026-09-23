@@ -2,18 +2,25 @@ import { ScriptAnalysis, ScriptPreset, SpeechDirection, ChunkSettings } from './
 import { splitScriptIntoChunks } from './chunking';
 
 export const SUPPORTED_DIRECTION_TAGS: SpeechDirection[] = [
-  { tag: '[whisper]', label: 'Whisper', description: 'Low, intimate whispered delivery', supported: true },
-  { tag: '[slow]', label: 'Slow Pace', description: 'Slower, deliberate speaking pace', supported: true },
-  { tag: '[fast]', label: 'Fast Pace', description: 'Faster, rapid speaking rate', supported: true },
+  { tag: '[laugh]', label: 'Laugh', description: 'Full laugh in delivery', supported: true },
   { tag: '[chuckle]', label: 'Chuckle', description: 'Light laugh / chuckling tone', supported: true },
-  { tag: '[emphasis]', label: 'Emphasis', description: 'Stress on words', supported: true },
+  { tag: '[giggle]', label: 'Giggle', description: 'Playful giggle', supported: true },
+  { tag: '[snicker]', label: 'Snicker', description: 'Brief stifled laugh', supported: true },
+  { tag: '[whisper]', label: 'Whisper', description: 'Low, intimate whispered delivery', supported: true },
+  { tag: '[whispering]', label: 'Whispering', description: 'Continuous whispering tone', supported: true },
   { tag: '[sigh]', label: 'Sigh', description: 'Exhale or sigh pause', supported: true },
   { tag: '[gasp]', label: 'Gasp', description: 'Sudden intake of breath', supported: true },
+  { tag: '[pant]', label: 'Pant', description: 'Out of breath / panting sound', supported: true },
+  { tag: '[crying]', label: 'Crying', description: 'Emotional sobbing or crying voice', supported: true },
+  { tag: '[screaming]', label: 'Screaming', description: 'Loud shouting or scream', supported: true },
+  { tag: '[pause]', label: 'Pause', description: 'Brief natural hesitation', supported: true },
+  { tag: '[emphasis]', label: 'Emphasis', description: 'Stress on words', supported: true },
   { tag: '[excited]', label: 'Excited', description: 'Energetic and enthusiastic tone', supported: true },
+  { tag: '[calm]', label: 'Calm', description: 'Soothing and relaxed pace', supported: true },
   { tag: '[sad]', label: 'Melancholic', description: 'Somber or emotional delivery', supported: true },
   { tag: '[angry]', label: 'Intense', description: 'Firm, forceful or angry emotion', supported: true },
-  { tag: '[calm]', label: 'Calm', description: 'Soothing and relaxed pace', supported: true },
-  { tag: '[pause]', label: 'Pause', description: 'Brief natural hesitation', supported: true }
+  { tag: '[slow]', label: 'Slow Pace', description: 'Slower, deliberate speaking pace', supported: true },
+  { tag: '[fast]', label: 'Fast Pace', description: 'Faster, rapid speaking rate', supported: true }
 ];
 
 export const SCRIPT_PRESETS: ScriptPreset[] = [

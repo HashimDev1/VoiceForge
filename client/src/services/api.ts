@@ -1,4 +1,13 @@
-import { Voice, ApiHealthResponse, AudioTake } from '../../../shared/src/types';
+import {
+  Voice,
+  ApiHealthResponse,
+  AudioTake,
+  FishAudioModelSearchQuery,
+  FishAudioModelListResponse,
+  VoiceDesignRequestPayload,
+  VoiceDesignResult,
+  AsrTranscriptionResult
+} from '../../../shared/src/types';
 
 export class ApiClient {
   public static async getHealth(): Promise<ApiHealthResponse> {
@@ -155,4 +164,81 @@ export class ApiClient {
     }
     return await res.blob();
   }
+
+  /**
+   * Search / Browse remote and community Fish Audio models
+   */
+  public static async getRemoteVoices(params: FishAudioModelSearchQuery): Promise<FishAudioModelListResponse> {
+    const query = new URLSearchParams();
+    if (params.title) query.set('title', params.title);
+    if (params.tag) query.set('tag', params.tag);
+    if (params.language) query.set('language', params.language);
+    if (params.self !== undefined) query.set('self', String(params.self));
+    if (params.page_number) query.set('page_number', String(params.page_number));
+    if (params.page_size) query.set('page_size', String(params.page_size));
+    if (params.sort_by) query.set('sort_by', params.sort_by);
+
+    const res = await fetch(`/api/voices/remote?${query.toString()}`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to fetch community voices from Fish Audio.');
+    }
+    return {
+      total: data.total || 0,
+      items: data.items || [],
+      page_number: data.page_number || 1,
+      page_size: data.page_size || 20
+    };
+  }
+
+  /**
+   * Instant Zero-Shot Voice Cloning (Upload or Recorded Audio)
+   */
+  public static async cloneVoice(formData: FormData): Promise<{
+    success: boolean;
+    voice: Voice;
+    customVoices: Voice[];
+  }> {
+    const res = await fetch('/api/voices/clone', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to clone voice with Fish Audio.');
+    }
+    return data;
+  }
+
+  /**
+   * Voice Design: Generate voices from natural language prompts
+   */
+  public static async designVoice(payload: VoiceDesignRequestPayload): Promise<VoiceDesignResult> {
+    const res = await fetch('/api/voices/design', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to design voice.');
+    }
+    return data;
+  }
+
+  /**
+   * Speech to Text (ASR) Audio Transcription
+   */
+  public static async transcribeAudio(formData: FormData): Promise<AsrTranscriptionResult> {
+    const res = await fetch('/api/asr/transcribe', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to transcribe audio.');
+    }
+    return data;
+  }
 }
+

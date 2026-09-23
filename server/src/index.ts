@@ -11,6 +11,7 @@ import healthRoutes from './routes/healthRoutes';
 import voiceRoutes from './routes/voiceRoutes';
 import ttsRoutes from './routes/ttsRoutes';
 import audioRoutes from './routes/audioRoutes';
+import asrRoutes from './routes/asrRoutes';
 import { ProjectService } from './services/projectService';
 
 const app = express();
@@ -52,6 +53,7 @@ app.use('/api', healthRoutes);
 app.use('/api', voiceRoutes);
 app.use('/api', ttsRoutes);
 app.use('/api', audioRoutes);
+app.use('/api', asrRoutes);
 
 // Static frontend serving (for production or unified single-port hosting)
 const clientDistPath = [

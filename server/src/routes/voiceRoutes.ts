@@ -1,9 +1,16 @@
 import { Router, Request, Response } from 'express';
+import multer from 'multer';
 import { Voice } from '../../../shared/src/types';
 import { VoiceStorageService } from '../services/voiceStorageService';
+import { FishAudioService } from '../services/fishAudioService';
+import { ProjectService } from '../services/projectService';
 import { logger } from '../utils/logger';
 
 const router = Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 } // 25MB max audio
+});
 
 // Built-in voice configurations with application metadata
 const CONFIGURED_VOICES: Voice[] = [
@@ -165,4 +172,157 @@ router.delete('/voices/custom/:id', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/voices/remote - search & browse Fish Audio community/official models
+router.get('/voices/remote', async (req: Request, res: Response) => {
+  try {
+    const { title, tag, language, self, page_number, page_size, sort_by } = req.query;
+
+    const data = await FishAudioService.listRemoteModels({
+      title: title ? String(title) : undefined,
+      tag: tag ? String(tag) : undefined,
+      language: language ? String(language) : undefined,
+      self: self !== undefined ? String(self) === 'true' : undefined,
+      page_number: page_number ? parseInt(String(page_number), 10) : 1,
+      page_size: page_size ? parseInt(String(page_size), 10) : 24,
+      sort_by: (sort_by as any) || 'score'
+    });
+
+    res.json({
+      success: true,
+      ...data
+    });
+  } catch (error: any) {
+    logger.error('Failed to list remote models:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to list remote Fish Audio models'
+    });
+  }
+});
+
+// POST /api/voices/clone - Instant Zero-Shot Voice Cloning via audio upload
+router.post('/voices/clone', upload.single('audio'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'Audio file is required for voice cloning (10-30 seconds recommended).'
+      });
+    }
+
+    const { title, description, text, tags, category, language, gender, style } = req.body;
+    if (!title || !title.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Voice title is required.'
+      });
+    }
+
+    let parsedTags: string[] = [];
+    if (tags) {
+      try {
+        parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+      } catch {
+        parsedTags = String(tags).split(',').map((t) => t.trim()).filter(Boolean);
+      }
+    }
+
+    // Call Fish Audio API to create fast model
+    const createdModel = await FishAudioService.createVoiceModel(
+      req.file.buffer,
+      req.file.originalname,
+      {
+        title: title.trim(),
+        description: description ? description.trim() : undefined,
+        text: text ? text.trim() : undefined,
+        tags: parsedTags,
+        visibility: 'private'
+      }
+    );
+
+    // Register into local custom voices so user can immediately use it
+    const newVoice: Voice = {
+      id: createdModel._id,
+      name: createdModel.title || title.trim(),
+      language: language || (createdModel.languages && createdModel.languages[0]) || 'English',
+      style: style || 'Cloned Voice',
+      gender: (gender as any) || 'Neutral',
+      description: description || `Cloned voice model created on ${new Date().toLocaleDateString()}`,
+      category: (category as any) || 'Documentary',
+      isCustom: true
+    };
+
+    const customVoices = await VoiceStorageService.saveCustomVoice(newVoice);
+
+    res.json({
+      success: true,
+      voice: newVoice,
+      model: createdModel,
+      customVoices
+    });
+  } catch (error: any) {
+    logger.error('Voice clone failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to clone voice with Fish Audio API.'
+    });
+  }
+});
+
+// POST /api/voices/design - AI Prompt-Based Voice Design
+router.post('/voices/design', async (req: Request, res: Response) => {
+  try {
+    const { instruction, reference_text, language, n = 2, speed = 1.0 } = req.body;
+
+    if (!instruction || !instruction.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Instruction prompt is required (e.g. "Elderly British narrator with a warm raspy tone").'
+      });
+    }
+
+    const result = await FishAudioService.designVoice({
+      instruction: instruction.trim(),
+      reference_text: reference_text ? reference_text.trim() : undefined,
+      language: language ? language.trim() : undefined,
+      n: Math.min(Math.max(Number(n) || 2, 1), 4),
+      speed: Number(speed) || 1.0
+    });
+
+    // Convert candidate audio base64 into locally accessible URLs for frontend preview
+    const processedCandidates = await Promise.all(
+      result.candidates.map(async (cand: any, idx: number) => {
+        let audioUrl = '';
+        if (cand.audio_base64) {
+          const buffer = Buffer.from(cand.audio_base64, 'base64');
+          const saved = await ProjectService.saveAudioFile(buffer, `design_cand_${idx}`);
+          audioUrl = saved.fileUrl;
+        }
+        return {
+          id: cand.id,
+          index: cand.index,
+          sampleIndex: idx,
+          audioUrl,
+          text: cand.text || reference_text || instruction,
+          durationMs: cand.duration_ms,
+          sampleRate: cand.sample_rate
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      instruction: result.instruction,
+      candidates: processedCandidates
+    });
+  } catch (error: any) {
+    logger.error('Voice design failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate voice design candidates.'
+    });
+  }
+});
+
 export default router;
+

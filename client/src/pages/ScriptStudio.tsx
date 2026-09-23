@@ -6,6 +6,7 @@ import { ScriptAnalyzer } from '../components/ScriptAnalyzer';
 import { VoiceSelector } from '../components/VoiceSelector';
 import { ChunkList } from '../components/ChunkList';
 import { ExportModal } from '../components/ExportModal';
+import { AsrModal } from '../components/AsrModal';
 import { 
   Sparkles, 
   Copy, 
@@ -19,7 +20,8 @@ import {
   Plus,
   Layers,
   Gauge,
-  Volume2
+  Volume2,
+  Mic
 } from 'lucide-react';
 
 interface ScriptStudioProps {
@@ -79,7 +81,17 @@ export const ScriptStudio: React.FC<ScriptStudioProps> = ({
 }) => {
   const [showAnalyzer, setShowAnalyzer] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showAsrModal, setShowAsrModal] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const handleApplyAsrScript = (transcribed: string, mode: 'replace' | 'append') => {
+    if (mode === 'replace') {
+      handleScriptChange(transcribed);
+    } else {
+      const combined = project.script.trim() ? `${project.script.trim()}\n\n${transcribed}` : transcribed;
+      handleScriptChange(combined);
+    }
+  };
 
   // Script undo/redo history state
   const [history, setHistory] = useState<string[]>([project.script]);
@@ -263,18 +275,30 @@ export const ScriptStudio: React.FC<ScriptStudioProps> = ({
                 </button>
               </div>
 
-              {/* Analyzer Toggle */}
-              <button
-                onClick={() => setShowAnalyzer(!showAnalyzer)}
-                className={`px-3 py-1.5 rounded-xl font-mono font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 border transition ${
-                  showAnalyzer
-                    ? 'bg-black text-white dark:bg-white dark:text-black border-black shadow-sm'
-                    : 'bg-slate-100 dark:bg-studio-850 text-slate-900 dark:text-slate-100 border-studio-border hover:border-black'
-                }`}
-              >
-                <Zap className="w-3.5 h-3.5" />
-                <span>{showAnalyzer ? 'Hide Analysis' : 'Analyze Script'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAsrModal(true)}
+                  className="px-3 py-1.5 rounded-xl font-mono font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition shadow-sm"
+                  title="Transcribe spoken audio or microphone to script with Fish Audio ASR"
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                  <span>Audio to Script</span>
+                </button>
+
+                {/* Analyzer Toggle */}
+                <button
+                  onClick={() => setShowAnalyzer(!showAnalyzer)}
+                  className={`px-3 py-1.5 rounded-xl font-mono font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 border transition ${
+                    showAnalyzer
+                      ? 'bg-black text-white dark:bg-white dark:text-black border-black shadow-sm'
+                      : 'bg-slate-100 dark:bg-studio-850 text-slate-900 dark:text-slate-100 border-studio-border hover:border-black'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>{showAnalyzer ? 'Hide Analysis' : 'Analyze Script'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Direction Tag Quick Helper Bar */}
@@ -576,6 +600,13 @@ export const ScriptStudio: React.FC<ScriptStudioProps> = ({
         isPlaying={isPlaying}
         currentAudioUrl={currentAudioUrl}
         onSetPause={onUpdatePause}
+      />
+
+      {/* Speech-to-Text Transcription Modal */}
+      <AsrModal
+        isOpen={showAsrModal}
+        onClose={() => setShowAsrModal(false)}
+        onApplyScript={handleApplyAsrScript}
       />
     </div>
   );

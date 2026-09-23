@@ -148,3 +148,93 @@ export interface ApiHealthResponse {
   message: string;
   model: string;
 }
+
+// Remote Fish Audio Model / Community Model Types
+export interface FishAudioSampleEntity {
+  audio: string;
+  title?: string;
+  text?: string;
+}
+
+export interface FishAudioAuthorEntity {
+  _id?: string;
+  nickname?: string;
+  avatar?: string;
+}
+
+export interface FishAudioRemoteModel {
+  _id: string;
+  title: string;
+  description?: string;
+  type?: 'tts' | 'svc';
+  train_mode?: 'fast' | 'full';
+  state?: 'created' | 'training' | 'trained' | 'failed';
+  tags?: string[];
+  languages?: string[];
+  visibility?: 'public' | 'unlist' | 'private';
+  like_count?: number;
+  task_count?: number;
+  samples?: FishAudioSampleEntity[];
+  author?: FishAudioAuthorEntity;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface FishAudioModelSearchQuery {
+  title?: string;
+  tag?: string;
+  language?: string;
+  self?: boolean;
+  page_number?: number;
+  page_size?: number;
+  sort_by?: 'score' | 'task_count' | 'created_at';
+}
+
+export interface FishAudioModelListResponse {
+  total: number;
+  items: FishAudioRemoteModel[];
+  page_number: number;
+  page_size: number;
+}
+
+// Voice Design Types
+export interface VoiceDesignRequestPayload {
+  instruction: string;
+  reference_text?: string;
+  language?: string;
+  n?: number;
+  speed?: number;
+  num_step?: number;
+  guidance_scale?: number;
+}
+
+export interface VoiceDesignCandidate {
+  audioUrl: string;
+  signature?: string;
+  sampleIndex: number;
+  previewUrl?: string;
+}
+
+export interface VoiceDesignResult {
+  success: boolean;
+  candidates: VoiceDesignCandidate[];
+  instruction: string;
+}
+
+// Speech to Text (ASR) Types
+export interface AsrTranscriptionResult {
+  success: boolean;
+  text: string;
+  duration?: number;
+  language?: string;
+}
+
+// Voice Clone Payload
+export interface CloneVoicePayload {
+  title: string;
+  description?: string;
+  text?: string;
+  language?: string;
+  tags?: string[];
+}
+
