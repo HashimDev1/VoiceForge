@@ -1,6 +1,9 @@
 # Multi-stage Dockerfile for VoiceForge Studio
 FROM node:20-alpine AS builder
 
+# Install build tools and ffmpeg
+RUN apk add --no-cache ffmpeg python3 make g++
+
 WORKDIR /app
 
 # Copy root and package manifests
@@ -25,6 +28,9 @@ RUN npm --prefix server run build
 # Production Runner Stage
 FROM node:20-alpine AS runner
 
+# Install system ffmpeg in runner container
+RUN apk add --no-cache ffmpeg
+
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=5000
@@ -39,7 +45,7 @@ COPY --from=builder /app/client/dist ./client/dist
 COPY --from=builder /app/server/dist ./server/dist
 
 # Ensure temporary storage directory exists
-RUN mkdir -p /app/temp_storage
+RUN mkdir -p /app/temp_storage /app/data
 
 EXPOSE 5000
 

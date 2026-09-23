@@ -24,6 +24,21 @@ export class FFmpegHelper {
       return this.cachedFfmpegPath;
     }
 
+    // Try ffmpeg-static npm package (portable across Windows, Linux, Docker, Render)
+    try {
+      const ffmpegStatic = require('ffmpeg-static');
+      const staticPath = typeof ffmpegStatic === 'string' ? ffmpegStatic : (ffmpegStatic?.default || null);
+      if (staticPath && fs.existsSync(staticPath)) {
+        if (process.platform !== 'win32') {
+          try {
+            fs.chmodSync(staticPath, 0o755);
+          } catch {}
+        }
+        this.cachedFfmpegPath = staticPath;
+        return staticPath;
+      }
+    } catch {}
+
     const userProfile = process.env.USERPROFILE || 'C:\\Users\\Muhammad Hashim';
     const staticFfmpegCandidate = path.join(
       userProfile,

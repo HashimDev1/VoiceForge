@@ -1,11 +1,15 @@
 import fs from 'fs';
 import path from 'path';
+import { execFile } from 'child_process';
+import util from 'util';
 import { DubbingSegment, DubbingProgress } from '../../../shared/src/types';
 import { FFmpegHelper } from '../utils/ffmpegHelper';
 import { TranslationEngineService } from './translationEngineService';
 import { NeuralTtsHelper } from './neuralTtsHelper';
 import { config } from '../config';
 import { logger } from '../utils/logger';
+
+const execFileAsync = util.promisify(execFile);
 
 export interface SentenceDubbingOptions {
   projectId: string;
@@ -237,9 +241,6 @@ export class SentenceDubbingService {
     await fs.promises.writeFile(concatListPath, fileEntries, 'utf-8');
 
     const ffmpeg = await FFmpegHelper.getFfmpegPath();
-    const { execFile } = require('child_process');
-    const util = require('util');
-    const execFileAsync = util.promisify(execFile);
 
     try {
       const args = [
