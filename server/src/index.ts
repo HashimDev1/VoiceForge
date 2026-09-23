@@ -18,6 +18,9 @@ import { VoiceTranslationStorageService } from './services/voiceTranslationStora
 
 const app = express();
 
+// Enable trust proxy for reverse proxies (Render, Heroku, Cloudflare, Docker)
+app.set('trust proxy', 1);
+
 // Storage Initialization
 ProjectService.initStorage();
 VoiceTranslationStorageService.initStorage();
@@ -46,7 +49,10 @@ if (config.nodeEnv !== 'test') {
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 100,
-  message: { error: 'Too many requests to VoiceForge backend. Please slow down.' }
+  message: { error: 'Too many requests to VoiceForge backend. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false }
 });
 
 app.use('/api', apiLimiter);
