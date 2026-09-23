@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Voice, VoiceCategory } from '../../../shared/src/types';
-import { Play, Volume2, Check, Sparkles, Plus, Info, Edit3, Trash2, Save, ChevronDown, ChevronUp } from 'lucide-react';
+import { Play, Volume2, Check, Sparkles, Plus, Info, Edit3, Trash2, Save, ChevronDown, ChevronUp, Globe, Wand2, X } from 'lucide-react';
 import { ApiClient } from '../services/api';
+import { VoiceCloneModal } from './VoiceCloneModal';
+import { VoiceDesignModal } from './VoiceDesignModal';
+import { CommunityVoiceBrowser } from './CommunityVoiceBrowser';
 
 interface VoiceSelectorProps {
   voices: Voice[];
@@ -42,9 +45,19 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
   
   // Custom Voice Modal State (for creating or editing)
   const [showAddCustomModal, setShowAddCustomModal] = useState<boolean>(false);
+  const [showCloneModal, setShowCloneModal] = useState<boolean>(false);
+  const [showDesignModal, setShowDesignModal] = useState<boolean>(false);
+  const [showCommunityModal, setShowCommunityModal] = useState<boolean>(false);
   const [editingVoiceId, setEditingVoiceId] = useState<string | null>(null);
   const [customRefId, setCustomRefId] = useState<string>('');
   const [customVoiceName, setCustomVoiceName] = useState<string>('');
+
+  const handleVoiceCreated = (voice: Voice) => {
+    if (onSaveCustomVoice) {
+      onSaveCustomVoice(voice);
+    }
+    onSelectVoice(voice);
+  };
 
   const filteredVoices = voices.filter((v) => {
     if (activeCategory === 'All') return true;
@@ -128,13 +141,46 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={openNewVoiceModal}
-          className="px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black rounded-xl text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md hover:opacity-95 transition self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Save Ref ID</span>
-        </button>
+        <div className="flex items-center gap-1.5 flex-wrap self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setShowCloneModal(true)}
+            className="px-2.5 py-1.5 bg-black dark:bg-white text-white dark:text-black rounded-xl text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm hover:opacity-95 transition cursor-pointer"
+            title="Clone voice from reference audio or microphone"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300 dark:text-amber-500" />
+            <span>Clone Voice</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowCommunityModal(true)}
+            className="px-2.5 py-1.5 bg-slate-100 dark:bg-studio-850 text-slate-800 dark:text-slate-200 border border-studio-border hover:border-black dark:hover:border-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer"
+            title="Browse Fish Audio community voices"
+          >
+            <Globe className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Community</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowDesignModal(true)}
+            className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+            title="Design a voice using natural language AI prompt"
+          >
+            <Wand2 className="w-3.5 h-3.5" />
+            <span>Design</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={openNewVoiceModal}
+            className="px-2 py-1.5 text-slate-500 hover:text-black dark:hover:text-white rounded-xl text-xs font-mono transition cursor-pointer"
+            title="Manually enter reference ID"
+          >
+            <span>+ ID</span>
+          </button>
+        </div>
       </div>
 
       {/* Category Pills */}
@@ -358,6 +404,56 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
                 <Save className="w-3.5 h-3.5" />
                 <span>{editingVoiceId ? 'Update & Save' : 'Save Voice'}</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Instant Voice Clone Modal */}
+      <VoiceCloneModal
+        isOpen={showCloneModal}
+        onClose={() => setShowCloneModal(false)}
+        onVoiceCreated={handleVoiceCreated}
+      />
+
+      {/* AI Voice Design Modal */}
+      <VoiceDesignModal
+        isOpen={showDesignModal}
+        onClose={() => setShowDesignModal(false)}
+        onVoiceSaved={handleVoiceCreated}
+      />
+
+      {/* Community Voice Explorer Modal */}
+      {showCommunityModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-studio-900 border border-studio-border rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="px-6 py-4 border-b border-studio-border flex items-center justify-between bg-slate-50 dark:bg-studio-950/60">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold">
+                  <Globe className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">Fish Audio Community Voices</h2>
+                  <p className="text-xs text-slate-500 font-mono">Browse and import public voice models</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCommunityModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-studio-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              <CommunityVoiceBrowser
+                onSelectVoice={(v) => {
+                  onSelectVoice(v);
+                  setShowCommunityModal(false);
+                }}
+                onSaveCustomVoice={onSaveCustomVoice}
+                savedVoiceIds={new Set(voices.map((v) => v.id))}
+              />
             </div>
           </div>
         </div>
