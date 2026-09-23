@@ -283,6 +283,35 @@ export interface TranslationOutput {
   createdAt: string;
 }
 
+export interface DubbingSegment {
+  id: number | string;
+  start_time: number;
+  end_time: number;
+  original_text: string;
+  translated_text?: string;
+  duration: number;
+  audioUrl?: string;
+  status?: 'pending' | 'translating' | 'generating' | 'matching' | 'completed' | 'error';
+}
+
+export interface DubbingProgress {
+  currentSegment: number;
+  totalSegments: number;
+  currentPhase:
+    | 'Extracting Audio'
+    | 'Speech Recognition'
+    | 'Sentence Segmentation'
+    | 'Translating'
+    | 'Generating Voice'
+    | 'Matching Timing'
+    | 'Merging Sentences'
+    | 'Completed'
+    | 'Idle';
+  currentLanguage?: string;
+  percent: number;
+  message?: string;
+}
+
 export interface VoiceTranslationProject {
   id: string;
   userId: string;
@@ -305,6 +334,8 @@ export interface VoiceTranslationProject {
   settings: VoicePreservationSettings;
   timingMode: TimingControlMode;
   analysis?: VoiceAnalysisResult;
+  segments?: DubbingSegment[];
+  progress?: DubbingProgress;
   outputs: TranslationOutput[];
   createdAt: string;
   updatedAt: string;

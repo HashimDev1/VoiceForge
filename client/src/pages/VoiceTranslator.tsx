@@ -34,7 +34,9 @@ import {
   TranslationOutput,
   VoiceAnalysisResult,
   VoicePreservationSettings,
-  TimingControlMode
+  TimingControlMode,
+  DubbingProgress,
+  DubbingSegment
 } from '../../../shared/src/types';
 import { ApiClient } from '../services/api';
 
@@ -118,6 +120,7 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeStep, setActiveStep] = useState<number>(0);
   const [processingError, setProcessingError] = useState<string | null>(null);
+  const [currentProgress, setCurrentProgress] = useState<DubbingProgress | null>(null);
 
   // Active Project & Projects List
   const [currentProject, setCurrentProject] = useState<VoiceTranslationProject | null>(null);
@@ -272,6 +275,9 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
       const pollInterval = setInterval(async () => {
         try {
           const freshProject = await ApiClient.getTranslationProject(project.id);
+          if (freshProject.progress) {
+            setCurrentProgress(freshProject.progress);
+          }
           if (freshProject.status === 'completed') {
             clearInterval(pollInterval);
             clearInterval(stepTimer);
@@ -290,7 +296,7 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
         } catch (pollErr) {
           console.warn('Poll error:', pollErr);
         }
-      }, 1500);
+      }, 1200);
 
       // Safety timeout after 90 seconds
       setTimeout(() => {
@@ -1114,6 +1120,43 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
               );
             })}
           </div>
+
+          {/* Live Sentence Dubbing Progress Monitor */}
+          {isProcessing && (
+            <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-studio-850 border border-studio-border animate-in fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-xs font-mono font-bold text-slate-900 dark:text-white">
+                    {currentProgress?.totalSegments && currentProgress.totalSegments > 0
+                      ? `Processing Segment ${currentProgress.currentSegment}/${currentProgress.totalSegments}`
+                      : 'Processing Sentence Dubbing Pipeline...'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
+                    {currentProgress?.currentPhase || 'Generating Voice'}
+                  </span>
+                  <span className="text-xs font-mono font-extrabold text-slate-900 dark:text-white">
+                    {currentProgress?.percent || 15}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full bg-slate-200 dark:bg-studio-700 h-2 rounded-full overflow-hidden mb-2">
+                <div
+                  className="bg-black dark:bg-white h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.max(5, currentProgress?.percent || 15)}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-500">
+                <span>{currentProgress?.message || 'Processing sentence-by-sentence with Fish Audio voice clone...'}</span>
+                <span>Exact Timing Alignment Active</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1244,6 +1287,80 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* SECTION 8B: SENTENCE-BY-SENTENCE DUBBING BREAKDOWN */}
+      {/* ======================================================== */}
+      {currentProject && currentProject.segments && currentProject.segments.length > 0 && (
+        <div className="bg-white dark:bg-studio-900 border border-studio-border rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between border-b border-studio-border pb-4 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-black text-white dark:bg-white dark:text-black font-mono font-bold text-xs flex items-center justify-center">
+                ✓
+              </span>
+              <div>
+                <h2 className="text-sm font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                  Sentence-by-Sentence AI Dubbing Studio ({currentProject.segments.length} Sentences)
+                </h2>
+                <span className="text-[11px] text-slate-500 font-mono">
+                  Exact start/end timestamp alignment & Fish Audio cloned speech per sentence
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              PRECISION TIMING
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-studio-border text-slate-500 uppercase text-[10px]">
+                  <th className="pb-3 font-bold w-12">#</th>
+                  <th className="pb-3 font-bold w-28">Timestamp</th>
+                  <th className="pb-3 font-bold w-20">Duration</th>
+                  <th className="pb-3 font-bold">Original Sentence</th>
+                  <th className="pb-3 font-bold">Translated Sentence</th>
+                  <th className="pb-3 font-bold text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-studio-border">
+                {currentProject.segments.map((seg) => (
+                  <tr key={seg.id} className="hover:bg-slate-50 dark:hover:bg-studio-850 transition">
+                    <td className="py-3 font-bold text-slate-400">{seg.id}</td>
+                    <td className="py-3 text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">
+                      {seg.start_time.toFixed(1)}s - {seg.end_time.toFixed(1)}s
+                    </td>
+                    <td className="py-3">
+                      <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-studio-800 text-[10px] font-bold">
+                        {seg.duration.toFixed(2)}s
+                      </span>
+                    </td>
+                    <td className="py-3 text-slate-900 dark:text-white max-w-xs">{seg.original_text}</td>
+                    <td className="py-3 text-emerald-700 dark:text-emerald-300 max-w-xs font-sans">
+                      {seg.translated_text || '—'}
+                    </td>
+                    <td className="py-3 text-right">
+                      {seg.audioUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => onAudioPlay(seg.audioUrl!)}
+                          className="p-1.5 rounded-lg border border-studio-border hover:bg-slate-200 dark:hover:bg-studio-800 transition"
+                          title="Play Sentence Audio"
+                        >
+                          <Play className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-400">✓ Synced</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

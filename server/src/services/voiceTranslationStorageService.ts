@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { VoiceTranslationProject, TranslationOutput } from '../../../shared/src/types';
+import { VoiceTranslationProject, TranslationOutput, DubbingProgress, DubbingSegment } from '../../../shared/src/types';
 import { logger } from '../utils/logger';
 
 export class VoiceTranslationStorageService {
@@ -79,6 +79,23 @@ export class VoiceTranslationStorageService {
 
     project.status = status;
     if (error) project.error = error;
+    project.updatedAt = new Date().toISOString();
+
+    return await this.saveProject(project);
+  }
+
+  public static async updateProjectProgress(
+    id: string,
+    progress: DubbingProgress,
+    segments?: DubbingSegment[]
+  ): Promise<VoiceTranslationProject | null> {
+    const project = await this.getProjectById(id);
+    if (!project) return null;
+
+    project.progress = progress;
+    if (segments) {
+      project.segments = segments;
+    }
     project.updatedAt = new Date().toISOString();
 
     return await this.saveProject(project);

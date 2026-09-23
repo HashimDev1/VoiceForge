@@ -3,14 +3,14 @@ import path from 'path';
 import {
   VoiceTranslationProject,
   TranslationOutput,
-  SpeechSegment,
+  DubbingSegment,
   VoiceAnalysisResult
 } from '../../../shared/src/types';
 import { FFmpegHelper } from '../utils/ffmpegHelper';
-import { TranslationEngineService, SUPPORTED_LANGUAGES } from './translationEngineService';
+import { TranslationEngineService } from './translationEngineService';
 import { FishAudioService } from './fishAudioService';
-import { ProjectService } from './projectService';
 import { VoiceTranslationStorageService } from './voiceTranslationStorageService';
+import { SentenceDubbingService } from './sentenceDubbingService';
 import { NeuralTtsHelper } from './neuralTtsHelper';
 import { logger } from '../utils/logger';
 import { config } from '../config';
@@ -41,7 +41,8 @@ export class VoiceTranslationPipelineService {
   }
 
   /**
-   * Executes the full 8-step AI Dubbing and Multilingual Translation pipeline.
+   * Executes the full 8-step AI Dubbing and Multilingual Translation pipeline at the sentence level.
+   * Audio -> ASR -> Sentence segmentation -> Sentence translation -> Sentence cloning -> Timing match -> Merge -> Final dubbed audio.
    */
   public static async processProject(projectId: string): Promise<VoiceTranslationProject> {
     const project = await VoiceTranslationStorageService.getProjectById(projectId);
@@ -51,24 +52,32 @@ export class VoiceTranslationPipelineService {
 
     try {
       await VoiceTranslationStorageService.updateProjectStatus(projectId, 'processing');
-      logger.info(`Starting 8-step AI Dubbing pipeline for project "${project.projectName}" (${projectId})`);
+      logger.info(`Starting Sentence-Level AI Dubbing pipeline for project "${project.projectName}" (${projectId})`);
 
       const sourceFilePath = path.join(config.storageDir, project.sourceFile.filename);
       // Guarantee source audio file exists on disk
       if (!fs.existsSync(sourceFilePath)) {
         logger.info(`Source file not found at ${sourceFilePath}, synthesizing sample audio track...`);
-        const sampleText = 'Welcome to my channel. In this video, we explore the power of AI voice cloning and real-time multilingual translation.';
+        const sampleText = 'Welcome to VoiceForge Studio. This is an original demonstration voice recording to show multilingual AI voice translation.';
         await NeuralTtsHelper.synthesizeSpeech({
           text: sampleText,
           language: project.sourceLanguage || 'English',
           outputPath: sourceFilePath,
-          targetDurationSec: project.duration > 0 ? project.duration : 5.0
+          targetDurationSec: project.duration > 0 ? project.duration : 8.784
         });
       }
 
       // ==========================================
       // STEP 1: EXTRACT AUDIO
       // ==========================================
+      await VoiceTranslationStorageService.updateProjectProgress(projectId, {
+        currentSegment: 0,
+        totalSegments: 0,
+        currentPhase: 'Extracting Audio',
+        percent: 10,
+        message: 'Extracting high-fidelity audio stream...'
+      });
+
       logger.info(`[Step 1/8] Extracting clean audio track...`);
       let audioPath = sourceFilePath;
       if (project.sourceFileType === 'video') {
@@ -81,13 +90,21 @@ export class VoiceTranslationPipelineService {
       const probedDuration = await FFmpegHelper.getMediaDuration(audioPath);
       const targetOriginalDuration = probedDuration > 0
         ? probedDuration
-        : (project.duration > 0 ? project.duration : 5.0);
+        : (project.duration > 0 ? project.duration : 8.784);
 
       logger.info(`Probed original duration: ${targetOriginalDuration.toFixed(2)}s`);
 
       // ==========================================
       // STEP 2: SPEECH RECOGNITION (Whisper / ASR)
       // ==========================================
+      await VoiceTranslationStorageService.updateProjectProgress(projectId, {
+        currentSegment: 0,
+        totalSegments: 0,
+        currentPhase: 'Speech Recognition',
+        percent: 20,
+        message: 'Running speech recognition with timestamp detection...'
+      });
+
       logger.info(`[Step 2/8] Running Speech Recognition (ASR)...`);
       let recognizedText = '';
       let detectedLang = project.sourceLanguage || 'English';
@@ -104,104 +121,42 @@ export class VoiceTranslationPipelineService {
         rawSegments = asrResult.segments || [];
       } catch (asrErr: any) {
         logger.warn('Fish Audio ASR unavailable or offline, using fallback transcription:', asrErr.message);
-        recognizedText = 'Welcome to my channel. In this video, we explore the power of AI voice cloning and real-time multilingual translation.';
-      }
-
-      // ==========================================
-      // STEP 3 & 4: DETECT TIMESTAMPS & TEXT
-      // ==========================================
-      logger.info(`[Step 3/8 & 4/8] Detecting timestamps and extracting transcript segments...`);
-      const segments: SpeechSegment[] = [];
-
-      if (rawSegments && rawSegments.length > 0) {
-        for (const s of rawSegments) {
-          segments.push({
-            start: Number(s.start) || 0,
-            end: Number(s.end) || 0,
-            text: String(s.text || '').trim()
-          });
-        }
-      } else {
-        const sentences = recognizedText.match(/[^.!?]+[.!?]+/g) || [recognizedText];
-        const segDuration = targetOriginalDuration / sentences.length;
-        let cursor = 0;
-        for (const sentence of sentences) {
-          const clean = sentence.trim();
-          if (clean) {
-            segments.push({
-              start: cursor,
-              end: cursor + segDuration,
-              text: clean
-            });
-            cursor += segDuration;
-          }
-        }
+        recognizedText = 'Welcome to VoiceForge Studio. This is an original demonstration voice recording to show multilingual AI voice translation.';
       }
 
       await VoiceTranslationStorageService.updateProjectStatus(projectId, 'generating');
 
       // ==========================================
-      // STEP 5, 6, 7 & 8: TRANSLATE, CLONE, TIMING, CREATE
+      // STEP 3-7: SENTENCE-LEVEL DUBBING
       // ==========================================
       const targetLanguages = project.targetLanguages.length > 0 ? project.targetLanguages : ['Spanish'];
-      logger.info(`Processing ${targetLanguages.length} target languages: ${targetLanguages.join(', ')}`);
+      logger.info(`Executing sentence dubbing for ${targetLanguages.length} target languages: ${targetLanguages.join(', ')}`);
+
+      let lastSegments: DubbingSegment[] = [];
 
       for (const targetLang of targetLanguages) {
-        logger.info(`[Step 5/8] Translating to ${targetLang}...`);
-        const translatedSegments: SpeechSegment[] = [];
-
-        for (const seg of segments) {
-          const translatedText = await TranslationEngineService.translate(
-            seg.text,
-            detectedLang,
-            targetLang
-          );
-          translatedSegments.push({
-            start: seg.start,
-            end: seg.end,
-            text: translatedText
-          });
-        }
-
-        const fullTranslatedScript = translatedSegments.map((s) => s.text).join(' ');
-
-        // [Step 6/8] Synthesize Speech with Voice Cloning
-        logger.info(`[Step 6/8] Synthesizing voice audio for ${targetLang}...`);
-        const rawFilename = `raw_trans_${TranslationEngineService.normalizeLangCode(targetLang)}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.mp3`;
-        const rawAudioPath = path.join(config.storageDir, rawFilename);
-
-        await NeuralTtsHelper.synthesizeSpeech({
-          text: fullTranslatedScript,
-          language: targetLang,
-          referenceId: project.voiceId,
-          outputPath: rawAudioPath,
-          targetDurationSec: targetOriginalDuration
+        const dubbingResult = await SentenceDubbingService.dubSentences({
+          projectId,
+          sourceText: recognizedText,
+          rawSegments,
+          totalDuration: targetOriginalDuration,
+          sourceLanguage: detectedLang,
+          targetLanguage: targetLang,
+          voiceId: project.voiceId,
+          timingMode: project.timingMode,
+          onProgress: async (prog) => {
+            await VoiceTranslationStorageService.updateProjectProgress(projectId, prog, dubbingResult?.segments);
+          }
         });
 
-        // [Step 7/8] Match Timing
-        logger.info(`[Step 7/8] Matching timing with mode: ${project.timingMode} (target: ${targetOriginalDuration.toFixed(2)}s)...`);
-        const finalAudioFilename = `final_${TranslationEngineService.normalizeLangCode(targetLang)}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.mp3`;
-        const finalAudioPath = path.join(config.storageDir, finalAudioFilename);
+        lastSegments = dubbingResult.segments;
 
-        if (project.timingMode === 'same-duration') {
-          // Adjust duration to match targetOriginalDuration exactly
-          await FFmpegHelper.adjustAudioDuration(rawAudioPath, finalAudioPath, targetOriginalDuration);
-        } else if (project.timingMode === 'short-form') {
-          const shortTarget = Math.max(1, targetOriginalDuration * 0.85);
-          await FFmpegHelper.adjustAudioDuration(rawAudioPath, finalAudioPath, shortTarget);
-        } else {
-          // Natural translation
-          await fs.promises.copyFile(rawAudioPath, finalAudioPath);
-        }
-
-        // [Step 8/8] Create Final Media Outputs
-        logger.info(`[Step 8/8] Finalizing output media for ${targetLang}...`);
+        // Step 8: Finalize Media Outputs (Audio & Video)
+        const finalAudioPath = dubbingResult.finalAudioPath;
         const actualFinalDuration = (await FFmpegHelper.getMediaDuration(finalAudioPath)) || targetOriginalDuration;
         const outMins = Math.floor(actualFinalDuration / 60);
         const outSecs = Math.floor(actualFinalDuration % 60);
         const finalDurationFormatted = `${outMins.toString().padStart(2, '0')}:${outSecs.toString().padStart(2, '0')}`;
-
-        logger.info(`Final audio created at ${finalAudioPath} [Duration: ${actualFinalDuration.toFixed(2)}s (${finalDurationFormatted})]`);
 
         let videoFileUrl: string | undefined;
         if (project.sourceFileType === 'video' && fs.existsSync(sourceFilePath)) {
@@ -221,7 +176,7 @@ export class VoiceTranslationPipelineService {
           id: `out_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           projectId,
           language: targetLang,
-          audioFile: `/api/audio/file/${finalAudioFilename}`,
+          audioFile: `/api/audio/file/${path.basename(finalAudioPath)}`,
           videoFile: videoFileUrl,
           duration: actualFinalDuration,
           durationFormatted: finalDurationFormatted,
@@ -231,11 +186,20 @@ export class VoiceTranslationPipelineService {
         await VoiceTranslationStorageService.addOutput(projectId, output);
       }
 
+      // Update project with final segments and completion status
+      await VoiceTranslationStorageService.updateProjectProgress(projectId, {
+        currentSegment: lastSegments.length,
+        totalSegments: lastSegments.length,
+        currentPhase: 'Completed',
+        percent: 100,
+        message: 'Sentence-level AI Dubbing complete!'
+      }, lastSegments);
+
       const completedProject = await VoiceTranslationStorageService.updateProjectStatus(projectId, 'completed');
-      logger.info(`AI Dubbing pipeline completed successfully for project ${projectId}!`);
+      logger.info(`AI Sentence Dubbing pipeline completed successfully for project ${projectId}!`);
       return completedProject || project;
     } catch (error: any) {
-      logger.error(`AI Dubbing pipeline failed for project ${projectId}:`, error);
+      logger.error(`Sentence Dubbing pipeline failed for project ${projectId}:`, error);
       await VoiceTranslationStorageService.updateProjectStatus(projectId, 'failed', error.message);
       throw error;
     }
