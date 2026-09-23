@@ -95,10 +95,28 @@ export class FishAudioService {
         logger.warn(`Fish Audio API returned status ${statusCode}: ${errorMessage}`);
 
         if (statusCode === 401) {
-          throw new Error('Fish Audio API key is invalid (401 Unauthorized). Check your .env file.');
+          const err: any = new Error('Fish Audio API key is invalid (401 Unauthorized). Check your .env file.');
+          err.statusCode = 401;
+          err.isClientError = true;
+          throw err;
+        }
+        if (statusCode === 402) {
+          const err: any = new Error(`Fish Audio insufficient credits or payment required (402): ${errorMessage}`);
+          err.statusCode = 402;
+          err.isClientError = true;
+          throw err;
         }
         if (statusCode === 403) {
-          throw new Error(`Fish Audio rejected this request (403 Forbidden): ${errorMessage}`);
+          const err: any = new Error(`Fish Audio rejected this request (403 Forbidden): ${errorMessage}`);
+          err.statusCode = 403;
+          err.isClientError = true;
+          throw err;
+        }
+        if (statusCode === 400 || statusCode === 404) {
+          const err: any = new Error(`Fish Audio client error (${statusCode}): ${errorMessage}`);
+          err.statusCode = statusCode;
+          err.isClientError = true;
+          throw err;
         }
         if (statusCode === 429) {
           if (attempt < maxRetries) {
@@ -119,8 +137,17 @@ export class FishAudioService {
           throw new Error(`Fish Audio is temporarily unavailable (${statusCode} Server Error).`);
         }
 
-        throw new Error(`Fish Audio API error (${statusCode}): ${errorMessage}`);
+        const fallbackErr: any = new Error(`Fish Audio API error (${statusCode}): ${errorMessage}`);
+        fallbackErr.statusCode = statusCode;
+        if (statusCode >= 400 && statusCode < 500) {
+          fallbackErr.isClientError = true;
+        }
+        throw fallbackErr;
       } catch (err: any) {
+        if (err.isClientError || (err.statusCode >= 400 && err.statusCode < 500 && err.statusCode !== 429)) {
+          throw err;
+        }
+
         if (err.name === 'FetchError' || err.message.includes('fetch failed')) {
           if (attempt < maxRetries) {
             logger.warn(`Network connection error. Retrying in ${delay}ms...`);
@@ -132,7 +159,7 @@ export class FishAudioService {
         }
 
         // Rethrow specified API error
-        if (attempt >= maxRetries || err.message.includes('401') || err.message.includes('403')) {
+        if (attempt >= maxRetries || err.message.includes('401') || err.message.includes('403') || err.message.includes('402') || err.message.includes('400')) {
           throw err;
         }
       }

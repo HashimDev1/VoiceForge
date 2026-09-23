@@ -271,7 +271,7 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
 
       const project = await ApiClient.createTranslationProject(payload);
 
-      // Poll until project is completed or failed
+      // Poll until project is completed or failed (750ms interval for smooth real-time bar)
       const pollInterval = setInterval(async () => {
         try {
           const freshProject = await ApiClient.getTranslationProject(project.id);
@@ -296,14 +296,19 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
         } catch (pollErr) {
           console.warn('Poll error:', pollErr);
         }
-      }, 1200);
+      }, 750);
 
-      // Safety timeout after 90 seconds
+      // Generous safety timeout (15 minutes for long 5-30 min videos)
       setTimeout(() => {
         clearInterval(pollInterval);
         clearInterval(stepTimer);
-        setIsProcessing(false);
-      }, 90000);
+        setIsProcessing((prev) => {
+          if (prev) {
+            console.warn('Safety poll timeout reached after 15 minutes.');
+          }
+          return false;
+        });
+      }, 900000);
     } catch (err: any) {
       setProcessingError(err.message || 'Dubbing process encountered an error.');
       setIsProcessing(false);

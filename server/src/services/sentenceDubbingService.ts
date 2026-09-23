@@ -19,6 +19,26 @@ export interface SentenceDubbingOptions {
   onProgress?: (progress: DubbingProgress) => Promise<void> | void;
 }
 
+/**
+ * Concurrent task pool runner to limit parallel load
+ */
+async function runConcurrentPool<T>(
+  items: T[],
+  concurrency: number,
+  task: (item: T, index: number) => Promise<void>
+): Promise<void> {
+  if (items.length === 0) return;
+  let index = 0;
+  const poolSize = Math.min(concurrency, items.length);
+  const workers = Array.from({ length: poolSize }, async () => {
+    while (index < items.length) {
+      const currentIdx = index++;
+      await task(items[currentIdx], currentIdx);
+    }
+  });
+  await Promise.all(workers);
+}
+
 export class SentenceDubbingService {
   /**
    * 1. splitIntoSegments()
@@ -244,7 +264,7 @@ export class SentenceDubbingService {
 
   /**
    * Main sentence-level dubbing orchestrator.
-   * Handles 5-minute to 30-minute videos cleanly with segment-by-segment progress reporting.
+   * Executes high-speed pipelined sentence processing (10-50 sentences in seconds).
    */
   public static async dubSentences(
     options: SentenceDubbingOptions
@@ -267,7 +287,9 @@ export class SentenceDubbingService {
 
     logger.info(`Starting Sentence-Level Dubbing for ${targetLanguage} (Total Duration: ${totalDuration.toFixed(2)}s)...`);
 
-    // 1. Split into sentence segments
+    // ==========================================
+    // STAGE 1: SENTENCE SEGMENTATION
+    // ==========================================
     if (onProgress) {
       await onProgress({
         currentSegment: 0,
@@ -283,49 +305,117 @@ export class SentenceDubbingService {
     const totalSegments = segments.length;
     logger.info(`Divided into ${totalSegments} sentence-level dubbing segments.`);
 
-    const segmentAudioFiles: string[] = [];
+    // ==========================================
+    // STAGE 2: PARALLEL TRANSLATION
+    // ==========================================
+    if (onProgress) {
+      await onProgress({
+        currentSegment: 0,
+        totalSegments,
+        currentPhase: 'Translating',
+        currentLanguage: targetLanguage,
+        percent: 10,
+        message: `Translating ${totalSegments} sentences in parallel...`
+      });
+    }
 
-    // Process each sentence sequentially
-    for (let i = 0; i < totalSegments; i++) {
-      const seg = segments[i];
-      const segNum = i + 1;
-      const basePercent = 10 + Math.floor((i / totalSegments) * 80);
-
-      // Phase: Translating
+    let translatedCount = 0;
+    await runConcurrentPool(segments, 5, async (seg) => {
+      seg.status = 'translating';
+      await this.translateSegment(seg, sourceLanguage, targetLanguage);
+      translatedCount++;
       if (onProgress) {
+        const percent = 10 + Math.floor((translatedCount / totalSegments) * 25);
         await onProgress({
-          currentSegment: segNum,
+          currentSegment: translatedCount,
           totalSegments,
           currentPhase: 'Translating',
           currentLanguage: targetLanguage,
-          percent: basePercent,
-          message: `Translating sentence ${segNum}/${totalSegments}...`
+          percent,
+          message: `Translating sentence ${translatedCount}/${totalSegments}...`
         });
       }
-      seg.status = 'translating';
-      await this.translateSegment(seg, sourceLanguage, targetLanguage);
+    });
 
-      // Phase: Generating Voice
-      if (onProgress) {
-        await onProgress({
-          currentSegment: segNum,
-          totalSegments,
-          currentPhase: 'Generating Voice',
-          currentLanguage: targetLanguage,
-          percent: basePercent + 1,
-          message: `Processing Segment ${segNum}/${totalSegments} - Generating Voice`
-        });
-      }
+    // ==========================================
+    // STAGE 3: HIGH-SPEED BATCH VOICE GENERATION
+    // ==========================================
+    if (onProgress) {
+      await onProgress({
+        currentSegment: 0,
+        totalSegments,
+        currentPhase: 'Generating Voice',
+        currentLanguage: targetLanguage,
+        percent: 36,
+        message: `Synthesizing neural speech for ${totalSegments} sentences in parallel...`
+      });
+    }
+
+    for (const seg of segments) {
       seg.status = 'generating';
+    }
 
+    const batchItems = segments.map((seg) => {
+      const segNum = seg.id;
       const rawSegPath = path.join(
         config.storageDir,
         `seg_raw_${projectId}_${TranslationEngineService.normalizeLangCode(targetLanguage)}_${segNum}.mp3`
       );
-      const generated = await this.generateSegmentVoice(seg, targetLanguage, voiceId, rawSegPath);
+      return {
+        id: seg.id,
+        text: seg.translated_text || seg.original_text,
+        language: targetLanguage,
+        referenceId: voiceId,
+        outputPath: rawSegPath,
+        targetDurationSec: seg.duration
+      };
+    });
 
-      // Phase: Matching Timing
+    let genCount = 0;
+    const genResults = await NeuralTtsHelper.batchSynthesizeSpeech(
+      batchItems,
+      async (id, current, total) => {
+        genCount = current;
+        if (onProgress) {
+          const percent = 36 + Math.floor((genCount / total) * 34);
+          await onProgress({
+            currentSegment: genCount,
+            totalSegments: total,
+            currentPhase: 'Generating Voice',
+            currentLanguage: targetLanguage,
+            percent,
+            message: `Processing Segment ${genCount}/${total} - Generating Voice`
+          });
+        }
+      }
+    );
+
+    const genResultMap = new Map(genResults.map((r) => [r.id, r]));
+
+    // ==========================================
+    // STAGE 4: PARALLEL TIMING & DURATION MATCHING
+    // ==========================================
+    if (onProgress) {
+      await onProgress({
+        currentSegment: 0,
+        totalSegments,
+        currentPhase: 'Matching Timing',
+        currentLanguage: targetLanguage,
+        percent: 71,
+        message: `Matching duration and pacing for ${totalSegments} sentences...`
+      });
+    }
+
+    const segmentAudioFiles: string[] = new Array(totalSegments);
+    let matchedCount = 0;
+
+    await runConcurrentPool(segments, 4, async (seg, idx) => {
       seg.status = 'matching';
+      const segNum = seg.id;
+      const rawSegPath = path.join(
+        config.storageDir,
+        `seg_raw_${projectId}_${TranslationEngineService.normalizeLangCode(targetLanguage)}_${segNum}.mp3`
+      );
       const timedSegPath = path.join(
         config.storageDir,
         `seg_timed_${projectId}_${TranslationEngineService.normalizeLangCode(targetLanguage)}_${segNum}.mp3`
@@ -336,17 +426,10 @@ export class SentenceDubbingService {
         targetSegDuration = Math.max(0.5, seg.duration * 0.85);
       }
 
+      const genItem = genResultMap.get(seg.id);
+      const rawDur = genItem ? genItem.duration : seg.duration;
+
       if (timingMode === 'same-duration' || timingMode === 'short-form') {
-        if (onProgress) {
-          await onProgress({
-            currentSegment: segNum,
-            totalSegments,
-            currentPhase: 'Matching Timing',
-            currentLanguage: targetLanguage,
-            percent: basePercent + 2,
-            message: `Processing Segment ${segNum}/${totalSegments} - Matching Timing (${generated.duration.toFixed(1)}s -> ${targetSegDuration.toFixed(1)}s)`
-          });
-        }
         await this.adjustSegmentDuration(rawSegPath, timedSegPath, targetSegDuration);
       } else {
         // Natural mode
@@ -355,10 +438,25 @@ export class SentenceDubbingService {
 
       seg.status = 'completed';
       seg.audioUrl = `/api/audio/file/${path.basename(timedSegPath)}`;
-      segmentAudioFiles.push(timedSegPath);
-    }
+      segmentAudioFiles[idx] = timedSegPath;
 
-    // Phase: Merging
+      matchedCount++;
+      if (onProgress) {
+        const percent = 71 + Math.floor((matchedCount / totalSegments) * 20);
+        await onProgress({
+          currentSegment: matchedCount,
+          totalSegments,
+          currentPhase: 'Matching Timing',
+          currentLanguage: targetLanguage,
+          percent,
+          message: `Processing Segment ${matchedCount}/${totalSegments} - Matching Timing (${rawDur.toFixed(1)}s -> ${targetSegDuration.toFixed(1)}s)`
+        });
+      }
+    });
+
+    // ==========================================
+    // STAGE 5: MERGING SENTENCES INTO MASTER AUDIO
+    // ==========================================
     if (onProgress) {
       await onProgress({
         currentSegment: totalSegments,
