@@ -223,14 +223,15 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
 
   // START AI DUBBING
   const handleStartDubbing = async () => {
+    const effectiveFile = uploadedFile || {
+      filename: 'sample_speech.mp3',
+      url: '/api/audio/file/sample_speech.mp3',
+      originalName: 'voice_recording.mp3',
+      sizeBytes: 2048000
+    };
+
     if (!uploadedFile) {
-      // Create mock file for demonstration if none uploaded
-      setUploadedFile({
-        filename: 'sample_speech.mp3',
-        url: '/api/audio/file/sample_speech.mp3',
-        originalName: 'voice_recording.mp3',
-        sizeBytes: 2048000
-      });
+      setUploadedFile(effectiveFile);
     }
 
     if (selectedLanguages.length === 0) {
@@ -246,19 +247,13 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
     const chosenVoiceName = voiceSource === 'uploaded' ? 'Uploaded Voice Clone' : (selectedVoiceObj?.name || 'Selected Clone');
 
     try {
-      // Step simulated progression for responsive UI feedback
       const stepTimer = setInterval(() => {
         setActiveStep((prev) => (prev < 7 ? prev + 1 : prev));
-      }, 1200);
+      }, 1400);
 
       const payload = {
-        projectName: `Dubbed - ${uploadedFile?.originalName || 'Voice Track'} (${selectedLanguages.length} Languages)`,
-        sourceFile: uploadedFile || {
-          filename: 'demo_voice.mp3',
-          url: '/api/audio/file/demo_voice.mp3',
-          originalName: 'demo_voice.mp3',
-          sizeBytes: 1048576
-        },
+        projectName: `Dubbed - ${effectiveFile.originalName} (${selectedLanguages.length} Languages)`,
+        sourceFile: effectiveFile,
         sourceFileType,
         sourceLanguage: analysis.detectedLanguage || 'English',
         targetLanguages: selectedLanguages,
@@ -272,22 +267,37 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
       };
 
       const project = await ApiClient.createTranslationProject(payload);
-      clearInterval(stepTimer);
-      setActiveStep(8);
 
-      // Wait a moment on step 8 then poll project status
-      setTimeout(async () => {
+      // Poll until project is completed or failed
+      const pollInterval = setInterval(async () => {
         try {
           const freshProject = await ApiClient.getTranslationProject(project.id);
-          setCurrentProject(freshProject);
-          loadProjects();
-        } catch {
-          setCurrentProject(project);
-        } finally {
-          setIsProcessing(false);
-          setActiveStep(0);
+          if (freshProject.status === 'completed') {
+            clearInterval(pollInterval);
+            clearInterval(stepTimer);
+            setActiveStep(8);
+            setCurrentProject(freshProject);
+            setIsProcessing(false);
+            loadProjects();
+          } else if (freshProject.status === 'failed') {
+            clearInterval(pollInterval);
+            clearInterval(stepTimer);
+            setProcessingError(freshProject.error || 'AI Dubbing pipeline failed.');
+            setIsProcessing(false);
+            setActiveStep(0);
+            loadProjects();
+          }
+        } catch (pollErr) {
+          console.warn('Poll error:', pollErr);
         }
-      }, 1800);
+      }, 1500);
+
+      // Safety timeout after 90 seconds
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        clearInterval(stepTimer);
+        setIsProcessing(false);
+      }, 90000);
     } catch (err: any) {
       setProcessingError(err.message || 'Dubbing process encountered an error.');
       setIsProcessing(false);
@@ -1220,6 +1230,16 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                  </div>
+
+                  {/* Inline Audio Player for Direct 1-Click Playback */}
+                  <div className="mt-2.5">
+                    <audio
+                      controls
+                      src={out.audioFile}
+                      preload="metadata"
+                      className="w-full h-8 rounded-lg outline-none"
+                    />
                   </div>
                 </div>
               );

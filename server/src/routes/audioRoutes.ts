@@ -26,9 +26,43 @@ router.get('/audio/file/:filename', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Audio file not found.' });
     }
 
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Accept-Ranges', 'bytes');
-    fs.createReadStream(filePath).pipe(res);
+    const stat = fs.statSync(filePath);
+    const fileSize = stat.size;
+    const range = req.headers.range;
+
+    const ext = path.extname(filename).toLowerCase();
+    const mimeMap: Record<string, string> = {
+      '.mp3': 'audio/mpeg',
+      '.wav': 'audio/wav',
+      '.m4a': 'audio/mp4',
+      '.mp4': 'video/mp4',
+      '.mov': 'video/quicktime',
+      '.ogg': 'audio/ogg'
+    };
+    const contentType = mimeMap[ext] || 'audio/mpeg';
+
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunkSize = end - start + 1;
+      const fileStream = fs.createReadStream(filePath, { start, end });
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunkSize,
+        'Content-Type': contentType
+      });
+      fileStream.pipe(res);
+    } else {
+      res.writeHead(200, {
+        'Content-Length': fileSize,
+        'Content-Type': contentType,
+        'Accept-Ranges': 'bytes'
+      });
+      fs.createReadStream(filePath).pipe(res);
+    }
   } catch (err: any) {
     logger.error('Serve audio file error:', err);
     res.status(500).json({ error: 'Failed to read audio file.' });
