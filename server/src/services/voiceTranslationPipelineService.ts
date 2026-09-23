@@ -145,7 +145,7 @@ export class VoiceTranslationPipelineService {
           voiceId: project.voiceId,
           timingMode: project.timingMode,
           onProgress: async (prog) => {
-            await VoiceTranslationStorageService.updateProjectProgress(projectId, prog, dubbingResult?.segments);
+            await VoiceTranslationStorageService.updateProjectProgress(projectId, prog);
           }
         });
 
