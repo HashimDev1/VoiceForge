@@ -14,6 +14,7 @@ try {
   execSync(`${tsNodeCmd} tests/fishAudioTasks.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/multiTake.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/voiceStorage.test.ts`, { stdio: 'inherit' });
+  execSync(`${tsNodeCmd} tests/voiceTranslation.test.ts`, { stdio: 'inherit' });
   console.log('\n✅ ALL UNIT TESTS PASSED SUCCESSFULLY!');
 } catch (err) {
   console.error('\n❌ TEST RUNNER FAILED:', err.message);

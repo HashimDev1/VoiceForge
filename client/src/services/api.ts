@@ -6,7 +6,10 @@ import {
   FishAudioModelListResponse,
   VoiceDesignRequestPayload,
   VoiceDesignResult,
-  AsrTranscriptionResult
+  AsrTranscriptionResult,
+  VoiceTranslationProject,
+  TranslationOutput,
+  VoiceAnalysisResult
 } from '../../../shared/src/types';
 
 export class ApiClient {
@@ -239,6 +242,97 @@ export class ApiClient {
       throw new Error(data.error || 'Failed to transcribe audio.');
     }
     return data;
+  }
+
+  // ==========================================
+  // VOICE TRANSLATOR STUDIO API CLIENT
+  // ==========================================
+
+  public static async uploadTranslationMedia(formData: FormData): Promise<{
+    success: boolean;
+    file: { filename: string; url: string; originalName: string; sizeBytes: number; mimeType?: string };
+    sourceFileType: 'audio' | 'video';
+    analysis: VoiceAnalysisResult;
+  }> {
+    const res = await fetch('/api/translation/upload', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to upload media file.');
+    }
+    return data;
+  }
+
+  public static async importYouTubeMedia(url: string, downloadVideo: boolean = false): Promise<{
+    success: boolean;
+    file: { filename: string; url: string; originalName: string; sizeBytes: number };
+    sourceFileType: 'audio' | 'video';
+    analysis: VoiceAnalysisResult;
+  }> {
+    const res = await fetch('/api/translation/import-youtube', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, downloadVideo })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to import YouTube audio/video.');
+    }
+    return data;
+  }
+
+  public static async getTranslationProjects(): Promise<VoiceTranslationProject[]> {
+    const res = await fetch('/api/translation/projects');
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to fetch translation projects.');
+    }
+    return data.projects || [];
+  }
+
+  public static async getTranslationProject(id: string): Promise<VoiceTranslationProject> {
+    const res = await fetch(`/api/translation/projects/${encodeURIComponent(id)}`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to fetch translation project.');
+    }
+    return data.project;
+  }
+
+  public static async createTranslationProject(payload: any): Promise<VoiceTranslationProject> {
+    const res = await fetch('/api/translation/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to start AI translation.');
+    }
+    return data.project;
+  }
+
+  public static async deleteTranslationProject(id: string): Promise<void> {
+    const res = await fetch(`/api/translation/projects/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to delete translation project.');
+    }
+  }
+
+  public static async deleteTranslationOutput(projectId: string, outputId: string): Promise<VoiceTranslationProject> {
+    const res = await fetch(`/api/translation/projects/${encodeURIComponent(projectId)}/outputs/${encodeURIComponent(outputId)}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to delete translation output.');
+    }
+    return data.project;
   }
 }
 

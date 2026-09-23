@@ -13,11 +13,19 @@ import {
   X,
   Sparkles,
   Sun,
-  Moon
+  Moon,
+  Globe
 } from 'lucide-react';
 import { ApiHealthResponse } from '../../../shared/src/types';
 
-export type TabType = 'dashboard' | 'script-studio' | 'voice-generator' | 'projects' | 'history' | 'settings';
+export type TabType =
+  | 'dashboard'
+  | 'voice-generator'
+  | 'voice-translator'
+  | 'script-studio'
+  | 'projects'
+  | 'history'
+  | 'settings';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -44,10 +52,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   theme,
   onToggleTheme
 }) => {
-  const navItems = [
+  const navItems: {
+    id: TabType;
+    label: string;
+    icon: any;
+    isNew?: boolean;
+    prefixEmoji?: string;
+  }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'script-studio', label: 'Script Studio', icon: FileText },
     { id: 'voice-generator', label: 'Voice Generator', icon: Mic },
+    { id: 'voice-translator', label: 'Voice Translator', icon: Globe, isNew: true, prefixEmoji: '🌍' },
+    { id: 'script-studio', label: 'Script Studio', icon: FileText },
     { id: 'projects', label: 'Projects', icon: FolderKanban },
     { id: 'history', label: 'History', icon: History },
     { id: 'settings', label: 'Settings', icon: Settings }
@@ -154,8 +169,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   } ${collapsed && !mobileOpen ? 'justify-center px-0' : ''}`}
                   title={collapsed && !mobileOpen ? item.label : undefined}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-white dark:text-black' : 'text-slate-500 dark:text-slate-400'}`} />
-                  {(!collapsed || mobileOpen) && <span>{item.label}</span>}
+                  <div className="flex items-center gap-2.5">
+                    {item.prefixEmoji ? (
+                      <span className="text-sm leading-none">{item.prefixEmoji}</span>
+                    ) : (
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-white dark:text-black' : 'text-slate-500 dark:text-slate-400'}`} />
+                    )}
+                    {(!collapsed || mobileOpen) && <span>{item.label}</span>}
+                  </div>
+                  {(!collapsed || mobileOpen) && item.isNew && (
+                    <span className="text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-500 text-white dark:bg-emerald-400 dark:text-black tracking-widest uppercase">
+                      NEW
+                    </span>
+                  )}
                 </button>
               );
             })}

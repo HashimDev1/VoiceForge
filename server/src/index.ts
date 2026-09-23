@@ -12,12 +12,15 @@ import voiceRoutes from './routes/voiceRoutes';
 import ttsRoutes from './routes/ttsRoutes';
 import audioRoutes from './routes/audioRoutes';
 import asrRoutes from './routes/asrRoutes';
+import translationRoutes from './routes/translationRoutes';
 import { ProjectService } from './services/projectService';
+import { VoiceTranslationStorageService } from './services/voiceTranslationStorageService';
 
 const app = express();
 
 // Storage Initialization
 ProjectService.initStorage();
+VoiceTranslationStorageService.initStorage();
 
 // Periodic temporary storage cleanup (every 6 hours)
 setInterval(() => {
@@ -54,6 +57,7 @@ app.use('/api', voiceRoutes);
 app.use('/api', ttsRoutes);
 app.use('/api', audioRoutes);
 app.use('/api', asrRoutes);
+app.use('/api/translation', translationRoutes);
 
 // Static frontend serving (for production or unified single-port hosting)
 const clientDistPath = [

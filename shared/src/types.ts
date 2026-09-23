@@ -238,3 +238,89 @@ export interface CloneVoicePayload {
   tags?: string[];
 }
 
+// ==========================================
+// VOICE TRANSLATOR STUDIO TYPES
+// ==========================================
+
+export type TranslationProjectStatus =
+  | 'uploading'
+  | 'processing'
+  | 'generating'
+  | 'completed'
+  | 'failed';
+
+export type TimingControlMode = 'same-duration' | 'natural' | 'short-form';
+
+export interface VoicePreservationSettings {
+  voiceSimilarity: number; // 0 - 100
+  emotionMatching: number; // 0 - 100
+  accentPreservation: number; // 0 - 100
+  keepVoiceIdentity: boolean;
+  keepEmotion: boolean;
+  keepPauses: boolean;
+  keepSpeakingStyle: boolean;
+  keepGender: boolean;
+}
+
+export interface VoiceAnalysisResult {
+  gender: 'Male' | 'Female' | 'Neutral';
+  ageStyle: 'Adult' | 'Young' | 'Senior';
+  tone: string;
+  detectedLanguage: string;
+  durationSec: number;
+  durationFormatted: string;
+  voiceId?: string;
+}
+
+export interface TranslationOutput {
+  id: string;
+  projectId: string;
+  language: string;
+  audioFile: string;
+  videoFile?: string;
+  duration: number;
+  durationFormatted: string;
+  createdAt: string;
+}
+
+export interface VoiceTranslationProject {
+  id: string;
+  userId: string;
+  projectName: string;
+  sourceFile: {
+    filename: string;
+    url: string;
+    originalName: string;
+    sizeBytes: number;
+    mimeType?: string;
+  };
+  sourceFileType: 'audio' | 'video';
+  sourceLanguage: string;
+  targetLanguages: string[];
+  voiceId: string;
+  voiceName?: string;
+  duration: number;
+  durationFormatted: string;
+  status: TranslationProjectStatus;
+  settings: VoicePreservationSettings;
+  timingMode: TimingControlMode;
+  analysis?: VoiceAnalysisResult;
+  outputs: TranslationOutput[];
+  createdAt: string;
+  updatedAt: string;
+  error?: string;
+}
+
+export interface TranslationStepInfo {
+  step: number;
+  title: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  detail?: string;
+}
+
+export interface SpeechSegment {
+  start: number;
+  end: number;
+  text: string;
+}
+

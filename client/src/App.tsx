@@ -6,6 +6,7 @@ import { AudioPlayer } from './components/AudioPlayer';
 import { Dashboard } from './pages/Dashboard';
 import { ScriptStudio } from './pages/ScriptStudio';
 import { VoiceGenerator } from './pages/VoiceGenerator';
+import { VoiceTranslator } from './pages/VoiceTranslator';
 import { Projects } from './pages/Projects';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
@@ -168,6 +169,15 @@ export function App() {
               onAudioPlay={play}
               onSaveCustomVoice={saveCustomVoice}
               onDeleteCustomVoice={deleteCustomVoice}
+            />
+          )}
+
+          {activeTab === 'voice-translator' && (
+            <VoiceTranslator
+              voices={voices}
+              onAudioPlay={play}
+              currentAudioUrl={currentUrl}
+              isPlaying={isPlaying}
             />
           )}
 
