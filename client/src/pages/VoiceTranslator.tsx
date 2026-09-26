@@ -141,6 +141,23 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
     { step: 8, label: 'Create final audio', desc: 'Generating multilingual master audio & video' }
   ];
 
+  // Maps backend pipeline phases directly to 8 visualizer steps
+  const mapPhaseToStep = (phase?: string, status?: string): number => {
+    if (status === 'completed') return 9; // all 8 complete
+    if (!phase) return 1;
+    const p = phase.toLowerCase();
+    if (p.includes('extract')) return 1;
+    if (p.includes('speech recognition') || p.includes('asr') || p.includes('transcrib')) return 2;
+    if (p.includes('segment') || p.includes('split') || p.includes('timestamp')) return 3;
+    if (p.includes('convert speech') || p.includes('text')) return 4;
+    if (p.includes('translat')) return 5;
+    if (p.includes('generat') || p.includes('voice') || p.includes('synthesiz')) return 6;
+    if (p.includes('matching') || p.includes('timing')) return 7;
+    if (p.includes('merg') || p.includes('final') || p.includes('media') || p.includes('master') || p.includes('video')) return 8;
+    if (p.includes('complet')) return 9;
+    return 1;
+  };
+
   // Load existing projects on mount
   useEffect(() => {
     loadProjects();
@@ -250,9 +267,10 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
     const chosenVoiceName = voiceSource === 'uploaded' ? 'Uploaded Voice Clone' : (selectedVoiceObj?.name || 'Selected Clone');
 
     try {
+      // Gentle initial step timer while awaiting first response
       const stepTimer = setInterval(() => {
-        setActiveStep((prev) => (prev < 7 ? prev + 1 : prev));
-      }, 1400);
+        setActiveStep((prev) => (prev < 2 ? prev + 1 : prev));
+      }, 1500);
 
       const payload = {
         projectName: `Dubbed - ${effectiveFile.originalName} (${selectedLanguages.length} Languages)`,
@@ -277,14 +295,24 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
           const freshProject = await ApiClient.getTranslationProject(project.id);
           if (freshProject.progress) {
             setCurrentProgress(freshProject.progress);
+            const dynamicStep = mapPhaseToStep(freshProject.progress.currentPhase, freshProject.status);
+            setActiveStep((prev) => Math.max(prev, dynamicStep));
           }
           if (freshProject.status === 'completed') {
             clearInterval(pollInterval);
             clearInterval(stepTimer);
-            setActiveStep(8);
+            setActiveStep(9); // All 8 steps completed & green
             setCurrentProject(freshProject);
             setIsProcessing(false);
             loadProjects();
+
+            // Smoothly reveal results section
+            setTimeout(() => {
+              const el = document.getElementById('dubbing-results-section');
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }, 300);
           } else if (freshProject.status === 'failed') {
             clearInterval(pollInterval);
             clearInterval(stepTimer);
@@ -1102,8 +1130,9 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
           </span>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
             {pipelineSteps.map((s) => {
-              const isDone = activeStep > s.step;
-              const isCurrent = activeStep === s.step;
+              const isCompleted = currentProject?.status === 'completed' || activeStep >= 9;
+              const isDone = isCompleted || activeStep > s.step;
+              const isCurrent = !isCompleted && activeStep === s.step;
               return (
                 <div
                   key={s.step}
@@ -1125,6 +1154,35 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
               );
             })}
           </div>
+
+          {/* All 8 Steps Completed Celebration Banner */}
+          {(currentProject?.status === 'completed' || activeStep >= 9) && (
+            <div className="mt-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">
+                    All 8 Dubbing Pipeline Steps Completed Successfully!
+                  </h4>
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-mono">
+                    {currentProject?.projectName || 'Project'} is ready with {currentProject?.outputs?.length || 1} translated voice versions.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('dubbing-results-section');
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-mono font-bold transition shadow-sm whitespace-nowrap self-stretch sm:self-auto text-center"
+              >
+                VIEW RESULTS & PREVIEWS ↓
+              </button>
+            </div>
+          )}
 
           {/* Live Sentence Dubbing Progress Monitor */}
           {isProcessing && (
@@ -1169,7 +1227,7 @@ export const VoiceTranslator: React.FC<VoiceTranslatorProps> = ({
       {/* SECTION 8: RESULTS & DOWNLOAD PAGE */}
       {/* ======================================================== */}
       {currentProject && currentProject.outputs && currentProject.outputs.length > 0 && (
-        <div className="bg-white dark:bg-studio-900 border border-studio-border rounded-2xl p-6 shadow-sm">
+        <div id="dubbing-results-section" className="bg-white dark:bg-studio-900 border border-studio-border rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between border-b border-studio-border pb-4 mb-5">
             <div>
               <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold block">

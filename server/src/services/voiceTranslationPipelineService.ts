@@ -154,6 +154,14 @@ export class VoiceTranslationPipelineService {
         lastSegments = dubbingResult.segments;
 
         // Step 8: Finalize Media Outputs (Audio & Video)
+        await VoiceTranslationStorageService.updateProjectProgress(projectId, {
+          currentSegment: lastSegments.length,
+          totalSegments: lastSegments.length,
+          currentPhase: 'Merging Sentences',
+          percent: 95,
+          message: `Finalizing dubbed master ${project.sourceFileType === 'video' ? 'video & audio' : 'audio'} for ${targetLang}...`
+        });
+
         const finalAudioPath = dubbingResult.finalAudioPath;
         const actualFinalDuration = (await FFmpegHelper.getMediaDuration(finalAudioPath)) || targetOriginalDuration;
         const outMins = Math.floor(actualFinalDuration / 60);
