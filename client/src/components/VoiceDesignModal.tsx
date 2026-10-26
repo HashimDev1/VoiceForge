@@ -86,7 +86,8 @@ export const VoiceDesignModal: React.FC<VoiceDesignModalProps> = ({
   const handleTogglePlay = (candidate: VoiceDesignCandidate) => {
     if (!candidate.audioUrl) return;
 
-    if (activeCandidateId === candidate.id && isPlaying) {
+    const candKey = candidate.id || candidate.audioUrl;
+    if (activeCandidateId === candKey && isPlaying) {
       if (audioRef.current) audioRef.current.pause();
       setIsPlaying(false);
       return;
@@ -96,7 +97,7 @@ export const VoiceDesignModal: React.FC<VoiceDesignModalProps> = ({
 
     const audio = new Audio(candidate.audioUrl);
     audioRef.current = audio;
-    setActiveCandidateId(candidate.id);
+    setActiveCandidateId(candKey);
     setIsPlaying(true);
 
     audio.onended = () => setIsPlaying(false);
@@ -296,13 +297,14 @@ export const VoiceDesignModal: React.FC<VoiceDesignModalProps> = ({
               </h3>
               <div className="space-y-2.5">
                 {candidates.map((cand, idx) => {
-                  const isPlayingThis = isPlaying && activeCandidateId === cand.id;
+                  const candKey = cand.id || cand.audioUrl || String(idx);
+                  const isPlayingThis = isPlaying && activeCandidateId === candKey;
                   const isSaved = savedCandidates.has(idx);
                   const isSavingThis = savingIndex === idx;
 
                   return (
                     <div
-                      key={cand.id || idx}
+                      key={candKey}
                       className="p-3.5 rounded-xl border border-studio-border bg-slate-50/70 dark:bg-studio-950/50 flex items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3">

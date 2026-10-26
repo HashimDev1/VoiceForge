@@ -63,9 +63,13 @@ export class VoiceStorageService {
         language: voice.language || 'English',
         style: voice.style || 'Custom Reference',
         gender: voice.gender || 'Neutral',
-        description: voice.description || 'Saved Fish Audio reference ID model.',
+        description: voice.description || 'Saved voice model.',
         category: voice.category || 'Documentary',
-        isCustom: true
+        previewAudioUrl: voice.previewAudioUrl,
+        provider: voice.provider || (voice.id.startsWith('kokoro_') ? 'open-source-tts' : 'fish-audio'),
+        isCustom: true,
+        isCloned: voice.isCloned ?? voice.id.startsWith('kokoro_cloned_'),
+        tags: voice.tags || []
       };
 
       let updatedVoices: Voice[];

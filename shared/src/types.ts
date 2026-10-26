@@ -12,7 +12,7 @@ export type VoiceCategory =
   | 'Cinematic';
 
 export interface Voice {
-  id: string; // Fish Audio reference_id or default model marker
+  id: string; // Fish Audio reference_id, open-source model marker, or custom reference
   name: string;
   language: string;
   style: string;
@@ -21,6 +21,11 @@ export interface Voice {
   category: VoiceCategory;
   previewAudioUrl?: string;
   isCustom?: boolean;
+  isCloned?: boolean;
+  tags?: string[];
+  engine?: string;
+  provider?: 'fish-audio' | 'open-source-tts';
+  isFree?: boolean;
 }
 
 export type ChunkSizePreset = 'Small' | 'Medium' | 'Large' | 'Single Chunk' | 'Custom';
@@ -128,6 +133,7 @@ export interface TTSRequestPayload {
   reference_id?: string;
   format?: 'mp3' | 'wav' | 'pcm' | 'opus';
   model?: string;
+  provider?: 'fish-audio' | 'open-source-tts';
   speechSpeed?: number;
   numTakes?: number;
   prosody?: {
@@ -145,6 +151,8 @@ export interface AudioMergePayload {
 export interface ApiHealthResponse {
   status: 'ok' | 'degraded' | 'error';
   fishAudioConnected: boolean;
+  openSourceTtsReady?: boolean;
+  openSourceEngine?: string;
   message: string;
   model: string;
 }
@@ -209,6 +217,7 @@ export interface VoiceDesignRequestPayload {
 }
 
 export interface VoiceDesignCandidate {
+  id?: string;
   audioUrl: string;
   signature?: string;
   sampleIndex: number;

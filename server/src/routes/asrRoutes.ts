@@ -31,12 +31,68 @@ router.post('/transcribe', upload.single('audio'), async (req: Request, res: Res
       language
     );
 
+    let detectedLang = result.language || 'English';
+    let detectedCode = result.language_code || 'en';
+
+    // Script-based language detection on transcribed text
+    const textSample = result.text || '';
+    if (/[\u0900-\u097F]/.test(textSample)) {
+      detectedLang = 'Hindi';
+      detectedCode = 'hi';
+    } else if (/[\u0600-\u06FF]/.test(textSample)) {
+      detectedLang = 'Urdu';
+      detectedCode = 'ur';
+    } else if (/[\u3040-\u30FF]/.test(textSample)) {
+      detectedLang = 'Japanese';
+      detectedCode = 'ja';
+    } else if (/[\u4E00-\u9FFF]/.test(textSample)) {
+      detectedLang = 'Chinese';
+      detectedCode = 'zh';
+    } else if (/[\uAC00-\uD7AF]/.test(textSample)) {
+      detectedLang = 'Korean';
+      detectedCode = 'ko';
+    } else {
+      // Map common codes to full language names
+      const langMap: Record<string, string> = {
+        'hi': 'Hindi',
+        'hindi': 'Hindi',
+        'ur': 'Urdu',
+        'urdu': 'Urdu',
+        'es': 'Spanish',
+        'spanish': 'Spanish',
+        'fr': 'French',
+        'french': 'French',
+        'de': 'German',
+        'german': 'German',
+        'ja': 'Japanese',
+        'japanese': 'Japanese',
+        'ar': 'Arabic',
+        'arabic': 'Arabic',
+        'zh': 'Chinese',
+        'chinese': 'Chinese',
+        'pt': 'Portuguese',
+        'portuguese': 'Portuguese',
+        'ru': 'Russian',
+        'russian': 'Russian',
+        'it': 'Italian',
+        'italian': 'Italian',
+        'ko': 'Korean',
+        'korean': 'Korean',
+        'en': 'English',
+        'english': 'English'
+      };
+      const key = detectedLang.toLowerCase().trim();
+      if (langMap[key]) {
+        detectedLang = langMap[key];
+      }
+    }
+
     res.json({
       success: true,
       text: result.text || '',
       duration: result.duration,
-      language: result.language,
-      language_code: result.language_code,
+      language: detectedLang,
+      language_code: detectedCode,
       segments: result.segments || [],
       provider: result.provider
     });

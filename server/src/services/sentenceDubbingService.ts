@@ -19,6 +19,7 @@ export interface SentenceDubbingOptions {
   sourceLanguage: string;
   targetLanguage: string;
   voiceId: string;
+  gender?: 'male' | 'female';
   timingMode: 'same-duration' | 'natural' | 'short-form';
   onProgress?: (progress: DubbingProgress) => Promise<void> | void;
 }

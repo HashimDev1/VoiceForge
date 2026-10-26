@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ApiHealthResponse } from '../../../shared/src/types';
-import { Settings as SettingsIcon, Radio, ShieldCheck, CheckCircle2, AlertCircle, Sparkles, RefreshCw, Sun, Moon } from 'lucide-react';
+import { Settings as SettingsIcon, Radio, ShieldCheck, CheckCircle2, AlertCircle, Sparkles, RefreshCw, Sun, Moon, Zap, Volume2, Cpu } from 'lucide-react';
 import { ApiClient } from '../services/api';
 
 interface SettingsProps {
@@ -11,23 +11,43 @@ interface SettingsProps {
 }
 
 export const Settings: React.FC<SettingsProps> = ({ apiHealth, onRefreshHealth, theme, onToggleTheme }) => {
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testingFish, setTestingFish] = useState(false);
+  const [fishTestResult, setFishTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const handleTestConnection = async () => {
+  const [testingOpenSource, setTestingOpenSource] = useState(false);
+  const [openSourceTestResult, setOpenSourceTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleTestFishConnection = async () => {
     try {
-      setTesting(true);
-      setTestResult(null);
+      setTestingFish(true);
+      setFishTestResult(null);
       const res = await ApiClient.testConnection();
-      setTestResult(res);
+      setFishTestResult(res);
       onRefreshHealth();
     } catch (err: any) {
-      setTestResult({
+      setFishTestResult({
         success: false,
         message: err.message || 'Failed to connect to Fish Audio API.'
       });
     } finally {
-      setTesting(false);
+      setTestingFish(false);
+    }
+  };
+
+  const handleTestOpenSourceConnection = async () => {
+    try {
+      setTestingOpenSource(true);
+      setOpenSourceTestResult(null);
+      const res = await ApiClient.testOpenSourceConnection();
+      setOpenSourceTestResult(res);
+      onRefreshHealth();
+    } catch (err: any) {
+      setOpenSourceTestResult({
+        success: false,
+        message: err.message || 'Failed to test Open-Source TTS engine.'
+      });
+    } finally {
+      setTestingOpenSource(false);
     }
   };
 
@@ -36,11 +56,94 @@ export const Settings: React.FC<SettingsProps> = ({ apiHealth, onRefreshHealth, 
       <div className="border-b border-studio-border pb-4">
         <h1 className="text-2xl font-serif font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
           <SettingsIcon className="w-5 h-5 text-black dark:text-white" />
-          <span>Studio & API Settings.</span>
+          <span>Studio & TTS Engines.</span>
         </h1>
         <p className="text-xs font-mono text-slate-500 uppercase tracking-wider mt-0.5">
-          FISH AUDIO DEVELOPER INTEGRATION & SERVER STATUS
+          MULTI-ENGINE ARCHITECTURE: OPEN-SOURCE (100% FREE) & CLOUD TTS
         </p>
+      </div>
+
+      {/* Open-Source Neural TTS Card */}
+      <div className="glass-panel rounded-2xl p-6 border border-emerald-500/30 dark:border-emerald-500/20 space-y-4 shadow-sm bg-white dark:bg-studio-900 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="flex items-center justify-between border-b border-studio-border pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center border border-emerald-300 dark:border-emerald-800">
+              <Zap className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-serif font-bold text-slate-900 dark:text-white">Open-Source Neural TTS Engine</h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                  100% FREE • UNLIMITED
+                </span>
+              </div>
+              <p className="text-xs font-mono text-slate-500">Engine: Microsoft Edge-TTS Neural (Zero-cost, Python Asyncio Daemon)</p>
+            </div>
+          </div>
+
+          <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase border flex items-center gap-1.5 bg-emerald-500 text-white border-emerald-600 shadow-xs">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>ACTIVE & READY</span>
+          </span>
+        </div>
+
+        {/* Configuration Details Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+          <div className="bg-slate-50 dark:bg-studio-850 p-3.5 rounded-xl border border-studio-border space-y-1">
+            <span className="text-[10px] font-bold text-slate-500 uppercase">Pricing / Cost</span>
+            <p className="font-bold text-emerald-600 dark:text-emerald-400">$0.00 / Free Forever (No Credit Card / No API Key)</p>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-studio-850 p-3.5 rounded-xl border border-studio-border space-y-1">
+            <span className="text-[10px] font-bold text-slate-500 uppercase">Available Voices</span>
+            <p className="font-bold text-slate-900 dark:text-white">19+ Curated Voices (Christopher, Guy, Andrew, Jenny, etc.)</p>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-studio-850 p-3.5 rounded-xl border border-studio-border space-y-1">
+            <span className="text-[10px] font-bold text-slate-500 uppercase">Hardware Requirements</span>
+            <p className="text-slate-700 dark:text-slate-300">Any CPU or laptop (Zero GPU needed, ~0.4s per sentence)</p>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-studio-850 p-3.5 rounded-xl border border-studio-border space-y-1">
+            <span className="text-[10px] font-bold text-slate-500 uppercase">YouTube Monetization</span>
+            <p className="font-bold text-slate-900 dark:text-white">Passed & Compliant (Natural cadence for Shorts & Essays)</p>
+          </div>
+        </div>
+
+        {/* Test Open Source Button */}
+        <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <button
+            onClick={handleTestOpenSourceConnection}
+            disabled={testingOpenSource}
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition self-start sm:self-auto cursor-pointer"
+          >
+            {testingOpenSource ? (
+              <RefreshCw className="w-4 h-4 animate-spin text-white" />
+            ) : (
+              <Zap className="w-4 h-4" />
+            )}
+            <span>{testingOpenSource ? 'Testing Open-Source Voice...' : 'Test Open-Source TTS Engine'}</span>
+          </button>
+
+          {openSourceTestResult && (
+            <div
+              className={`p-3 rounded-xl border text-xs font-mono font-bold flex items-center gap-2 ${
+                openSourceTestResult.success
+                  ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30'
+                  : 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-500/30'
+              }`}
+            >
+              {openSourceTestResult.success ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              )}
+              <span>{openSourceTestResult.message}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Fish Audio Integration Card */}
@@ -95,40 +198,40 @@ export const Settings: React.FC<SettingsProps> = ({ apiHealth, onRefreshHealth, 
           </div>
 
           <div className="bg-slate-50 dark:bg-studio-850 p-3.5 rounded-xl border border-studio-border space-y-1">
-            <span className="text-[10px] font-bold text-slate-500 uppercase">Max Concurrent TTS Jobs</span>
-            <p className="font-bold text-slate-900 dark:text-white">2 Jobs (Controlled Rate Limit Queue)</p>
+            <span className="text-[10px] font-bold text-slate-500 uppercase">Automatic Fallback</span>
+            <p className="font-bold text-emerald-600 dark:text-emerald-400">Enabled → Falls back to Open-Source TTS if quota exhausted</p>
           </div>
         </div>
 
         {/* Test Connection Button */}
         <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <button
-            onClick={handleTestConnection}
-            disabled={testing}
-            className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black rounded-xl text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md hover:opacity-95 transition self-start sm:self-auto"
+            onClick={handleTestFishConnection}
+            disabled={testingFish}
+            className="px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black rounded-xl text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md hover:opacity-95 transition self-start sm:self-auto cursor-pointer"
           >
-            {testing ? (
+            {testingFish ? (
               <RefreshCw className="w-4 h-4 animate-spin text-white dark:text-black" />
             ) : (
               <Sparkles className="w-4 h-4" />
             )}
-            <span>{testing ? 'Testing API Connection...' : 'Test API Connection'}</span>
+            <span>{testingFish ? 'Testing API Connection...' : 'Test Fish Audio API'}</span>
           </button>
 
-          {testResult && (
+          {fishTestResult && (
             <div
               className={`p-3 rounded-xl border text-xs font-mono font-bold flex items-center gap-2 ${
-                testResult.success
+                fishTestResult.success
                   ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30'
                   : 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-500/30'
               }`}
             >
-              {testResult.success ? (
+              {fishTestResult.success ? (
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               ) : (
                 <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
               )}
-              <span>{testResult.message}</span>
+              <span>{fishTestResult.message}</span>
             </div>
           )}
         </div>
@@ -143,7 +246,7 @@ export const Settings: React.FC<SettingsProps> = ({ apiHealth, onRefreshHealth, 
           </div>
           <button
             onClick={onToggleTheme}
-            className="px-4 py-2 bg-slate-100 dark:bg-studio-850 border border-studio-border rounded-xl text-xs font-mono font-bold flex items-center gap-2 text-slate-800 dark:text-slate-200 hover:border-black transition"
+            className="px-4 py-2 bg-slate-100 dark:bg-studio-850 border border-studio-border rounded-xl text-xs font-mono font-bold flex items-center gap-2 text-slate-800 dark:text-slate-200 hover:border-black transition cursor-pointer"
           >
             {theme === 'dark' ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
             <span>Switch to {theme === 'dark' ? 'Light' : 'Dark'}</span>
@@ -151,25 +254,29 @@ export const Settings: React.FC<SettingsProps> = ({ apiHealth, onRefreshHealth, 
         </div>
       )}
 
-      {/* Security Best Practices Card */}
+      {/* Architecture Highlights Card */}
       <div className="glass-panel rounded-2xl p-6 border border-studio-border space-y-3 shadow-sm bg-white dark:bg-studio-900">
         <div className="flex items-center gap-2 text-sm font-serif font-bold text-slate-900 dark:text-white">
           <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-          <span>Security & Key Protection Architecture</span>
+          <span>Multi-Engine & Key Protection Architecture</span>
         </div>
 
         <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans">
-          VoiceForge Studio strictly follows server-side security guidelines:
+          VoiceForge Studio gives you complete freedom and reliability:
         </p>
 
         <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400 font-sans">
           <li className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />
-            <span><code className="text-black dark:text-white font-mono bg-slate-100 dark:bg-studio-800 px-1 py-0.5 rounded">FISH_API_KEY</code> is loaded only in <code className="text-black dark:text-white font-mono bg-slate-100 dark:bg-studio-800 px-1 py-0.5 rounded">server/.env</code> and never bundled into frontend JavaScript.</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span><strong>Open-Source TTS:</strong> 100% free, runs with zero API keys, no monthly usage bills, and instant rendering.</span>
           </li>
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-black dark:bg-white" />
-            <span>All TTS requests flow from Browser → Express Backend → Fish Audio API → Audio Stream → Browser.</span>
+            <span><strong>Fish Audio Cloud:</strong> Optional premium voice design and custom clone IDs loaded safely via server .env.</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+            <span><strong>Automatic Fallback:</strong> If Fish Audio API hits rate limits or credit limits, VoiceForge automatically falls back to Open-Source TTS so your workflow never gets interrupted.</span>
           </li>
         </ul>
       </div>

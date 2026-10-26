@@ -14,12 +14,15 @@ import {
   Sparkles,
   Sun,
   Moon,
-  Globe
+  Globe,
+  Cpu
 } from 'lucide-react';
 import { ApiHealthResponse } from '../../../shared/src/types';
 
 export type TabType =
   | 'dashboard'
+  | 'clone-voice'
+  | 'open-source-tts'
   | 'voice-generator'
   | 'voice-translator'
   | 'script-studio'
@@ -34,6 +37,7 @@ interface SidebarProps {
   collapsed: boolean;
   setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
   onNewProject: () => void;
+  onOpenCloneVoice?: () => void;
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
   theme: 'dark' | 'light';
@@ -47,6 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   collapsed,
   setCollapsed,
   onNewProject,
+  onOpenCloneVoice,
   mobileOpen,
   setMobileOpen,
   theme,
@@ -57,10 +62,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     label: string;
     icon: any;
     isNew?: boolean;
+    badgeText?: string;
     prefixEmoji?: string;
   }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'voice-generator', label: 'Voice Generator', icon: Mic },
+    { id: 'clone-voice', label: 'Clone Voice', icon: Sparkles, isNew: true, badgeText: 'AI FREE', prefixEmoji: '✨' },
+    { id: 'open-source-tts', label: 'Open-Source TTS', icon: Cpu, isNew: true, prefixEmoji: '⚡' },
+    { id: 'voice-generator', label: 'Fish Audio Studio', icon: Mic },
     { id: 'voice-translator', label: 'Voice Translator', icon: Globe, isNew: true, prefixEmoji: '🌍' },
     { id: 'script-studio', label: 'Script Studio', icon: FileText },
     { id: 'projects', label: 'Projects', icon: FolderKanban },
@@ -136,8 +144,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          {/* Quick Action Button */}
-          <div className="p-3">
+          {/* Quick Action Buttons */}
+          <div className="p-3 space-y-1.5">
             <button
               onClick={() => {
                 onNewProject();
@@ -146,9 +154,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`w-full py-2.5 px-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md hover:opacity-95 transition group ${
                 collapsed && !mobileOpen ? 'px-0' : ''
               }`}
+              title="New Voiceover Project"
             >
               <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
               {(!collapsed || mobileOpen) && <span>New Voiceover</span>}
+            </button>
+
+            <button
+              onClick={() => {
+                handleSelectTab('clone-voice');
+                if (onOpenCloneVoice) {
+                  onOpenCloneVoice();
+                }
+                setMobileOpen(false);
+              }}
+              className={`w-full py-2 px-3 bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-amber-500/15 hover:from-amber-500/25 hover:to-orange-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-xl font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition group shadow-xs ${
+                collapsed && !mobileOpen ? 'px-0' : ''
+              }`}
+              title="Clone Character Voice"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 group-hover:rotate-12 transition-transform duration-200" />
+              {(!collapsed || mobileOpen) && <span>Clone Voice</span>}
             </button>
           </div>
 
@@ -162,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleSelectTab(item.id as TabType)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all ${
                     isActive
                       ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
                       : 'text-slate-600 hover:text-black dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-studio-850'
@@ -177,9 +203,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     )}
                     {(!collapsed || mobileOpen) && <span>{item.label}</span>}
                   </div>
-                  {(!collapsed || mobileOpen) && item.isNew && (
-                    <span className="text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-500 text-white dark:bg-emerald-400 dark:text-black tracking-widest uppercase">
-                      NEW
+                  {(!collapsed || mobileOpen) && (item.badgeText || item.isNew) && (
+                    <span
+                      className={`text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-full tracking-widest uppercase ${
+                        item.badgeText === 'AI FREE'
+                          ? 'bg-amber-500/20 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300 border border-amber-500/30'
+                          : 'bg-emerald-500 text-white dark:bg-emerald-400 dark:text-black'
+                      }`}
+                    >
+                      {item.badgeText || 'NEW'}
                     </span>
                   )}
                 </button>

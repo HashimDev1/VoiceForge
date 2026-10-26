@@ -10,7 +10,7 @@ import { TranslationEngineService } from './translationEngineService';
 
 const execFileAsync = util.promisify(execFile);
 
-export const EDGE_TTS_VOICES: Record<string, string> = {
+export const EDGE_TTS_VOICES_MALE: Record<string, string> = {
   en: 'en-US-ChristopherNeural',
   es: 'es-ES-AlvaroNeural',
   ar: 'ar-SA-HamedNeural',
@@ -26,6 +26,24 @@ export const EDGE_TTS_VOICES: Record<string, string> = {
   tr: 'tr-TR-AhmetNeural'
 };
 
+export const EDGE_TTS_VOICES_FEMALE: Record<string, string> = {
+  en: 'en-US-JennyNeural',
+  es: 'es-ES-ElviraNeural',
+  ar: 'ar-SA-ZariyahNeural',
+  ur: 'ur-PK-UzmaNeural',
+  hi: 'hi-IN-SwaraNeural',
+  fr: 'fr-FR-DeniseNeural',
+  de: 'de-DE-KatjaNeural',
+  it: 'it-IT-ElsaNeural',
+  pt: 'pt-BR-FranciscaNeural',
+  zh: 'zh-CN-XiaoxiaoNeural',
+  ja: 'ja-JP-NanamiNeural',
+  ko: 'ko-KR-SunHiNeural',
+  tr: 'tr-TR-EmelNeural'
+};
+
+export const EDGE_TTS_VOICES = EDGE_TTS_VOICES_MALE;
+
 const BUILTIN_PRESETS = new Set([
   'documentary_male',
   'warm_storyteller',
@@ -40,6 +58,7 @@ export interface BatchSynthesizeItem {
   text: string;
   language: string;
   referenceId?: string;
+  gender?: 'male' | 'female';
   outputPath: string;
   targetDurationSec?: number;
 }
@@ -120,10 +139,18 @@ export class NeuralTtsHelper {
 
     // 2. High-Speed Local Neural TTS Batch via batch_edge_tts.py
     try {
-      const scriptPath = path.resolve(__dirname, '../scripts/batch_edge_tts.py');
+      const candidates = [
+        path.resolve(process.cwd(), 'server/src/scripts/batch_edge_tts.py'),
+        path.resolve(process.cwd(), 'src/scripts/batch_edge_tts.py'),
+        path.resolve(__dirname, '../scripts/batch_edge_tts.py'),
+        path.resolve(__dirname, '../../src/scripts/batch_edge_tts.py')
+      ];
+      const scriptPath = candidates.find((c) => fs.existsSync(c)) || candidates[0];
       const payload = missingItems.map((it) => {
         const langCode = TranslationEngineService.normalizeLangCode(it.language);
-        const voice = EDGE_TTS_VOICES[langCode] || 'en-US-ChristopherNeural';
+        const isFemale = it.gender === 'female' || (Boolean(it.referenceId) && (it.referenceId!.includes('female') || it.referenceId!.includes('youth') || it.referenceId!.includes('assistant')));
+        const voiceDict = isFemale ? EDGE_TTS_VOICES_FEMALE : EDGE_TTS_VOICES_MALE;
+        const voice = voiceDict[langCode] || (isFemale ? 'en-US-JennyNeural' : 'en-US-ChristopherNeural');
         return {
           id: it.id,
           text: it.text,

@@ -3,6 +3,8 @@ import multer from 'multer';
 import { Voice } from '../../../shared/src/types';
 import { VoiceStorageService } from '../services/voiceStorageService';
 import { FishAudioService } from '../services/fishAudioService';
+import { OpenSourceTtsService, OPEN_SOURCE_VOICES } from '../services/openSourceTtsService';
+import { CharacterCloneService } from '../services/characterCloneService';
 import { ProjectService } from '../services/projectService';
 import { logger } from '../utils/logger';
 
@@ -12,7 +14,7 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 } // 25MB max audio
 });
 
-// Built-in voice configurations with application metadata
+// Built-in Fish Audio voice configurations
 const CONFIGURED_VOICES: Voice[] = [
   {
     id: '7f92f8afb8ec43bf81429cc1c9199cb1',
@@ -21,7 +23,8 @@ const CONFIGURED_VOICES: Voice[] = [
     style: 'Deep / Cinematic',
     gender: 'Male',
     description: 'Deep, resonant documentary tone suited for mystery, history, and narrative video essays.',
-    category: 'Documentary'
+    category: 'Documentary',
+    provider: 'fish-audio'
   },
   {
     id: 'e4538965824c4786a3411b402868ff18',
@@ -30,7 +33,8 @@ const CONFIGURED_VOICES: Voice[] = [
     style: 'Engaging / Warm',
     gender: 'Male',
     description: 'Warm and expressive story narration with natural dynamic pacing.',
-    category: 'Storytelling'
+    category: 'Storytelling',
+    provider: 'fish-audio'
   },
   {
     id: '3643b177897241289196e19199aa5fb0',
@@ -39,7 +43,8 @@ const CONFIGURED_VOICES: Voice[] = [
     style: 'Suspenseful / Dark',
     gender: 'Male',
     description: 'Low-pitched, tense delivery ideal for true crime investigations and mysterious stories.',
-    category: 'Deep'
+    category: 'Deep',
+    provider: 'fish-audio'
   },
   {
     id: '9f2a74c4314c46fa9b47e5b565a0dbd2',
@@ -48,7 +53,8 @@ const CONFIGURED_VOICES: Voice[] = [
     style: 'Crisp / Professional',
     gender: 'Female',
     description: 'Clear, modern female voice for tech reviews, news digests, and video tutorials.',
-    category: 'News'
+    category: 'News',
+    provider: 'fish-audio'
   },
   {
     id: 'b1e847c2098d4924a4f89d343461234a',
@@ -57,7 +63,8 @@ const CONFIGURED_VOICES: Voice[] = [
     style: 'Articulate / Calm',
     gender: 'Female',
     description: 'Calm and articulate speech tailored for educational documentaries and explainer channels.',
-    category: 'Educational'
+    category: 'Educational',
+    provider: 'fish-audio'
   },
   {
     id: 'd903f8a42b104928a38a7c29bc982001',
@@ -66,7 +73,8 @@ const CONFIGURED_VOICES: Voice[] = [
     style: 'Energetic / Powerful',
     gender: 'Male',
     description: 'High energy, persuasive tone designed to inspire action and keep viewer attention.',
-    category: 'Motivational'
+    category: 'Motivational',
+    provider: 'fish-audio'
   },
   {
     id: 'default_s21_free',
@@ -75,17 +83,21 @@ const CONFIGURED_VOICES: Voice[] = [
     style: 'Natural / Standard',
     gender: 'Neutral',
     description: 'Standard default voice provided by the Fish Audio s2.1-pro-free model.',
-    category: 'Calm'
+    category: 'Calm',
+    provider: 'fish-audio',
+    isFree: true
   }
 ];
 
-// GET /api/voices - returns both server-saved custom voices and built-in voices
+// GET /api/voices - returns Open Source voices, server-saved custom voices, and built-in voices
 router.get('/voices', async (req: Request, res: Response) => {
   try {
     const customVoices = await VoiceStorageService.getCustomVoices();
+    const allVoices = [...OPEN_SOURCE_VOICES, ...customVoices, ...CONFIGURED_VOICES];
     res.json({
       success: true,
-      voices: [...customVoices, ...CONFIGURED_VOICES],
+      voices: allVoices,
+      openSourceVoices: OPEN_SOURCE_VOICES,
       customVoices,
       configuredVoices: CONFIGURED_VOICES
     });
@@ -93,7 +105,8 @@ router.get('/voices', async (req: Request, res: Response) => {
     logger.error('Failed to get voices:', error);
     res.json({
       success: true,
-      voices: CONFIGURED_VOICES,
+      voices: [...OPEN_SOURCE_VOICES, ...CONFIGURED_VOICES],
+      openSourceVoices: OPEN_SOURCE_VOICES,
       customVoices: [],
       configuredVoices: CONFIGURED_VOICES
     });
@@ -210,7 +223,7 @@ router.post('/voices/clone', upload.single('audio'), async (req: Request, res: R
       });
     }
 
-    const { title, description, text, tags, category, language, gender, style } = req.body;
+    const { title, description, text, tags, category, language, gender, style, engine } = req.body;
     if (!title || !title.trim()) {
       return res.status(400).json({
         success: false,
@@ -227,44 +240,97 @@ router.post('/voices/clone', upload.single('audio'), async (req: Request, res: R
       }
     }
 
-    // Call Fish Audio API to create fast model
-    const createdModel = await FishAudioService.createVoiceModel(
-      req.file.buffer,
-      req.file.originalname,
-      {
-        title: title.trim(),
-        description: description ? description.trim() : undefined,
-        text: text ? text.trim() : undefined,
-        tags: parsedTags,
-        visibility: 'private'
-      }
-    );
+    // Check if user requested local Kokoro cloning or if Fish Audio is not configured
+    const useLocalClone = engine === 'kokoro' || engine === 'local' || engine === 'open-source' || !process.env.FISH_AUDIO_API_KEY || process.env.FISH_AUDIO_API_KEY === 'YOUR_FISH_AUDIO_API_KEY_HERE';
 
-    // Register into local custom voices so user can immediately use it
-    const newVoice: Voice = {
-      id: createdModel._id,
-      name: createdModel.title || title.trim(),
-      language: language || (createdModel.languages && createdModel.languages[0]) || 'English',
-      style: style || 'Cloned Voice',
-      gender: (gender as any) || 'Neutral',
-      description: description || `Cloned voice model created on ${new Date().toLocaleDateString()}`,
-      category: (category as any) || 'Documentary',
-      isCustom: true
-    };
+    if (useLocalClone) {
+      logger.info(`[VoiceRoutes] Cloning voice "${title.trim()}" via local Kokoro Neural Acoustic Cloner`);
+      const cloneResult = await CharacterCloneService.cloneCharacter(
+        req.file.buffer,
+        req.file.originalname,
+        {
+          title: title.trim(),
+          description: description ? description.trim() : undefined,
+          gender: gender as any,
+          category: category as any,
+          language,
+          style: style || 'Cloned Character'
+        }
+      );
 
-    const customVoices = await VoiceStorageService.saveCustomVoice(newVoice);
+      const customVoices = await VoiceStorageService.getCustomVoices();
+      return res.json({
+        success: true,
+        voice: cloneResult.voice,
+        acoustics: cloneResult.acoustics,
+        customVoices,
+        engine: 'kokoro-local'
+      });
+    }
 
-    res.json({
-      success: true,
-      voice: newVoice,
-      model: createdModel,
-      customVoices
-    });
+    // Try Fish Audio API with automatic fallback to local neural cloner
+    try {
+      const createdModel = await FishAudioService.createVoiceModel(
+        req.file.buffer,
+        req.file.originalname,
+        {
+          title: title.trim(),
+          description: description ? description.trim() : undefined,
+          text: text ? text.trim() : undefined,
+          tags: parsedTags,
+          visibility: 'private'
+        }
+      );
+
+      const newVoice: Voice = {
+        id: createdModel._id,
+        name: createdModel.title || title.trim(),
+        language: language || (createdModel.languages && createdModel.languages[0]) || 'English',
+        style: style || 'Cloned Voice',
+        gender: (gender as any) || 'Neutral',
+        description: description || `Cloned voice model created on ${new Date().toLocaleDateString()}`,
+        category: (category as any) || 'Documentary',
+        isCustom: true
+      };
+
+      const customVoices = await VoiceStorageService.saveCustomVoice(newVoice);
+
+      return res.json({
+        success: true,
+        voice: newVoice,
+        model: createdModel,
+        customVoices,
+        engine: 'fish-audio'
+      });
+    } catch (fishErr: any) {
+      logger.warn(`Fish Audio voice cloning failed (${fishErr.message}). Automatically falling back to local Neural Cloner...`);
+      const cloneResult = await CharacterCloneService.cloneCharacter(
+        req.file.buffer,
+        req.file.originalname,
+        {
+          title: title.trim(),
+          description: description ? description.trim() : undefined,
+          gender: gender as any,
+          category: category as any,
+          language,
+          style: style || 'Cloned Character'
+        }
+      );
+
+      const customVoices = await VoiceStorageService.getCustomVoices();
+      return res.json({
+        success: true,
+        voice: cloneResult.voice,
+        acoustics: cloneResult.acoustics,
+        customVoices,
+        engine: 'kokoro-local-fallback'
+      });
+    }
   } catch (error: any) {
     logger.error('Voice clone failed:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to clone voice with Fish Audio API.'
+      error: error.message || 'Failed to clone character voice.'
     });
   }
 });

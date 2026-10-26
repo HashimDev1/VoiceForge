@@ -1,5 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Upload, Mic, Square, Play, Pause, Sparkles, Loader2, Volume2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { 
+  X, 
+  Upload, 
+  Mic, 
+  Square, 
+  Play, 
+  Pause, 
+  Sparkles, 
+  Loader2, 
+  Volume2, 
+  CheckCircle2, 
+  AlertCircle,
+  Cpu,
+  Layers,
+  ShieldCheck,
+  Zap,
+  Globe
+} from 'lucide-react';
 import { Voice, VoiceCategory } from '../../../shared/src/types';
 import { ApiClient } from '../services/api';
 
@@ -8,6 +25,26 @@ interface VoiceCloneModalProps {
   onClose: () => void;
   onVoiceCreated: (voice: Voice) => void;
 }
+
+export const LANGUAGE_OPTIONS = [
+  { id: 'auto', name: 'Auto-Detect (Automatic Audio Analysis)', flag: '🌐' },
+  { id: 'Hindi', name: 'Hindi (हिन्दी)', flag: '🇮🇳' },
+  { id: 'Urdu', name: 'Urdu (اردو)', flag: '🇵🇰' },
+  { id: 'English', name: 'English (US / UK / Global)', flag: '🇺🇸' },
+  { id: 'Spanish', name: 'Spanish (Español)', flag: '🇪🇸' },
+  { id: 'French', name: 'French (Français)', flag: '🇫🇷' },
+  { id: 'German', name: 'German (Deutsch)', flag: '🇩🇪' },
+  { id: 'Japanese', name: 'Japanese (日本語)', flag: '🇯🇵' },
+  { id: 'Arabic', name: 'Arabic (العربية)', flag: '🇸🇦' },
+  { id: 'Chinese', name: 'Chinese (Mandarin 中文)', flag: '🇨🇳' },
+  { id: 'Portuguese', name: 'Portuguese (Português)', flag: '🇧🇷' },
+  { id: 'Russian', name: 'Russian (Русский)', flag: '🇷🇺' },
+  { id: 'Italian', name: 'Italian (Italiano)', flag: '🇮🇹' },
+  { id: 'Korean', name: 'Korean (한국어)', flag: '🇰🇷' },
+  { id: 'Bengali', name: 'Bengali (বাংলা)', flag: '🇧🇩' },
+  { id: 'Tamil', name: 'Tamil (தமிழ்)', flag: '🇮🇳' },
+  { id: 'Turkish', name: 'Turkish (Türkçe)', flag: '🇹🇷' }
+];
 
 const CATEGORIES: VoiceCategory[] = [
   'Documentary',
@@ -28,6 +65,7 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
   onClose,
   onVoiceCreated
 }) => {
+  const [engine, setEngine] = useState<'kokoro' | 'fish-audio'>('kokoro');
   const [activeTab, setActiveTab] = useState<'upload' | 'record'>('upload');
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
@@ -42,21 +80,25 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
   // Form fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<VoiceCategory>('Documentary');
-  const [gender, setGender] = useState<'Male' | 'Female' | 'Neutral'>('Neutral');
-  const [language, setLanguage] = useState('English');
+  const [category, setCategory] = useState<VoiceCategory>('Storytelling');
+  const [gender, setGender] = useState<'Male' | 'Female' | 'Neutral'>('Male');
+  const [language, setLanguage] = useState('auto');
+  const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
+  const [isDetectingLang, setIsDetectingLang] = useState(false);
   const [referenceText, setReferenceText] = useState('');
-  const [tags, setTags] = useState('clone, custom');
+  const [tags, setTags] = useState('character, clone, neural');
 
-  // Status
+  // Status & Results
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [clonedResult, setClonedResult] = useState<{ voice: Voice; acoustics?: any } | null>(null);
 
   // Playback
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -90,6 +132,31 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
       const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
       setTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
     }
+
+    // Automatically detect language from audio
+    detectAudioLanguage(file);
+  };
+
+  const detectAudioLanguage = async (file: File) => {
+    try {
+      setIsDetectingLang(true);
+      const formData = new FormData();
+      formData.append('audio', file);
+      const res = await ApiClient.transcribeAudio(formData);
+      if (res && res.language) {
+        setDetectedLanguage(res.language);
+        if (language === 'auto' || language === 'English') {
+          setLanguage(res.language);
+        }
+      }
+      if (res && res.text && !referenceText) {
+        setReferenceText(res.text);
+      }
+    } catch (e) {
+      console.warn('Auto language detection skipped:', e);
+    } finally {
+      setIsDetectingLang(false);
+    }
   };
 
   const startRecording = async () => {
@@ -116,6 +183,9 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
         setAudioPreviewUrl(url);
 
         stream.getTracks().forEach((track) => track.stop());
+
+        // Auto detect language from recorded audio
+        detectAudioLanguage(file);
       };
 
       mediaRecorder.start(200);
@@ -123,10 +193,16 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
       setRecordDuration(0);
 
       timerRef.current = setInterval(() => {
-        setRecordDuration((prev) => prev + 1);
+        setRecordDuration((prev) => {
+          if (prev >= 60) {
+            stopRecording();
+            return 60;
+          }
+          return prev + 1;
+        });
       }, 1000);
     } catch (err: any) {
-      setError('Microphone access denied or not available: ' + err.message);
+      setError('Microphone access denied or audio device not found.');
     }
   };
 
@@ -138,36 +214,12 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
     }
   };
 
-  const handleAutoTranscribe = async () => {
-    if (!audioFile) {
-      setError('Please upload or record reference audio first.');
-      return;
-    }
-    try {
-      setIsTranscribing(true);
-      setError(null);
-      const formData = new FormData();
-      formData.append('audio', audioFile);
-      if (language) formData.append('language', language);
-
-      const result = await ApiClient.transcribeAudio(formData);
-      if (result.text) {
-        setReferenceText(result.text);
-      }
-    } catch (err: any) {
-      setError('Auto-transcription failed: ' + err.message);
-    } finally {
-      setIsTranscribing(false);
-    }
-  };
-
   const togglePlayback = () => {
-    if (!audioRef.current && audioPreviewUrl) {
+    if (!audioPreviewUrl) return;
+    if (!audioRef.current) {
       audioRef.current = new Audio(audioPreviewUrl);
       audioRef.current.onended = () => setIsPlaying(false);
     }
-    if (!audioRef.current) return;
-
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
@@ -177,14 +229,46 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
     }
   };
 
+  const togglePreviewPlayback = (url: string) => {
+    if (!previewAudioRef.current || previewAudioRef.current.src !== url) {
+      previewAudioRef.current = new Audio(url);
+      previewAudioRef.current.onended = () => setIsPlayingPreview(false);
+    }
+    if (isPlayingPreview) {
+      previewAudioRef.current.pause();
+      setIsPlayingPreview(false);
+    } else {
+      previewAudioRef.current.play();
+      setIsPlayingPreview(true);
+    }
+  };
+
+  const handleAutoTranscribe = async () => {
+    if (!audioFile) return;
+    try {
+      setIsTranscribing(true);
+      setError(null);
+      const formData = new FormData();
+      formData.append('audio', audioFile);
+      const res = await ApiClient.transcribeAudio(formData);
+      if (res && res.text) {
+        setReferenceText(res.text);
+      }
+    } catch (err: any) {
+      setError('Transcription failed. You can type or leave it blank.');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
   const handleCloneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!audioFile) {
-      setError('Please provide reference audio (10–30s recommended).');
+      setError('Please provide reference character audio (5–30s clean speech works best).');
       return;
     }
     if (!title.trim()) {
-      setError('Please enter a voice title.');
+      setError('Please enter a character voice title.');
       return;
     }
 
@@ -192,26 +276,31 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
       setIsCloning(true);
       setError(null);
 
+      const finalLanguage = language === 'auto' ? (detectedLanguage || 'English') : language;
+
       const formData = new FormData();
       formData.append('audio', audioFile);
       formData.append('title', title.trim());
+      formData.append('engine', engine);
       if (description.trim()) formData.append('description', description.trim());
       if (referenceText.trim()) formData.append('text', referenceText.trim());
       formData.append('category', category);
       formData.append('gender', gender);
-      formData.append('language', language);
-      formData.append('style', 'Cloned Voice');
+      formData.append('language', finalLanguage);
+      formData.append('style', 'Cloned Character');
       formData.append('tags', JSON.stringify(tags.split(',').map((t) => t.trim()).filter(Boolean)));
 
       const res = await ApiClient.cloneVoice(formData);
 
-      setSuccess(true);
-      setTimeout(() => {
-        onVoiceCreated(res.voice);
-        onClose();
-      }, 1200);
+      setClonedResult({ voice: res.voice, acoustics: (res as any).acoustics });
+      onVoiceCreated(res.voice);
+
+      // If preview audio was returned, play it
+      if (res.voice.previewAudioUrl) {
+        togglePreviewPlayback(res.voice.previewAudioUrl);
+      }
     } catch (err: any) {
-      setError(err.message || 'Voice cloning failed.');
+      setError(err.message || 'Character voice cloning failed.');
     } finally {
       setIsCloning(false);
     }
@@ -229,12 +318,17 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-studio-border flex items-center justify-between bg-slate-50 dark:bg-studio-950/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-700 text-white flex items-center justify-center font-bold shadow-md">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">Instant Voice Cloning</h2>
-              <p className="text-xs text-slate-500 font-mono">Fish Audio Zero-Shot Fast Model Creation</p>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>Character Voice Cloner.</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 font-bold">
+                  ZERO-SHOT
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500 font-mono">Clone character voices with high fidelity and zero distortion</p>
             </div>
           </div>
           <button
@@ -254,17 +348,120 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
             </div>
           )}
 
-          {success && (
-            <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>Voice model cloned successfully! Adding to your narrators...</span>
+          {/* Success Banner & Generated Character Preview Card */}
+          {clonedResult && (
+            <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Character "{clonedResult.voice.name}" successfully cloned!</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition"
+                >
+                  Done / Use in Studio
+                </button>
+              </div>
+
+              {clonedResult.acoustics && (
+                <div className="grid grid-cols-3 gap-2 text-[11px] font-mono bg-white dark:bg-studio-900 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-800/40">
+                  <div>
+                    <span className="text-slate-400 block">Pitch (F0):</span>
+                    <span className="font-bold text-slate-800 dark:text-white">{clonedResult.acoustics.pitchHz} Hz</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Vocal Profile:</span>
+                    <span className="font-bold text-slate-800 dark:text-white">{clonedResult.acoustics.gender}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Timbre:</span>
+                    <span className="font-bold text-slate-800 dark:text-white">{clonedResult.acoustics.spectralCentroid} Hz</span>
+                  </div>
+                </div>
+              )}
+
+              {clonedResult.voice.previewAudioUrl && (
+                <div className="flex items-center justify-between p-2.5 bg-white dark:bg-studio-900 rounded-lg border border-emerald-200 dark:border-emerald-800/40">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => togglePreviewPlayback(clonedResult.voice.previewAudioUrl!)}
+                      className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 hover:bg-emerald-700 transition"
+                    >
+                      {isPlayingPreview ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5 fill-white" />}
+                    </button>
+                    <span className="text-xs font-medium text-slate-800 dark:text-slate-200">
+                      Generated Character Voice Preview
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-600 font-bold uppercase">
+                    Ready to Generate
+                  </span>
+                </div>
+              )}
             </div>
           )}
+
+          {/* Engine Selection Strip */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              1. Cloning AI Engine
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setEngine('kokoro')}
+                className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                  engine === 'kokoro'
+                    ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20 ring-1 ring-indigo-500 shadow-sm'
+                    : 'border-studio-border bg-slate-50 dark:bg-studio-850 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 dark:text-white">
+                    <Cpu className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Kokoro Neural Cloner</span>
+                  </div>
+                  <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    100% FREE
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                  Local offline acoustic matching & neural style adaptation. Unlimited characters, zero API fees.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setEngine('fish-audio')}
+                className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                  engine === 'fish-audio'
+                    ? 'border-black dark:border-white bg-slate-100 dark:bg-studio-800 ring-1 ring-black shadow-sm'
+                    : 'border-studio-border bg-slate-50 dark:bg-studio-850 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 dark:text-white">
+                    <Layers className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                    <span>Fish Audio Cloud</span>
+                  </div>
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-studio-750 text-slate-600 dark:text-slate-400">
+                    API KEY
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                  Cloud zero-shot model creation. Requires Fish Audio API key and developer credits.
+                </p>
+              </button>
+            </div>
+          </div>
 
           {/* Reference Audio Source Tabs */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-              1. Reference Audio Sample (10–30s recommended)
+              2. Reference Character Audio (5–30s clean speech)
             </label>
             <div className="grid grid-cols-2 gap-2 mb-3">
               <button
@@ -277,7 +474,7 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
                 }`}
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Upload Audio File</span>
+                <span>Upload Character Audio</span>
               </button>
               <button
                 type="button"
@@ -302,7 +499,7 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
                     handleFileSelect(e.dataTransfer.files[0]);
                   }
                 }}
-                className="border-2 border-dashed border-studio-border rounded-xl p-5 text-center bg-slate-50/50 dark:bg-studio-950/40 hover:bg-slate-50 transition cursor-pointer"
+                className="border-2 border-dashed border-studio-border rounded-xl p-5 text-center bg-slate-50/50 dark:bg-studio-950/40 hover:bg-slate-50 dark:hover:bg-studio-900 transition cursor-pointer"
                 onClick={() => {
                   const input = document.createElement('input');
                   input.type = 'file';
@@ -315,12 +512,12 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
                   input.click();
                 }}
               >
-                <Volume2 className="w-7 h-7 mx-auto text-slate-400 mb-2" />
+                <Volume2 className="w-7 h-7 mx-auto text-indigo-500 mb-2" />
                 <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-                  {audioFile ? audioFile.name : 'Click to select or drag & drop sample audio'}
+                  {audioFile ? audioFile.name : 'Click to select or drag & drop your character voice file'}
                 </p>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Supports MP3, WAV, M4A, OGG up to 25MB (clean speech with minimal background music works best)
+                  Supports MP3, WAV, M4A, OGG up to 25MB (clean character voice with minimal music yields the best fidelity)
                 </p>
               </div>
             )}
@@ -348,12 +545,12 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
                   {isRecording ? (
                     <span className="text-red-500 font-bold flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                      Recording... {formatSec(recordDuration)}
+                      Recording Character Voice... {formatSec(recordDuration)}
                     </span>
                   ) : audioFile ? (
                     `Recorded sample ready (${(audioFile.size / 1024).toFixed(1)} KB)`
                   ) : (
-                    'Click red microphone to start recording 10–30s of speech'
+                    'Click microphone to record your character voice sample'
                   )}
                 </div>
               </div>
@@ -381,55 +578,19 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
             )}
           </div>
 
-          {/* Reference Audio Transcript + ASR Helper */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                2. Reference Transcript (Optional but improves fidelity)
-              </label>
-              {audioFile && (
-                <button
-                  type="button"
-                  onClick={handleAutoTranscribe}
-                  disabled={isTranscribing}
-                  className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
-                >
-                  {isTranscribing ? (
-                    <>
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      <span>Transcribing via ASR...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3 h-3" />
-                      <span>Auto-Transcribe with Fish ASR</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-            <textarea
-              rows={2}
-              value={referenceText}
-              onChange={(e) => setReferenceText(e.target.value)}
-              placeholder="What does the speaker say in this reference audio clip? (Leave blank to let Fish Audio auto-detect)"
-              className="w-full text-xs p-2.5 rounded-lg border border-studio-border bg-white dark:bg-studio-950 focus:ring-1 focus:ring-black dark:focus:ring-white outline-none"
-            />
-          </div>
-
           {/* Voice Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Voice Name *
+                Character Voice Name *
               </label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. My Documentary Voice"
-                className="w-full text-xs p-2.5 rounded-lg border border-studio-border bg-white dark:bg-studio-950 focus:ring-1 focus:ring-black dark:focus:ring-white outline-none"
+                placeholder="e.g. Captain Drake, Anime Hero, Dark Lore"
+                className="w-full text-xs p-2.5 rounded-lg border border-studio-border bg-white dark:bg-studio-950 focus:ring-1 focus:ring-indigo-500 outline-none"
               />
             </div>
             <div>
@@ -439,7 +600,7 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as VoiceCategory)}
-                className="w-full text-xs p-2.5 rounded-lg border border-studio-border bg-white dark:bg-studio-950 focus:ring-1 focus:ring-black dark:focus:ring-white outline-none"
+                className="w-full text-xs p-2.5 rounded-lg border border-studio-border bg-white dark:bg-studio-950 focus:ring-1 focus:ring-indigo-500 outline-none"
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -450,71 +611,114 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Gender
+                Character Gender
               </label>
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value as any)}
-                className="w-full text-xs p-2.5 rounded-lg border border-studio-border bg-white dark:bg-studio-950 focus:ring-1 focus:ring-black dark:focus:ring-white outline-none"
+                className="w-full text-xs p-2.5 rounded-lg border border-studio-border bg-white dark:bg-studio-950 focus:ring-1 focus:ring-indigo-500 outline-none"
               >
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
-                <option value="Neutral">Neutral</option>
+                <option value="Neutral">Neutral (Auto-Detect Pitch)</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Language
-              </label>
-              <input
-                type="text"
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Language</span>
+                </label>
+                {audioFile && (
+                  <button
+                    type="button"
+                    onClick={() => detectAudioLanguage(audioFile)}
+                    disabled={isDetectingLang}
+                    className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                    title="Auto-detect language from audio"
+                  >
+                    {isDetectingLang ? (
+                      <>
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                        <span>Detecting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+                        <span>Auto-Detect</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                placeholder="e.g. English, Spanish, Japanese"
-                className="w-full text-xs p-2.5 rounded-lg border border-studio-border bg-white dark:bg-studio-950 focus:ring-1 focus:ring-black dark:focus:ring-white outline-none"
-              />
+                className="w-full text-xs p-2.5 rounded-lg border border-studio-border bg-white dark:bg-studio-950 focus:ring-1 focus:ring-indigo-500 outline-none"
+              >
+                {LANGUAGE_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.flag} {opt.name}
+                  </option>
+                ))}
+              </select>
+
+              {detectedLanguage && (
+                <div className="mt-1 flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="w-3 h-3 shrink-0" />
+                  <span>Auto-Detected: <strong>{detectedLanguage}</strong></span>
+                </div>
+              )}
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Description (Optional)
+              Character Description / Lore (Optional)
             </label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Cloned from personal studio mic recording"
-              className="w-full text-xs p-2.5 rounded-lg border border-studio-border bg-white dark:bg-studio-950 focus:ring-1 focus:ring-black dark:focus:ring-white outline-none"
+              placeholder="e.g. Gritty, battle-hardened fantasy warrior voice"
+              className="w-full text-xs p-2.5 rounded-lg border border-studio-border bg-white dark:bg-studio-950 focus:ring-1 focus:ring-indigo-500 outline-none"
             />
           </div>
 
           {/* Modal Actions */}
-          <div className="pt-3 border-t border-studio-border flex items-center justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-studio-800 rounded-lg transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isCloning || !audioFile || !title.trim()}
-              className="px-5 py-2 text-xs font-bold bg-black text-white dark:bg-white dark:text-black rounded-lg shadow hover:opacity-90 transition disabled:opacity-50 flex items-center gap-2"
-            >
-              {isCloning ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Cloning via Fish Audio Fast Model...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Clone Voice Instantly</span>
-                </>
-              )}
-            </button>
+          <div className="pt-3 border-t border-studio-border flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{engine === 'kokoro' ? 'Offline Zero-Cost Cloning' : 'Cloud Zero-Shot'}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-studio-800 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isCloning || !audioFile || !title.trim()}
+                className="px-5 py-2 text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg shadow hover:opacity-95 transition disabled:opacity-50 flex items-center gap-2 font-sans"
+              >
+                {isCloning ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Analyzing & Cloning Character...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-3.5 h-3.5 fill-white" />
+                    <span>Clone Character Voice Instantly</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

@@ -1,7 +1,13 @@
+import fs from 'fs';
+import path from 'path';
+import { execFile } from 'child_process';
+import util from 'util';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 import { FishAudioService } from './fishAudioService';
 import { TranslationEngineService } from './translationEngineService';
+
+const execFileAsync = util.promisify(execFile);
 
 export interface AsrSegment {
   start: number;
@@ -15,7 +21,7 @@ export interface SpeechRecognitionResult {
   language?: string;
   language_code?: string;
   segments?: AsrSegment[];
-  provider: 'groq' | 'openai' | 'fish_audio' | 'huggingface' | 'fallback';
+  provider: 'groq' | 'openai' | 'fish_audio' | 'huggingface' | 'local' | 'fallback';
 }
 
 export class SpeechRecognitionService {
@@ -119,14 +125,68 @@ export class SpeechRecognitionService {
       }
     }
 
-    // 5. Safe Fallback when no ASR providers are configured or succeeded
-    logger.warn('[ASR] All ASR providers unavailable. Using fallback transcription text.');
+    // 5. Try High-Accuracy Free Local / Python Speech Recognition Engine
+    try {
+      logger.info(`[ASR] Attempting local speech-to-text transcription via Python engine...`);
+      const tempExt = ext.startsWith('.') ? ext : '.mp3';
+      const tempPath = path.join(config.storageDir, `asr_temp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}${tempExt}`);
+      await fs.promises.writeFile(tempPath, audioBuffer);
+      try {
+        const localResult = await this.transcribeWithPython(tempPath, langCode || 'en');
+        if (localResult && localResult.text && localResult.text.trim()) {
+          logger.info(`[ASR] Successfully transcribed ${localResult.text.length} chars via Local Engine (${localResult.segments?.length || 0} segments).`);
+          return {
+            text: localResult.text,
+            duration: localResult.duration,
+            language: targetOrSourceLanguage || 'English',
+            language_code: langCode || 'en',
+            segments: localResult.segments || [],
+            provider: 'local'
+          };
+        }
+      } finally {
+        if (fs.existsSync(tempPath)) {
+          await fs.promises.unlink(tempPath).catch(() => {});
+        }
+      }
+    } catch (localErr: any) {
+      logger.warn('[ASR] Local Speech Recognition failed, using fallback:', localErr.message || localErr);
+    }
+
+    // 6. Safe Fallback when no speech could be recognized
+    logger.warn('[ASR] All ASR providers unavailable or audio silent. Using fallback transcription text.');
     return {
       text: 'Welcome to VoiceForge Studio. This is an original demonstration voice recording to show multilingual AI voice translation.',
       provider: 'fallback',
       language: targetOrSourceLanguage || 'English',
       language_code: langCode || 'en',
       segments: []
+    };
+  }
+
+  /**
+   * Transcribe via local Python script using speech_recognition
+   */
+  private static async transcribeWithPython(
+    audioPath: string,
+    langCode: string
+  ): Promise<{ text: string; duration?: number; segments?: AsrSegment[] }> {
+    const scriptPath = path.resolve(__dirname, '../scripts/transcribe_audio.py');
+    const { stdout } = await execFileAsync('python', [scriptPath, audioPath, langCode], {
+      maxBuffer: 20 * 1024 * 1024
+    });
+
+    const parsed = JSON.parse(stdout || '{}');
+    return {
+      text: parsed.text || '',
+      duration: parsed.duration,
+      segments: Array.isArray(parsed.segments)
+        ? parsed.segments.map((s: any) => ({
+            start: Number(s.start || 0),
+            end: Number(s.end || 0),
+            text: String(s.text || '').trim()
+          }))
+        : []
     };
   }
 

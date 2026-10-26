@@ -12,20 +12,87 @@ import {
   VoiceAnalysisResult
 } from '../../../shared/src/types';
 
+async function safeJson(res: Response): Promise<any> {
+  const text = await res.text();
+  if (!text || !text.trim()) {
+    if (!res.ok) {
+      throw new Error(`Server returned status ${res.status}: ${res.statusText || 'Backend offline'}`);
+    }
+    return {};
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Server returned invalid response (status ${res.status}): ${text.slice(0, 150)}`);
+  }
+}
+
 export class ApiClient {
   public static async getHealth(): Promise<ApiHealthResponse> {
     const res = await fetch('/api/health');
-    return await res.json();
+    return await safeJson(res);
   }
 
   public static async testConnection(): Promise<{ success: boolean; message: string; model: string }> {
     const res = await fetch('/api/health/test-connection', { method: 'POST' });
-    return await res.json();
+    return await safeJson(res);
+  }
+
+  public static async testOpenSourceConnection(): Promise<{ success: boolean; message: string; model: string }> {
+    const res = await fetch('/api/open-source-tts/test', { method: 'POST' });
+    return await safeJson(res);
+  }
+
+  // Standalone Open-Source TTS Service API
+  public static async getOpenSourceVoices(): Promise<Voice[]> {
+    const res = await fetch('/api/open-source-tts/voices');
+    const data = await safeJson(res);
+    return data.voices || [];
+  }
+
+  public static async generateOpenSourceTTS(params: {
+    text: string;
+    voiceId?: string;
+    voice?: string;
+    speechSpeed?: number;
+    pitch?: string;
+    volume?: string;
+    format?: string;
+    numTakes?: number;
+  }): Promise<{ success: boolean; audioUrl: string; filename: string; duration: number; sizeBytes: number; takes?: AudioTake[] }> {
+    const res = await fetch('/api/open-source-tts/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    const data = await safeJson(res);
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to generate Open-Source TTS speech.');
+    }
+    return data;
+  }
+
+  public static async generateOpenSourcePreview(params: {
+    voiceId: string;
+    previewText?: string;
+    speechSpeed?: number;
+    format?: string;
+  }): Promise<{ audioUrl: string; duration?: number }> {
+    const res = await fetch('/api/open-source-tts/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    const data = await safeJson(res);
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to generate Open-Source TTS preview.');
+    }
+    return data;
   }
 
   public static async getVoices(): Promise<Voice[]> {
     const res = await fetch('/api/voices');
-    const data = await res.json();
+    const data = await safeJson(res);
     return data.voices || [];
   }
 
@@ -35,7 +102,7 @@ export class ApiClient {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(voice)
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to save custom voice to server.');
     }
@@ -46,7 +113,7 @@ export class ApiClient {
     const res = await fetch(`/api/voices/custom/${encodeURIComponent(voiceId)}`, {
       method: 'DELETE'
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to delete custom voice from server.');
     }
@@ -57,16 +124,17 @@ export class ApiClient {
     text: string;
     reference_id?: string;
     format?: string;
+    provider?: 'fish-audio' | 'open-source-tts';
     speechSpeed?: number;
     numTakes?: number;
-  }): Promise<{ success: boolean; audioUrl: string; filename: string; sizeBytes: number; takes?: AudioTake[] }> {
+  }): Promise<{ success: boolean; audioUrl: string; filename: string; sizeBytes: number; takes?: AudioTake[]; providerUsed?: string }> {
     const res = await fetch('/api/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)
     });
 
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to generate speech chunk.');
     }
@@ -76,15 +144,16 @@ export class ApiClient {
   public static async generatePreview(
     reference_id: string,
     speechSpeed?: number,
-    format?: string
-  ): Promise<{ audioUrl: string }> {
+    format?: string,
+    provider?: 'fish-audio' | 'open-source-tts'
+  ): Promise<{ audioUrl: string; providerUsed?: string }> {
     const res = await fetch('/api/tts/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reference_id, speechSpeed, format })
+      body: JSON.stringify({ reference_id, speechSpeed, format, provider })
     });
 
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to generate voice preview.');
     }
@@ -95,16 +164,17 @@ export class ApiClient {
     chunkId: string;
     text: string;
     reference_id?: string;
+    provider?: 'fish-audio' | 'open-source-tts';
     speechSpeed?: number;
     format?: string;
-  }): Promise<{ audioUrl: string; take?: AudioTake }> {
+  }): Promise<{ audioUrl: string; take?: AudioTake; providerUsed?: string }> {
     const res = await fetch('/api/tts/regenerate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)
     });
 
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to regenerate chunk audio.');
     }
@@ -115,17 +185,18 @@ export class ApiClient {
     chunkId: string;
     text: string;
     reference_id?: string;
+    provider?: 'fish-audio' | 'open-source-tts';
     speechSpeed?: number;
     format?: string;
     takeNumber?: number;
-  }): Promise<{ success: boolean; chunkId: string; audioUrl: string; take: AudioTake }> {
+  }): Promise<{ success: boolean; chunkId: string; audioUrl: string; take: AudioTake; providerUsed?: string }> {
     const res = await fetch('/api/tts/generate-take', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)
     });
 
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to generate additional take.');
     }
@@ -143,7 +214,7 @@ export class ApiClient {
       body: JSON.stringify(params)
     });
 
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to merge audio clips.');
     }
@@ -162,7 +233,7 @@ export class ApiClient {
     });
 
     if (!res.ok) {
-      const err = await res.json();
+      const err = await safeJson(res).catch(() => ({}));
       throw new Error(err.error || 'Failed to export ZIP package.');
     }
     return await res.blob();
@@ -182,7 +253,7 @@ export class ApiClient {
     if (params.sort_by) query.set('sort_by', params.sort_by);
 
     const res = await fetch(`/api/voices/remote?${query.toString()}`);
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to fetch community voices from Fish Audio.');
     }
@@ -206,7 +277,7 @@ export class ApiClient {
       method: 'POST',
       body: formData
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to clone voice with Fish Audio.');
     }
@@ -222,7 +293,7 @@ export class ApiClient {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to design voice.');
     }
@@ -237,7 +308,7 @@ export class ApiClient {
       method: 'POST',
       body: formData
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to transcribe audio.');
     }
@@ -258,7 +329,7 @@ export class ApiClient {
       method: 'POST',
       body: formData
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to upload media file.');
     }
@@ -276,7 +347,7 @@ export class ApiClient {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url, downloadVideo })
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to import YouTube audio/video.');
     }
@@ -285,7 +356,7 @@ export class ApiClient {
 
   public static async getTranslationProjects(): Promise<VoiceTranslationProject[]> {
     const res = await fetch('/api/translation/projects');
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to fetch translation projects.');
     }
@@ -294,7 +365,7 @@ export class ApiClient {
 
   public static async getTranslationProject(id: string): Promise<VoiceTranslationProject> {
     const res = await fetch(`/api/translation/projects/${encodeURIComponent(id)}`);
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to fetch translation project.');
     }
@@ -307,7 +378,7 @@ export class ApiClient {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to start AI translation.');
     }
@@ -318,7 +389,7 @@ export class ApiClient {
     const res = await fetch(`/api/translation/projects/${encodeURIComponent(id)}`, {
       method: 'DELETE'
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to delete translation project.');
     }
@@ -328,11 +399,10 @@ export class ApiClient {
     const res = await fetch(`/api/translation/projects/${encodeURIComponent(projectId)}/outputs/${encodeURIComponent(outputId)}`, {
       method: 'DELETE'
     });
-    const data = await res.json();
+    const data = await safeJson(res);
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to delete translation output.');
     }
     return data.project;
   }
 }
-

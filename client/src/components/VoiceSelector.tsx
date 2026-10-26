@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Voice, VoiceCategory } from '../../../shared/src/types';
-import { Play, Volume2, Check, Sparkles, Plus, Info, Edit3, Trash2, Save, ChevronDown, ChevronUp, Globe, Wand2, X } from 'lucide-react';
+import { Play, Volume2, Check, Sparkles, Plus, Info, Edit3, Trash2, Save, ChevronDown, ChevronUp, Globe, Wand2, X, Zap } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { VoiceCloneModal } from './VoiceCloneModal';
 import { VoiceDesignModal } from './VoiceDesignModal';
@@ -39,6 +39,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
   onDeleteCustomVoice,
   compact = false
 }) => {
+  const [engineFilter, setEngineFilter] = useState<'all' | 'open-source' | 'fish-audio'>('all');
   const [activeCategory, setActiveCategory] = useState<VoiceCategory | 'My Custom Voices' | 'All'>('All');
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [showAllVoices, setShowAllVoices] = useState<boolean>(false);
@@ -60,19 +61,23 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
   };
 
   const filteredVoices = voices.filter((v) => {
+    const isOpenSource = v.provider === 'open-source-tts' || v.id.startsWith('edge_') || v.id.startsWith('kokoro_');
+    if (engineFilter === 'open-source' && !isOpenSource) return false;
+    if (engineFilter === 'fish-audio' && isOpenSource) return false;
+
     if (activeCategory === 'All') return true;
     if (activeCategory === 'My Custom Voices') return v.isCustom;
     return v.category === activeCategory;
   });
 
-  // Display only first 4 cards by default, or all if expanded
-  const displayedVoices = showAllVoices ? filteredVoices : filteredVoices.slice(0, 4);
+  // Display only first 6 cards by default, or all if expanded
+  const displayedVoices = showAllVoices ? filteredVoices : filteredVoices.slice(0, 6);
 
   const handleGeneratePreview = async (voice: Voice, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       setPreviewingId(voice.id);
-      const res = await ApiClient.generatePreview(voice.id);
+      const res = await ApiClient.generatePreview(voice.id, undefined, 'mp3', voice.provider);
       if (res.audioUrl) {
         onAudioPlay(res.audioUrl);
       }
@@ -183,6 +188,58 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
         </div>
       </div>
 
+      {/* Engine Filter Switcher */}
+      <div className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-studio-850 p-1.5 rounded-xl border border-studio-border">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              setEngineFilter('all');
+              setShowAllVoices(false);
+            }}
+            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold uppercase transition cursor-pointer ${
+              engineFilter === 'all'
+                ? 'bg-white dark:bg-studio-900 text-black dark:text-white shadow-xs border border-studio-border'
+                : 'text-slate-500 hover:text-black dark:hover:text-white'
+            }`}
+          >
+            All Engines ({voices.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEngineFilter('open-source');
+              setShowAllVoices(false);
+            }}
+            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold uppercase flex items-center gap-1.5 transition cursor-pointer ${
+              engineFilter === 'open-source'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+            }`}
+          >
+            <Zap className="w-3 h-3" />
+            <span>Open Source (100% Free)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEngineFilter('fish-audio');
+              setShowAllVoices(false);
+            }}
+            className={`px-3 py-1 rounded-lg text-xs font-mono font-bold uppercase transition cursor-pointer ${
+              engineFilter === 'fish-audio'
+                ? 'bg-white dark:bg-studio-900 text-black dark:text-white shadow-xs border border-studio-border'
+                : 'text-slate-500 hover:text-black dark:hover:text-white'
+            }`}
+          >
+            Fish Audio API
+          </button>
+        </div>
+        <span className="text-[11px] font-mono text-slate-500 hidden sm:inline-block pr-2">
+          {engineFilter === 'open-source' ? '⚡ 100% Free • Unlimited • Zero API Key' : 'Studio Cloud AI Synthesis'}
+        </span>
+      </div>
+
       {/* Category Pills */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {CATEGORIES.map((cat) => (
@@ -208,6 +265,8 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
         {displayedVoices.map((voice) => {
           const isSelected = selectedVoice.id === voice.id;
           const isPreviewing = previewingId === voice.id;
+          const isKokoro = voice.id.startsWith('kokoro_');
+          const isOpenSource = voice.provider === 'open-source-tts' || voice.id.startsWith('edge_') || isKokoro;
 
           return (
             <div
@@ -225,7 +284,42 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
                     <span className={`font-serif font-bold text-xs sm:text-sm truncate ${isSelected ? 'text-white dark:text-black' : 'text-slate-900 dark:text-white'}`}>
                       {voice.name}
                     </span>
-                    {voice.isCustom && (
+                    {isKokoro ? (
+                      <span className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded shrink-0 flex items-center gap-1 ${
+                        isSelected
+                          ? 'bg-purple-300 text-black font-extrabold'
+                          : 'bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800'
+                      }`}>
+                        <Sparkles className="w-2.5 h-2.5 text-purple-600" />
+                        <span>KOKORO</span>
+                      </span>
+                    ) : isOpenSource ? (
+                      <span className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded shrink-0 flex items-center gap-1 ${
+                        isSelected
+                          ? 'bg-emerald-400 text-black font-extrabold'
+                          : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                      }`}>
+                        <Zap className="w-2.5 h-2.5" />
+                        <span>EDGE</span>
+                      </span>
+                    ) : (
+                      <span className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded shrink-0 ${
+                        isSelected
+                          ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
+                          : 'bg-slate-100 dark:bg-studio-800 text-slate-600 dark:text-slate-400 border border-studio-border'
+                      }`}>
+                        Fish Audio
+                      </span>
+                    )}
+                    {voice.id.includes('cloned_') ? (
+                      <span className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded shrink-0 flex items-center gap-1 ${
+                        isSelected
+                          ? 'bg-amber-300 text-black font-extrabold'
+                          : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                      }`}>
+                        <span>CLONED</span>
+                      </span>
+                    ) : voice.isCustom ? (
                       <span className={`text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded shrink-0 ${
                         isSelected
                           ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
@@ -233,7 +327,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
                       }`}>
                         Saved
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   {isSelected && (
                     <span className="w-5 h-5 rounded-full bg-white text-black dark:bg-black dark:text-white flex items-center justify-center text-xs shadow-sm shrink-0">

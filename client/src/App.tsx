@@ -6,17 +6,22 @@ import { AudioPlayer } from './components/AudioPlayer';
 import { Dashboard } from './pages/Dashboard';
 import { ScriptStudio } from './pages/ScriptStudio';
 import { VoiceGenerator } from './pages/VoiceGenerator';
+import { OpenSourceStudio } from './pages/OpenSourceStudio';
 import { VoiceTranslator } from './pages/VoiceTranslator';
 import { Projects } from './pages/Projects';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
+import { CloneVoiceStudio } from './pages/CloneVoiceStudio';
+import { VoiceCloneModal } from './components/VoiceCloneModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useProjectStore } from './hooks/useProjectStore';
 import { useAudioPlayer } from './hooks/useAudioPlayer';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<TabType>('script-studio');
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
 
   // Theme state: default to light (matching user screenshot)
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
@@ -95,6 +100,7 @@ export function App() {
         collapsed={sidebarCollapsed}
         setCollapsed={setSidebarCollapsed}
         onNewProject={handleNewProject}
+        onOpenCloneVoice={() => setIsCloneModalOpen(true)}
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         theme={theme}
@@ -128,7 +134,27 @@ export function App() {
               onOpenProject={handleOpenProject}
               onNewVoiceover={handleNewProject}
               onOpenScriptStudio={() => setActiveTab('script-studio')}
+              onNavigateTab={(tab) => setActiveTab(tab)}
             />
+          )}
+
+          {activeTab === 'clone-voice' && (
+            <ErrorBoundary>
+              <CloneVoiceStudio
+                voices={voices}
+                selectedVoice={activeProject.selectedVoice}
+                onSelectVoice={setVoice}
+                onSaveCustomVoice={saveCustomVoice}
+                onDeleteCustomVoice={deleteCustomVoice}
+                onOpenCloneModal={() => setIsCloneModalOpen(true)}
+                onAudioPlay={play}
+                onSendToScriptStudio={(textVal, voice) => {
+                  setScriptText(textVal);
+                  setVoice(voice);
+                  setActiveTab('script-studio');
+                }}
+              />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'script-studio' && (
@@ -158,6 +184,20 @@ export function App() {
               isPlaying={isPlaying}
               onAudioPlay={play}
               onAudioPause={pause}
+            />
+          )}
+
+          {activeTab === 'open-source-tts' && (
+            <OpenSourceStudio
+              onAudioPlay={play}
+              onSendToScriptStudio={(textVal, voiceId) => {
+                setScriptText(textVal);
+                const matched = voices.find((v) => v.id === voiceId);
+                if (matched) {
+                  setVoice(matched);
+                }
+                setActiveTab('script-studio');
+              }}
             />
           )}
 
@@ -234,6 +274,19 @@ export function App() {
             />
           </div>
         )}
+
+        {/* Global Character Voice Clone Modal */}
+        <ErrorBoundary>
+          <VoiceCloneModal
+            isOpen={isCloneModalOpen}
+            onClose={() => setIsCloneModalOpen(false)}
+            onVoiceCreated={(newVoice) => {
+              saveCustomVoice(newVoice);
+              setVoice(newVoice);
+              setIsCloneModalOpen(false);
+            }}
+          />
+        </ErrorBoundary>
       </div>
     </div>
   );

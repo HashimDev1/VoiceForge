@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Project, ScriptChunk, Voice, ChunkSettings, ApiHealthResponse } from '../../../shared/src/types';
+import { Project, ScriptChunk, Voice, ChunkSettings, ApiHealthResponse, AudioTake } from '../../../shared/src/types';
 import { splitScriptIntoChunks } from '../../../shared/src/chunking';
 import { ApiClient } from '../services/api';
 
@@ -10,13 +10,15 @@ const DEFAULT_CHUNK_SETTINGS: ChunkSettings = {
 };
 
 const DEFAULT_VOICE: Voice = {
-  id: 'default_s21_free',
-  name: 'Fish Audio Default (s2.1-pro-free)',
+  id: 'edge_en-US-ChristopherNeural',
+  name: 'Christopher Neural (Documentary & Crime)',
   language: 'English',
-  style: 'Natural / Standard',
-  gender: 'Neutral',
-  description: 'Standard default voice provided by the Fish Audio s2.1-pro-free model.',
-  category: 'Calm'
+  style: 'Deep / Cinematic',
+  gender: 'Male',
+  description: 'Deep, resonant documentary tone suited for mystery, history, and narrative video essays (100% Free Open-Source).',
+  category: 'Documentary',
+  provider: 'open-source-tts',
+  isFree: true
 };
 
 const PROJECTS_STORAGE_KEY = 'voiceforge_projects_v1';
@@ -310,14 +312,38 @@ export function useProjectStore() {
         const currentCount = chunk.takes?.length || (chunk.audioUrl ? 1 : 0);
         const nextTakeNumber = currentCount + 1;
 
-        const res = await ApiClient.generateTakeForChunk({
-          chunkId,
-          text: chunk.text,
-          reference_id: activeProject.selectedVoice.id,
-          format: activeProject.audioFormat || 'mp3',
-          speechSpeed: activeProject.speechSpeed || 1.0,
-          takeNumber: nextTakeNumber
-        });
+        const isOpenSource =
+          activeProject.selectedVoice.provider === 'open-source-tts' ||
+          activeProject.selectedVoice.id.startsWith('edge_');
+
+        let newTake: AudioTake;
+
+        if (isOpenSource) {
+          const res = await ApiClient.generateOpenSourceTTS({
+            text: chunk.text,
+            voiceId: activeProject.selectedVoice.id,
+            format: activeProject.audioFormat || 'mp3',
+            speechSpeed: activeProject.speechSpeed || 1.0,
+            numTakes: 1
+          });
+          newTake = {
+            id: `take_${Date.now()}_${nextTakeNumber}`,
+            label: `Take ${nextTakeNumber}`,
+            audioUrl: res.audioUrl,
+            durationSec: res.duration,
+            createdAt: new Date().toISOString()
+          };
+        } else {
+          const res = await ApiClient.generateTakeForChunk({
+            chunkId,
+            text: chunk.text,
+            reference_id: activeProject.selectedVoice.id,
+            format: activeProject.audioFormat || 'mp3',
+            speechSpeed: activeProject.speechSpeed || 1.0,
+            takeNumber: nextTakeNumber
+          });
+          newTake = res.take;
+        }
 
         updateActiveProject((prev) => {
           const chunks = prev.chunks.map((c) => {
@@ -327,14 +353,14 @@ export function useProjectStore() {
                 : c.audioUrl
                 ? [{ id: `take_${Date.now()}_1`, label: 'Take 1', audioUrl: c.audioUrl, createdAt: new Date().toISOString() }]
                 : [];
-              existingTakes.push(res.take);
+              existingTakes.push(newTake);
 
               return {
                 ...c,
                 status: 'success' as const,
-                audioUrl: res.take.audioUrl,
+                audioUrl: newTake.audioUrl,
                 takes: existingTakes,
-                activeTakeId: res.take.id,
+                activeTakeId: newTake.id,
                 error: undefined
               };
             }
@@ -367,17 +393,38 @@ export function useProjectStore() {
 
       try {
         const numTakes = activeProject.multiTakeEnabled ? 2 : 1;
-        const result = await ApiClient.generateSingleTTS({
-          text: chunk.text,
-          reference_id: activeProject.selectedVoice.id,
-          speechSpeed: activeProject.speechSpeed || 1.0,
-          format: activeProject.audioFormat || 'mp3',
-          numTakes
-        });
+        const isOpenSource =
+          activeProject.selectedVoice.provider === 'open-source-tts' ||
+          activeProject.selectedVoice.id.startsWith('edge_');
 
-        const takes = result.takes && result.takes.length > 0 ? result.takes : [
-          { id: `take_${Date.now()}_1`, label: 'Take 1', audioUrl: result.audioUrl, createdAt: new Date().toISOString() }
-        ];
+        let audioUrl = '';
+        let takes: AudioTake[] = [];
+
+        if (isOpenSource) {
+          const res = await ApiClient.generateOpenSourceTTS({
+            text: chunk.text,
+            voiceId: activeProject.selectedVoice.id,
+            speechSpeed: activeProject.speechSpeed || 1.0,
+            format: activeProject.audioFormat || 'mp3',
+            numTakes
+          });
+          audioUrl = res.audioUrl;
+          takes = res.takes && res.takes.length > 0 ? res.takes : [
+            { id: `take_${Date.now()}_1`, label: 'Take 1', audioUrl: res.audioUrl, createdAt: new Date().toISOString() }
+          ];
+        } else {
+          const res = await ApiClient.generateSingleTTS({
+            text: chunk.text,
+            reference_id: activeProject.selectedVoice.id,
+            speechSpeed: activeProject.speechSpeed || 1.0,
+            format: activeProject.audioFormat || 'mp3',
+            numTakes
+          });
+          audioUrl = res.audioUrl;
+          takes = res.takes && res.takes.length > 0 ? res.takes : [
+            { id: `take_${Date.now()}_1`, label: 'Take 1', audioUrl: res.audioUrl, createdAt: new Date().toISOString() }
+          ];
+        }
 
         updateActiveProject((prev) => ({
           ...prev,
@@ -385,7 +432,7 @@ export function useProjectStore() {
             c.id === chunkId ? {
               ...c,
               status: 'success',
-              audioUrl: result.audioUrl,
+              audioUrl,
               takes,
               activeTakeId: takes[0]?.id,
               error: undefined
@@ -434,17 +481,38 @@ export function useProjectStore() {
 
           try {
             const numTakes = activeProject.multiTakeEnabled ? 2 : 1;
-            const res = await ApiClient.generateSingleTTS({
-              text: chunk.text,
-              reference_id: activeProject.selectedVoice.id,
-              format: activeProject.audioFormat || 'mp3',
-              speechSpeed: activeProject.speechSpeed || 1.0,
-              numTakes
-            });
+            const isOpenSource =
+              activeProject.selectedVoice.provider === 'open-source-tts' ||
+              activeProject.selectedVoice.id.startsWith('edge_');
 
-            const takes = res.takes && res.takes.length > 0 ? res.takes : [
-              { id: `take_${Date.now()}_1`, label: 'Take 1', audioUrl: res.audioUrl, createdAt: new Date().toISOString() }
-            ];
+            let audioUrl = '';
+            let takes: AudioTake[] = [];
+
+            if (isOpenSource) {
+              const res = await ApiClient.generateOpenSourceTTS({
+                text: chunk.text,
+                voiceId: activeProject.selectedVoice.id,
+                format: activeProject.audioFormat || 'mp3',
+                speechSpeed: activeProject.speechSpeed || 1.0,
+                numTakes
+              });
+              audioUrl = res.audioUrl;
+              takes = res.takes && res.takes.length > 0 ? res.takes : [
+                { id: `take_${Date.now()}_1`, label: 'Take 1', audioUrl: res.audioUrl, createdAt: new Date().toISOString() }
+              ];
+            } else {
+              const res = await ApiClient.generateSingleTTS({
+                text: chunk.text,
+                reference_id: activeProject.selectedVoice.id,
+                format: activeProject.audioFormat || 'mp3',
+                speechSpeed: activeProject.speechSpeed || 1.0,
+                numTakes
+              });
+              audioUrl = res.audioUrl;
+              takes = res.takes && res.takes.length > 0 ? res.takes : [
+                { id: `take_${Date.now()}_1`, label: 'Take 1', audioUrl: res.audioUrl, createdAt: new Date().toISOString() }
+              ];
+            }
 
             updateActiveProject((prev) => ({
               ...prev,
@@ -452,7 +520,7 @@ export function useProjectStore() {
                 c.id === chunkId ? {
                   ...c,
                   status: 'success',
-                  audioUrl: res.audioUrl,
+                  audioUrl,
                   takes,
                   activeTakeId: takes[0]?.id,
                   error: undefined
