@@ -6,3 +6,6 @@ build/
 temp_storage/
 uploads/
 .DS_Store
+data/chrome_flow_userdata/
+scratch_flow_html.html
+test_stroke.html

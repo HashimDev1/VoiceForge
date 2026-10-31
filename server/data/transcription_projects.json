@@ -1,0 +1,3769 @@
+[
+  {
+    "id": "trans_1793406255615_ij4ui",
+    "filename": "input_1793406063187_5_-modern-investigative-_-financial-explainer-_vox--bloomber.mp3",
+    "originalName": "5.-Modern-Investigative-&-Financial-Explainer-(Vox--Bloomberg-St-2026-10-31-05-15-The-envelope-weighed-almost-nothing.-Yet-somehow.mp3",
+    "mediaUrl": "/api/audio/file/input_1793406063187_5_-modern-investigative-_-financial-explainer-_vox--bloomber.mp3",
+    "mediaType": "audio",
+    "duration": 223.581938,
+    "durationFormatted": "03:43",
+    "detectedLanguage": "English",
+    "detectedLanguageCode": "en",
+    "confidenceScore": 0.9985,
+    "isAmbiguousHindiUrdu": false,
+    "selectedScript": "original",
+    "segments": [
+      {
+        "id": "seg_1",
+        "start": 0,
+        "end": 4.56,
+        "text": "The envelope weighed almost nothing, yet somehow they couldn't pick it up.",
+        "words": [
+          {
+            "word": " The",
+            "start": 0,
+            "end": 0.18,
+            "confidence": 0.83
+          },
+          {
+            "word": " envelope",
+            "start": 0.18,
+            "end": 0.52,
+            "confidence": 0.97
+          },
+          {
+            "word": " weighed",
+            "start": 0.52,
+            "end": 0.9,
+            "confidence": 0.99
+          },
+          {
+            "word": " almost",
+            "start": 0.9,
+            "end": 1.34,
+            "confidence": 1
+          },
+          {
+            "word": " nothing,",
+            "start": 1.34,
+            "end": 1.94,
+            "confidence": 1
+          },
+          {
+            "word": " yet",
+            "start": 2.26,
+            "end": 2.52,
+            "confidence": 0.99
+          },
+          {
+            "word": " somehow",
+            "start": 2.52,
+            "end": 2.98,
+            "confidence": 0.98
+          },
+          {
+            "word": " they",
+            "start": 2.98,
+            "end": 3.54,
+            "confidence": 0.7
+          },
+          {
+            "word": " couldn't",
+            "start": 3.54,
+            "end": 4.02,
+            "confidence": 1
+          },
+          {
+            "word": " pick",
+            "start": 4.02,
+            "end": 4.26,
+            "confidence": 1
+          },
+          {
+            "word": " it",
+            "start": 4.26,
+            "end": 4.4,
+            "confidence": 1
+          },
+          {
+            "word": " up.",
+            "start": 4.4,
+            "end": 4.56,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_2",
+        "start": 5.14,
+        "end": 7.88,
+        "text": "It sat on the corner of a desk for six days!",
+        "words": [
+          {
+            "word": " It",
+            "start": 5.14,
+            "end": 5.28,
+            "confidence": 0.99
+          },
+          {
+            "word": " sat",
+            "start": 5.28,
+            "end": 5.56,
+            "confidence": 0.99
+          },
+          {
+            "word": " on",
+            "start": 5.56,
+            "end": 5.82,
+            "confidence": 0.99
+          },
+          {
+            "word": " the",
+            "start": 5.82,
+            "end": 5.92,
+            "confidence": 1
+          },
+          {
+            "word": " corner",
+            "start": 5.92,
+            "end": 6.22,
+            "confidence": 1
+          },
+          {
+            "word": " of",
+            "start": 6.22,
+            "end": 6.4,
+            "confidence": 1
+          },
+          {
+            "word": " a",
+            "start": 6.4,
+            "end": 6.48,
+            "confidence": 0
+          },
+          {
+            "word": " desk",
+            "start": 6.48,
+            "end": 6.82,
+            "confidence": 0.99
+          },
+          {
+            "word": " for",
+            "start": 6.82,
+            "end": 7.06,
+            "confidence": 0.99
+          },
+          {
+            "word": " six",
+            "start": 7.06,
+            "end": 7.46,
+            "confidence": 0.88
+          },
+          {
+            "word": " days!",
+            "start": 7.46,
+            "end": 7.88,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_3",
+        "start": 8.5,
+        "end": 13.52,
+        "text": "Inside was an application to local art exhibition—nothing dangerous —",
+        "words": [
+          {
+            "word": " Inside",
+            "start": 8.5,
+            "end": 8.98,
+            "confidence": 0.98
+          },
+          {
+            "word": " was",
+            "start": 8.98,
+            "end": 9.22,
+            "confidence": 0.94
+          },
+          {
+            "word": " an",
+            "start": 9.22,
+            "end": 9.36,
+            "confidence": 1
+          },
+          {
+            "word": " application",
+            "start": 9.36,
+            "end": 9.84,
+            "confidence": 1
+          },
+          {
+            "word": " to",
+            "start": 9.84,
+            "end": 10.18,
+            "confidence": 0.99
+          },
+          {
+            "word": " local",
+            "start": 10.18,
+            "end": 10.54,
+            "confidence": 0
+          },
+          {
+            "word": " art",
+            "start": 10.54,
+            "end": 11,
+            "confidence": 0.99
+          },
+          {
+            "word": " exhibition—nothing",
+            "start": 11,
+            "end": 12.44,
+            "confidence": 0.58
+          },
+          {
+            "word": " dangerous",
+            "start": 12.44,
+            "end": 12.96,
+            "confidence": 1
+          },
+          {
+            "word": " —",
+            "start": 12.96,
+            "end": 13.52,
+            "confidence": 0
+          }
+        ]
+      },
+      {
+        "id": "seg_4",
+        "start": 13.52,
+        "end": 16.32,
+        "text": "just chance show drawing to strangers…",
+        "words": [
+          {
+            "word": " just",
+            "start": 13.52,
+            "end": 13.68,
+            "confidence": 0.43
+          },
+          {
+            "word": " chance",
+            "start": 13.68,
+            "end": 14.08,
+            "confidence": 0
+          },
+          {
+            "word": " show",
+            "start": 14.08,
+            "end": 14.52,
+            "confidence": 0
+          },
+          {
+            "word": " drawing",
+            "start": 14.52,
+            "end": 15.14,
+            "confidence": 0.03
+          },
+          {
+            "word": " to",
+            "start": 15.14,
+            "end": 15.3,
+            "confidence": 0.98
+          },
+          {
+            "word": " strangers…",
+            "start": 15.3,
+            "end": 16.32,
+            "confidence": 0.5
+          }
+        ]
+      },
+      {
+        "id": "seg_5",
+        "start": 16.32,
+        "end": 20.06,
+        "text": "But every morning when artist reached there their hands stopped",
+        "words": [
+          {
+            "word": " But",
+            "start": 16.32,
+            "end": 16.5,
+            "confidence": 0.53
+          },
+          {
+            "word": " every",
+            "start": 16.5,
+            "end": 16.82,
+            "confidence": 0.98
+          },
+          {
+            "word": " morning",
+            "start": 16.82,
+            "end": 17.2,
+            "confidence": 1
+          },
+          {
+            "word": " when",
+            "start": 17.2,
+            "end": 17.4,
+            "confidence": 0.8
+          },
+          {
+            "word": " artist",
+            "start": 17.4,
+            "end": 17.76,
+            "confidence": 0.02
+          },
+          {
+            "word": " reached",
+            "start": 17.76,
+            "end": 18.16,
+            "confidence": 0.96
+          },
+          {
+            "word": " there",
+            "start": 18.16,
+            "end": 18.58,
+            "confidence": 0
+          },
+          {
+            "word": " their",
+            "start": 18.58,
+            "end": 19,
+            "confidence": 0.08
+          },
+          {
+            "word": " hands",
+            "start": 19,
+            "end": 19.44,
+            "confidence": 0.82
+          },
+          {
+            "word": " stopped",
+            "start": 19.44,
+            "end": 20.06,
+            "confidence": 0.97
+          }
+        ]
+      },
+      {
+        "id": "seg_6",
+        "start": 20.76,
+        "end": 22.2,
+        "text": "…the room quieted",
+        "words": [
+          {
+            "word": " …the",
+            "start": 20.5,
+            "end": 20.9,
+            "confidence": 0.09
+          },
+          {
+            "word": " room",
+            "start": 20.9,
+            "end": 21.22,
+            "confidence": 0.99
+          },
+          {
+            "word": " quieted",
+            "start": 21.22,
+            "end": 22.2,
+            "confidence": 0.03
+          }
+        ]
+      },
+      {
+        "id": "seg_7",
+        "start": 22.2,
+        "end": 23.82,
+        "text": "...the envelope quietly",
+        "words": [
+          {
+            "word": " ...the",
+            "start": 22.2,
+            "end": 22.6,
+            "confidence": 0.43
+          },
+          {
+            "word": " envelope",
+            "start": 22.6,
+            "end": 23.16,
+            "confidence": 0.99
+          },
+          {
+            "word": " quietly",
+            "start": 23.16,
+            "end": 23.82,
+            "confidence": 0.02
+          }
+        ]
+      },
+      {
+        "id": "seg_8",
+        "start": 24.52,
+        "end": 27.96,
+        "text": "space between hand and paper felt enormous",
+        "words": [
+          {
+            "word": " space",
+            "start": 24.28,
+            "end": 24.68,
+            "confidence": 0
+          },
+          {
+            "word": " between",
+            "start": 24.68,
+            "end": 25.46,
+            "confidence": 0.91
+          },
+          {
+            "word": " hand",
+            "start": 25.46,
+            "end": 25.98,
+            "confidence": 0.12
+          },
+          {
+            "word": " and",
+            "start": 25.98,
+            "end": 26.28,
+            "confidence": 0.96
+          },
+          {
+            "word": " paper",
+            "start": 26.28,
+            "end": 26.74,
+            "confidence": 0.87
+          },
+          {
+            "word": " felt",
+            "start": 26.74,
+            "end": 27.18,
+            "confidence": 0.95
+          },
+          {
+            "word": " enormous",
+            "start": 27.18,
+            "end": 27.96,
+            "confidence": 0.96
+          }
+        ]
+      },
+      {
+        "id": "seg_9",
+        "start": 27.96,
+        "end": 32.84,
+        "text": "They had promised themselves they would open it after breakfast, then",
+        "words": [
+          {
+            "word": " They",
+            "start": 27.96,
+            "end": 28.94,
+            "confidence": 0.74
+          },
+          {
+            "word": " had",
+            "start": 28.94,
+            "end": 29.1,
+            "confidence": 0.98
+          },
+          {
+            "word": " promised",
+            "start": 29.1,
+            "end": 29.54,
+            "confidence": 1
+          },
+          {
+            "word": " themselves",
+            "start": 29.54,
+            "end": 30.06,
+            "confidence": 1
+          },
+          {
+            "word": " they",
+            "start": 30.06,
+            "end": 30.3,
+            "confidence": 0.98
+          },
+          {
+            "word": " would",
+            "start": 30.3,
+            "end": 30.44,
+            "confidence": 1
+          },
+          {
+            "word": " open",
+            "start": 30.44,
+            "end": 30.84,
+            "confidence": 1
+          },
+          {
+            "word": " it",
+            "start": 30.84,
+            "end": 31.02,
+            "confidence": 0.99
+          },
+          {
+            "word": " after",
+            "start": 31.02,
+            "end": 31.38,
+            "confidence": 1
+          },
+          {
+            "word": " breakfast,",
+            "start": 31.38,
+            "end": 31.88,
+            "confidence": 1
+          },
+          {
+            "word": " then",
+            "start": 32.44,
+            "end": 32.84,
+            "confidence": 0.98
+          }
+        ]
+      },
+      {
+        "id": "seg_10",
+        "start": 32.84,
+        "end": 34.92,
+        "text": "After cleaning the desk. Then",
+        "words": [
+          {
+            "word": " After",
+            "start": 32.84,
+            "end": 33.18,
+            "confidence": 0
+          },
+          {
+            "word": " cleaning",
+            "start": 33.18,
+            "end": 33.62,
+            "confidence": 0.99
+          },
+          {
+            "word": " the",
+            "start": 33.62,
+            "end": 33.88,
+            "confidence": 1
+          },
+          {
+            "word": " desk.",
+            "start": 33.88,
+            "end": 34.3,
+            "confidence": 1
+          },
+          {
+            "word": " Then",
+            "start": 34.64,
+            "end": 34.92,
+            "confidence": 0.96
+          }
+        ]
+      },
+      {
+        "id": "seg_11",
+        "start": 34.92,
+        "end": 35.62,
+        "text": "After finding",
+        "words": [
+          {
+            "word": " After",
+            "start": 34.92,
+            "end": 35.24,
+            "confidence": 0.04
+          },
+          {
+            "word": " finding",
+            "start": 35.24,
+            "end": 35.62,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_12",
+        "start": 35.62,
+        "end": 38.28,
+        "text": "The right pencil. Strange how easy",
+        "words": [
+          {
+            "word": " The",
+            "start": 35.62,
+            "end": 35.86,
+            "confidence": 0.01
+          },
+          {
+            "word": " right",
+            "start": 35.86,
+            "end": 36.16,
+            "confidence": 0.95
+          },
+          {
+            "word": " pencil.",
+            "start": 36.16,
+            "end": 36.64,
+            "confidence": 0.99
+          },
+          {
+            "word": " Strange",
+            "start": 37.16,
+            "end": 37.6,
+            "confidence": 0.99
+          },
+          {
+            "word": " how",
+            "start": 37.6,
+            "end": 37.88,
+            "confidence": 0.88
+          },
+          {
+            "word": " easy",
+            "start": 37.88,
+            "end": 38.28,
+            "confidence": 0.98
+          }
+        ]
+      },
+      {
+        "id": "seg_13",
+        "start": 38.28,
+        "end": 41.06,
+        "text": "It was to rearrange an entire room and",
+        "words": [
+          {
+            "word": " It",
+            "start": 38.28,
+            "end": 38.46,
+            "confidence": 0.04
+          },
+          {
+            "word": " was",
+            "start": 38.46,
+            "end": 38.66,
+            "confidence": 0.99
+          },
+          {
+            "word": " to",
+            "start": 38.66,
+            "end": 38.86,
+            "confidence": 0.92
+          },
+          {
+            "word": " rearrange",
+            "start": 38.86,
+            "end": 39.3,
+            "confidence": 0.96
+          },
+          {
+            "word": " an",
+            "start": 39.3,
+            "end": 39.64,
+            "confidence": 0.64
+          },
+          {
+            "word": " entire",
+            "start": 39.64,
+            "end": 40.14,
+            "confidence": 0.84
+          },
+          {
+            "word": " room",
+            "start": 40.14,
+            "end": 40.62,
+            "confidence": 0.94
+          },
+          {
+            "word": " and",
+            "start": 40.62,
+            "end": 41.06,
+            "confidence": 0.47
+          }
+        ]
+      },
+      {
+        "id": "seg_14",
+        "start": 41.06,
+        "end": 41.68,
+        "text": "How difficult",
+        "words": [
+          {
+            "word": " How",
+            "start": 41.06,
+            "end": 41.22,
+            "confidence": 0.22
+          },
+          {
+            "word": " difficult",
+            "start": 41.22,
+            "end": 41.68,
+            "confidence": 0.99
+          }
+        ]
+      },
+      {
+        "id": "seg_15",
+        "start": 41.68,
+        "end": 42,
+        "text": "It",
+        "words": [
+          {
+            "word": " It",
+            "start": 41.68,
+            "end": 42,
+            "confidence": 0.12
+          }
+        ]
+      },
+      {
+        "id": "seg_16",
+        "start": 42,
+        "end": 42.2,
+        "text": "Was",
+        "words": [
+          {
+            "word": " Was",
+            "start": 42,
+            "end": 42.2,
+            "confidence": 0.01
+          }
+        ]
+      },
+      {
+        "id": "seg_17",
+        "start": 42.2,
+        "end": 42.42,
+        "text": "To",
+        "words": [
+          {
+            "word": " To",
+            "start": 42.2,
+            "end": 42.42,
+            "confidence": 0.03
+          }
+        ]
+      },
+      {
+        "id": "seg_18",
+        "start": 42.42,
+        "end": 45.3,
+        "text": "Open one piece of paper each",
+        "words": [
+          {
+            "word": " Open",
+            "start": 42.42,
+            "end": 42.82,
+            "confidence": 0.08
+          },
+          {
+            "word": " one",
+            "start": 42.82,
+            "end": 43.3,
+            "confidence": 0.42
+          },
+          {
+            "word": " piece",
+            "start": 43.3,
+            "end": 43.68,
+            "confidence": 0.9
+          },
+          {
+            "word": " of",
+            "start": 43.68,
+            "end": 43.94,
+            "confidence": 0.94
+          },
+          {
+            "word": " paper",
+            "start": 43.94,
+            "end": 44.3,
+            "confidence": 0.92
+          },
+          {
+            "word": " each",
+            "start": 44.3,
+            "end": 45.3,
+            "confidence": 0.01
+          }
+        ]
+      },
+      {
+        "id": "seg_19",
+        "start": 45.3,
+        "end": 47.84,
+        "text": "Delay brought a little relief for",
+        "words": [
+          {
+            "word": " Delay",
+            "start": 45.3,
+            "end": 45.78,
+            "confidence": 0.62
+          },
+          {
+            "word": " brought",
+            "start": 45.78,
+            "end": 46.08,
+            "confidence": 0.72
+          },
+          {
+            "word": " a",
+            "start": 46.08,
+            "end": 46.32,
+            "confidence": 0.89
+          },
+          {
+            "word": " little",
+            "start": 46.32,
+            "end": 46.6,
+            "confidence": 0.96
+          },
+          {
+            "word": " relief",
+            "start": 46.6,
+            "end": 47.06,
+            "confidence": 0.91
+          },
+          {
+            "word": " for",
+            "start": 47.06,
+            "end": 47.84,
+            "confidence": 0.24
+          }
+        ]
+      },
+      {
+        "id": "seg_20",
+        "start": 47.84,
+        "end": 48.56,
+        "text": "A few minutes",
+        "words": [
+          {
+            "word": " A",
+            "start": 47.84,
+            "end": 47.98,
+            "confidence": 0.07
+          },
+          {
+            "word": " few",
+            "start": 47.98,
+            "end": 48.2,
+            "confidence": 0.98
+          },
+          {
+            "word": " minutes",
+            "start": 48.2,
+            "end": 48.56,
+            "confidence": 0.93
+          }
+        ]
+      },
+      {
+        "id": "seg_21",
+        "start": 48.56,
+        "end": 51.14,
+        "text": "The fear became quiet so",
+        "words": [
+          {
+            "word": " The",
+            "start": 48.56,
+            "end": 49,
+            "confidence": 0.04
+          },
+          {
+            "word": " fear",
+            "start": 49,
+            "end": 49.34,
+            "confidence": 0.91
+          },
+          {
+            "word": " became",
+            "start": 49.34,
+            "end": 49.76,
+            "confidence": 0.9
+          },
+          {
+            "word": " quiet",
+            "start": 49.76,
+            "end": 50.34,
+            "confidence": 0.88
+          },
+          {
+            "word": " so",
+            "start": 50.34,
+            "end": 51.14,
+            "confidence": 0.5
+          }
+        ]
+      },
+      {
+        "id": "seg_22",
+        "start": 51.14,
+        "end": 52.3,
+        "text": "They found another thing",
+        "words": [
+          {
+            "word": " They",
+            "start": 51.14,
+            "end": 51.28,
+            "confidence": 0.12
+          },
+          {
+            "word": " found",
+            "start": 51.28,
+            "end": 51.56,
+            "confidence": 0.95
+          },
+          {
+            "word": " another",
+            "start": 51.56,
+            "end": 51.96,
+            "confidence": 0.83
+          },
+          {
+            "word": " thing",
+            "start": 51.96,
+            "end": 52.3,
+            "confidence": 0.73
+          }
+        ]
+      },
+      {
+        "id": "seg_23",
+        "start": 52.3,
+        "end": 52.78,
+        "text": "To tidy",
+        "words": [
+          {
+            "word": " To",
+            "start": 52.3,
+            "end": 52.46,
+            "confidence": 0.05
+          },
+          {
+            "word": " tidy",
+            "start": 52.46,
+            "end": 52.78,
+            "confidence": 0.96
+          }
+        ]
+      },
+      {
+        "id": "seg_24",
+        "start": 52.78,
+        "end": 53.3,
+        "text": "And",
+        "words": [
+          {
+            "word": " And",
+            "start": 52.78,
+            "end": 53.3,
+            "confidence": 0.02
+          }
+        ]
+      },
+      {
+        "id": "seg_25",
+        "start": 53.3,
+        "end": 54.12,
+        "text": "Another reason",
+        "words": [
+          {
+            "word": " Another",
+            "start": 53.3,
+            "end": 53.7,
+            "confidence": 0.05
+          },
+          {
+            "word": " reason",
+            "start": 53.7,
+            "end": 54.12,
+            "confidence": 0.85
+          }
+        ]
+      },
+      {
+        "id": "seg_26",
+        "start": 54.12,
+        "end": 59.54,
+        "text": "to wait, but the envelope did not stay the same. At first it weighed as much",
+        "words": [
+          {
+            "word": " to",
+            "start": 54.12,
+            "end": 54.4,
+            "confidence": 0.47
+          },
+          {
+            "word": " wait,",
+            "start": 54.4,
+            "end": 54.72,
+            "confidence": 0.97
+          },
+          {
+            "word": " but",
+            "start": 55.02,
+            "end": 55.26,
+            "confidence": 1
+          },
+          {
+            "word": " the",
+            "start": 55.26,
+            "end": 55.38,
+            "confidence": 0.99
+          },
+          {
+            "word": " envelope",
+            "start": 55.38,
+            "end": 55.82,
+            "confidence": 0.98
+          },
+          {
+            "word": " did",
+            "start": 55.82,
+            "end": 56.14,
+            "confidence": 0.94
+          },
+          {
+            "word": " not",
+            "start": 56.14,
+            "end": 56.46,
+            "confidence": 0.98
+          },
+          {
+            "word": " stay",
+            "start": 56.46,
+            "end": 56.84,
+            "confidence": 0.99
+          },
+          {
+            "word": " the",
+            "start": 56.84,
+            "end": 57,
+            "confidence": 1
+          },
+          {
+            "word": " same.",
+            "start": 57,
+            "end": 57.34,
+            "confidence": 1
+          },
+          {
+            "word": " At",
+            "start": 57.92,
+            "end": 58.1,
+            "confidence": 0.99
+          },
+          {
+            "word": " first",
+            "start": 58.1,
+            "end": 58.48,
+            "confidence": 1
+          },
+          {
+            "word": " it",
+            "start": 58.48,
+            "end": 58.7,
+            "confidence": 0.4
+          },
+          {
+            "word": " weighed",
+            "start": 58.7,
+            "end": 58.98,
+            "confidence": 0.98
+          },
+          {
+            "word": " as",
+            "start": 58.98,
+            "end": 59.24,
+            "confidence": 0.99
+          },
+          {
+            "word": " much",
+            "start": 59.24,
+            "end": 59.54,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_27",
+        "start": 59.54,
+        "end": 63.32,
+        "text": "a letter — by third day table bent under",
+        "words": [
+          {
+            "word": " a",
+            "start": 59.54,
+            "end": 59.7,
+            "confidence": 0
+          },
+          {
+            "word": " letter",
+            "start": 59.7,
+            "end": 60.12,
+            "confidence": 0.72
+          },
+          {
+            "word": " —",
+            "start": 60.12,
+            "end": 60.66,
+            "confidence": 0.01
+          },
+          {
+            "word": " by",
+            "start": 60.66,
+            "end": 60.86,
+            "confidence": 0.96
+          },
+          {
+            "word": " third",
+            "start": 60.86,
+            "end": 61.28,
+            "confidence": 0
+          },
+          {
+            "word": " day",
+            "start": 61.28,
+            "end": 61.72,
+            "confidence": 0.96
+          },
+          {
+            "word": " table",
+            "start": 61.72,
+            "end": 62.14,
+            "confidence": 0
+          },
+          {
+            "word": " bent",
+            "start": 62.14,
+            "end": 62.86,
+            "confidence": 0.97
+          },
+          {
+            "word": " under",
+            "start": 62.86,
+            "end": 63.32,
+            "confidence": 0.98
+          }
+        ]
+      },
+      {
+        "id": "seg_28",
+        "start": 63.88,
+        "end": 67.1,
+        "text": "By sixth artist could barely slide aside",
+        "words": [
+          {
+            "word": " By",
+            "start": 63.5,
+            "end": 63.9,
+            "confidence": 0
+          },
+          {
+            "word": " sixth",
+            "start": 63.9,
+            "end": 64.6,
+            "confidence": 0.06
+          },
+          {
+            "word": " artist",
+            "start": 64.6,
+            "end": 65.36,
+            "confidence": 0.01
+          },
+          {
+            "word": " could",
+            "start": 65.36,
+            "end": 65.74,
+            "confidence": 0.89
+          },
+          {
+            "word": " barely",
+            "start": 65.74,
+            "end": 66.24,
+            "confidence": 0.96
+          },
+          {
+            "word": " slide",
+            "start": 66.24,
+            "end": 66.7,
+            "confidence": 0.99
+          },
+          {
+            "word": " aside",
+            "start": 66.7,
+            "end": 67.1,
+            "confidence": 0.03
+          }
+        ]
+      },
+      {
+        "id": "seg_29",
+        "start": 67.8,
+        "end": 71.62,
+        "text": "Every avoided moment had added another invisible stone",
+        "words": [
+          {
+            "word": " Every",
+            "start": 67.8,
+            "end": 68.24,
+            "confidence": 0.25
+          },
+          {
+            "word": " avoided",
+            "start": 68.24,
+            "end": 68.78,
+            "confidence": 0.95
+          },
+          {
+            "word": " moment",
+            "start": 68.78,
+            "end": 69.24,
+            "confidence": 0.97
+          },
+          {
+            "word": " had",
+            "start": 69.24,
+            "end": 69.5,
+            "confidence": 0.5
+          },
+          {
+            "word": " added",
+            "start": 69.5,
+            "end": 69.86,
+            "confidence": 0.98
+          },
+          {
+            "word": " another",
+            "start": 69.86,
+            "end": 70.34,
+            "confidence": 0.95
+          },
+          {
+            "word": " invisible",
+            "start": 70.34,
+            "end": 71.06,
+            "confidence": 0.92
+          },
+          {
+            "word": " stone",
+            "start": 71.06,
+            "end": 71.62,
+            "confidence": 0.98
+          }
+        ]
+      },
+      {
+        "id": "seg_30",
+        "start": 71.62,
+        "end": 73.74,
+        "text": "What if drawing is terrible?",
+        "words": [
+          {
+            "word": " What",
+            "start": 71.62,
+            "end": 72.42,
+            "confidence": 0.56
+          },
+          {
+            "word": " if",
+            "start": 72.42,
+            "end": 72.56,
+            "confidence": 0.97
+          },
+          {
+            "word": " drawing",
+            "start": 72.56,
+            "end": 73,
+            "confidence": 0.34
+          },
+          {
+            "word": " is",
+            "start": 73,
+            "end": 73.28,
+            "confidence": 0.95
+          },
+          {
+            "word": " terrible?",
+            "start": 73.28,
+            "end": 73.74,
+            "confidence": 0.97
+          }
+        ]
+      },
+      {
+        "id": "seg_31",
+        "start": 74.44,
+        "end": 75.46,
+        "text": "what people laugh",
+        "words": [
+          {
+            "word": " what",
+            "start": 74.44,
+            "end": 74.56,
+            "confidence": 0.04
+          },
+          {
+            "word": " people",
+            "start": 74.56,
+            "end": 74.94,
+            "confidence": 0.03
+          },
+          {
+            "word": " laugh",
+            "start": 74.94,
+            "end": 75.46,
+            "confidence": 0.94
+          }
+        ]
+      },
+      {
+        "id": "seg_32",
+        "start": 75.46,
+        "end": 78.54,
+        "text": "What if trying proves I'm not good enough?",
+        "words": [
+          {
+            "word": " What",
+            "start": 75.46,
+            "end": 76.1,
+            "confidence": 0.68
+          },
+          {
+            "word": " if",
+            "start": 76.1,
+            "end": 76.26,
+            "confidence": 0.99
+          },
+          {
+            "word": " trying",
+            "start": 76.26,
+            "end": 76.74,
+            "confidence": 0.91
+          },
+          {
+            "word": " proves",
+            "start": 76.74,
+            "end": 77.32,
+            "confidence": 0.99
+          },
+          {
+            "word": " I'm",
+            "start": 77.32,
+            "end": 77.72,
+            "confidence": 0.98
+          },
+          {
+            "word": " not",
+            "start": 77.72,
+            "end": 77.94,
+            "confidence": 0.99
+          },
+          {
+            "word": " good",
+            "start": 77.94,
+            "end": 78.28,
+            "confidence": 0.99
+          },
+          {
+            "word": " enough?",
+            "start": 78.28,
+            "end": 78.54,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_33",
+        "start": 79.2,
+        "end": 83.22,
+        "text": "Nothing had happened yet, and still the artist felt defeated.",
+        "words": [
+          {
+            "word": " Nothing",
+            "start": 79.2,
+            "end": 79.58,
+            "confidence": 0.98
+          },
+          {
+            "word": " had",
+            "start": 79.58,
+            "end": 79.84,
+            "confidence": 0.99
+          },
+          {
+            "word": " happened",
+            "start": 79.84,
+            "end": 80.2,
+            "confidence": 1
+          },
+          {
+            "word": " yet,",
+            "start": 80.2,
+            "end": 80.5,
+            "confidence": 0.99
+          },
+          {
+            "word": " and",
+            "start": 80.8,
+            "end": 81.08,
+            "confidence": 0.99
+          },
+          {
+            "word": " still",
+            "start": 81.08,
+            "end": 81.5,
+            "confidence": 0.99
+          },
+          {
+            "word": " the",
+            "start": 81.5,
+            "end": 81.82,
+            "confidence": 0.67
+          },
+          {
+            "word": " artist",
+            "start": 81.82,
+            "end": 82.26,
+            "confidence": 0.99
+          },
+          {
+            "word": " felt",
+            "start": 82.26,
+            "end": 82.62,
+            "confidence": 1
+          },
+          {
+            "word": " defeated.",
+            "start": 82.62,
+            "end": 83.22,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_34",
+        "start": 83.94,
+        "end": 90.48,
+        "text": "The strange thing was that envelope contained none of those answers—it only held a form!",
+        "words": [
+          {
+            "word": " The",
+            "start": 83.94,
+            "end": 84.12,
+            "confidence": 0.99
+          },
+          {
+            "word": " strange",
+            "start": 84.12,
+            "end": 84.54,
+            "confidence": 1
+          },
+          {
+            "word": " thing",
+            "start": 84.54,
+            "end": 84.84,
+            "confidence": 1
+          },
+          {
+            "word": " was",
+            "start": 84.84,
+            "end": 85.16,
+            "confidence": 1
+          },
+          {
+            "word": " that",
+            "start": 85.16,
+            "end": 85.62,
+            "confidence": 0
+          },
+          {
+            "word": " envelope",
+            "start": 85.62,
+            "end": 86.1,
+            "confidence": 0.05
+          },
+          {
+            "word": " contained",
+            "start": 86.1,
+            "end": 86.76,
+            "confidence": 0.96
+          },
+          {
+            "word": " none",
+            "start": 86.76,
+            "end": 87.34,
+            "confidence": 0.97
+          },
+          {
+            "word": " of",
+            "start": 87.34,
+            "end": 87.54,
+            "confidence": 1
+          },
+          {
+            "word": " those",
+            "start": 87.54,
+            "end": 87.74,
+            "confidence": 0.96
+          },
+          {
+            "word": " answers—it",
+            "start": 87.74,
+            "end": 88.98,
+            "confidence": 0.53
+          },
+          {
+            "word": " only",
+            "start": 88.98,
+            "end": 89.38,
+            "confidence": 0.99
+          },
+          {
+            "word": " held",
+            "start": 89.38,
+            "end": 89.78,
+            "confidence": 1
+          },
+          {
+            "word": " a",
+            "start": 89.78,
+            "end": 90,
+            "confidence": 0.99
+          },
+          {
+            "word": " form!",
+            "start": 90,
+            "end": 90.48,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_35",
+        "start": 91,
+        "end": 95.66,
+        "text": "The weight came from everything an artist imagined might happen next…",
+        "words": [
+          {
+            "word": " The",
+            "start": 91,
+            "end": 91.22,
+            "confidence": 0.98
+          },
+          {
+            "word": " weight",
+            "start": 91.22,
+            "end": 91.54,
+            "confidence": 0.78
+          },
+          {
+            "word": " came",
+            "start": 91.54,
+            "end": 91.9,
+            "confidence": 0.99
+          },
+          {
+            "word": " from",
+            "start": 91.9,
+            "end": 92.14,
+            "confidence": 1
+          },
+          {
+            "word": " everything",
+            "start": 92.14,
+            "end": 92.66,
+            "confidence": 0.99
+          },
+          {
+            "word": " an",
+            "start": 92.66,
+            "end": 92.96,
+            "confidence": 0.01
+          },
+          {
+            "word": " artist",
+            "start": 92.96,
+            "end": 93.36,
+            "confidence": 0.99
+          },
+          {
+            "word": " imagined",
+            "start": 93.36,
+            "end": 94.04,
+            "confidence": 0.86
+          },
+          {
+            "word": " might",
+            "start": 94.04,
+            "end": 94.46,
+            "confidence": 0.96
+          },
+          {
+            "word": " happen",
+            "start": 94.46,
+            "end": 94.94,
+            "confidence": 0.99
+          },
+          {
+            "word": " next…",
+            "start": 94.94,
+            "end": 95.66,
+            "confidence": 0.5
+          }
+        ]
+      },
+      {
+        "id": "seg_36",
+        "start": 95.66,
+        "end": 99.18,
+        "text": "And this is one reason beginning can feel so hard",
+        "words": [
+          {
+            "word": " And",
+            "start": 95.66,
+            "end": 95.88,
+            "confidence": 0.11
+          },
+          {
+            "word": " this",
+            "start": 95.88,
+            "end": 96.08,
+            "confidence": 0
+          },
+          {
+            "word": " is",
+            "start": 96.08,
+            "end": 96.28,
+            "confidence": 0.95
+          },
+          {
+            "word": " one",
+            "start": 96.28,
+            "end": 96.56,
+            "confidence": 0.97
+          },
+          {
+            "word": " reason",
+            "start": 96.56,
+            "end": 96.92,
+            "confidence": 0.99
+          },
+          {
+            "word": " beginning",
+            "start": 96.92,
+            "end": 97.5,
+            "confidence": 0.66
+          },
+          {
+            "word": " can",
+            "start": 97.5,
+            "end": 97.84,
+            "confidence": 0.96
+          },
+          {
+            "word": " feel",
+            "start": 97.84,
+            "end": 98.24,
+            "confidence": 0.98
+          },
+          {
+            "word": " so",
+            "start": 98.24,
+            "end": 98.68,
+            "confidence": 0.94
+          },
+          {
+            "word": " hard",
+            "start": 98.68,
+            "end": 99.18,
+            "confidence": 0.98
+          }
+        ]
+      },
+      {
+        "id": "seg_37",
+        "start": 99.18,
+        "end": 102.4,
+        "text": "A task is not always just a task.",
+        "words": [
+          {
+            "word": " A",
+            "start": 99.18,
+            "end": 99.88,
+            "confidence": 0.23
+          },
+          {
+            "word": " task",
+            "start": 99.88,
+            "end": 100.3,
+            "confidence": 0.95
+          },
+          {
+            "word": " is",
+            "start": 100.3,
+            "end": 100.52,
+            "confidence": 0.99
+          },
+          {
+            "word": " not",
+            "start": 100.52,
+            "end": 100.8,
+            "confidence": 0.99
+          },
+          {
+            "word": " always",
+            "start": 100.8,
+            "end": 101.28,
+            "confidence": 1
+          },
+          {
+            "word": " just",
+            "start": 101.28,
+            "end": 101.6,
+            "confidence": 1
+          },
+          {
+            "word": " a",
+            "start": 101.6,
+            "end": 101.98,
+            "confidence": 1
+          },
+          {
+            "word": " task.",
+            "start": 101.98,
+            "end": 102.4,
+            "confidence": 0.99
+          }
+        ]
+      },
+      {
+        "id": "seg_38",
+        "start": 102.84,
+        "end": 108.6,
+        "text": "Sometimes it arrives wrapped in uncertainty, embarrassment or the fear of discovering our",
+        "words": [
+          {
+            "word": " Sometimes",
+            "start": 102.84,
+            "end": 103.3,
+            "confidence": 0.99
+          },
+          {
+            "word": " it",
+            "start": 103.3,
+            "end": 103.62,
+            "confidence": 0.94
+          },
+          {
+            "word": " arrives",
+            "start": 103.62,
+            "end": 103.9,
+            "confidence": 0.99
+          },
+          {
+            "word": " wrapped",
+            "start": 103.9,
+            "end": 104.4,
+            "confidence": 0.99
+          },
+          {
+            "word": " in",
+            "start": 104.4,
+            "end": 104.64,
+            "confidence": 1
+          },
+          {
+            "word": " uncertainty,",
+            "start": 104.64,
+            "end": 105.22,
+            "confidence": 0.99
+          },
+          {
+            "word": " embarrassment",
+            "start": 105.86,
+            "end": 106.4,
+            "confidence": 1
+          },
+          {
+            "word": " or",
+            "start": 106.4,
+            "end": 107.04,
+            "confidence": 0.18
+          },
+          {
+            "word": " the",
+            "start": 107.04,
+            "end": 107.2,
+            "confidence": 0.99
+          },
+          {
+            "word": " fear",
+            "start": 107.2,
+            "end": 107.56,
+            "confidence": 1
+          },
+          {
+            "word": " of",
+            "start": 107.56,
+            "end": 107.74,
+            "confidence": 1
+          },
+          {
+            "word": " discovering",
+            "start": 107.74,
+            "end": 108.36,
+            "confidence": 1
+          },
+          {
+            "word": " our",
+            "start": 108.36,
+            "end": 108.6,
+            "confidence": 0.99
+          }
+        ]
+      },
+      {
+        "id": "seg_39",
+        "start": 108.6,
+        "end": 113.66,
+        "text": "limits – even something we care deeply about can feel unpleasant to face!",
+        "words": [
+          {
+            "word": " limits",
+            "start": 108.6,
+            "end": 109.02,
+            "confidence": 1
+          },
+          {
+            "word": " –",
+            "start": 109.02,
+            "end": 109.42,
+            "confidence": 0
+          },
+          {
+            "word": " even",
+            "start": 109.42,
+            "end": 109.96,
+            "confidence": 0.98
+          },
+          {
+            "word": " something",
+            "start": 109.96,
+            "end": 110.3,
+            "confidence": 1
+          },
+          {
+            "word": " we",
+            "start": 110.3,
+            "end": 110.54,
+            "confidence": 0.99
+          },
+          {
+            "word": " care",
+            "start": 110.54,
+            "end": 110.86,
+            "confidence": 0.99
+          },
+          {
+            "word": " deeply",
+            "start": 110.86,
+            "end": 111.28,
+            "confidence": 0.99
+          },
+          {
+            "word": " about",
+            "start": 111.28,
+            "end": 111.74,
+            "confidence": 1
+          },
+          {
+            "word": " can",
+            "start": 111.74,
+            "end": 111.98,
+            "confidence": 0.99
+          },
+          {
+            "word": " feel",
+            "start": 111.98,
+            "end": 112.32,
+            "confidence": 0.98
+          },
+          {
+            "word": " unpleasant",
+            "start": 112.32,
+            "end": 113.06,
+            "confidence": 0.99
+          },
+          {
+            "word": " to",
+            "start": 113.06,
+            "end": 113.34,
+            "confidence": 0.98
+          },
+          {
+            "word": " face!",
+            "start": 113.34,
+            "end": 113.66,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_40",
+        "start": 114.08,
+        "end": 119.62,
+        "text": "Avoidance offers quick bargain — leave this for later and you stop feeling uncomfortable",
+        "words": [
+          {
+            "word": " Avoidance",
+            "start": 114.08,
+            "end": 114.64,
+            "confidence": 0.86
+          },
+          {
+            "word": " offers",
+            "start": 114.64,
+            "end": 114.96,
+            "confidence": 1
+          },
+          {
+            "word": " quick",
+            "start": 114.96,
+            "end": 115.5,
+            "confidence": 0
+          },
+          {
+            "word": " bargain",
+            "start": 115.5,
+            "end": 116.06,
+            "confidence": 0.97
+          },
+          {
+            "word": " —",
+            "start": 116.06,
+            "end": 116.5,
+            "confidence": 0
+          },
+          {
+            "word": " leave",
+            "start": 116.5,
+            "end": 116.78,
+            "confidence": 0.96
+          },
+          {
+            "word": " this",
+            "start": 116.78,
+            "end": 117.04,
+            "confidence": 0.95
+          },
+          {
+            "word": " for",
+            "start": 117.04,
+            "end": 117.22,
+            "confidence": 0.99
+          },
+          {
+            "word": " later",
+            "start": 117.22,
+            "end": 117.52,
+            "confidence": 1
+          },
+          {
+            "word": " and",
+            "start": 117.52,
+            "end": 118,
+            "confidence": 0.69
+          },
+          {
+            "word": " you",
+            "start": 118,
+            "end": 118.14,
+            "confidence": 0.98
+          },
+          {
+            "word": " stop",
+            "start": 118.14,
+            "end": 118.48,
+            "confidence": 0
+          },
+          {
+            "word": " feeling",
+            "start": 118.48,
+            "end": 119,
+            "confidence": 0.99
+          },
+          {
+            "word": " uncomfortable",
+            "start": 119,
+            "end": 119.62,
+            "confidence": 0.98
+          }
+        ]
+      },
+      {
+        "id": "seg_41",
+        "start": 119.62,
+        "end": 121.08,
+        "text": "right now…",
+        "words": [
+          {
+            "word": " right",
+            "start": 119.62,
+            "end": 120.2,
+            "confidence": 0.95
+          },
+          {
+            "word": " now…",
+            "start": 120.2,
+            "end": 121.08,
+            "confidence": 0.5
+          }
+        ]
+      },
+      {
+        "id": "seg_42",
+        "start": 121.08,
+        "end": 124.74,
+        "text": "It works briefly … then tomorrow inherits",
+        "words": [
+          {
+            "word": " It",
+            "start": 121.08,
+            "end": 121.34,
+            "confidence": 0.36
+          },
+          {
+            "word": " works",
+            "start": 121.34,
+            "end": 121.78,
+            "confidence": 0.97
+          },
+          {
+            "word": " briefly",
+            "start": 121.78,
+            "end": 122.62,
+            "confidence": 0.06
+          },
+          {
+            "word": " …",
+            "start": 122.62,
+            "end": 123.24,
+            "confidence": 0
+          },
+          {
+            "word": " then",
+            "start": 123.24,
+            "end": 123.52,
+            "confidence": 0.41
+          },
+          {
+            "word": " tomorrow",
+            "start": 123.52,
+            "end": 124,
+            "confidence": 0.96
+          },
+          {
+            "word": " inherits",
+            "start": 124,
+            "end": 124.74,
+            "confidence": 0.98
+          }
+        ]
+      },
+      {
+        "id": "seg_43",
+        "start": 124.74,
+        "end": 127.54,
+        "text": "the task, deadline and worry.",
+        "words": [
+          {
+            "word": " the",
+            "start": 124.74,
+            "end": 124.92,
+            "confidence": 0.59
+          },
+          {
+            "word": " task,",
+            "start": 124.92,
+            "end": 125.34,
+            "confidence": 0.96
+          },
+          {
+            "word": " deadline",
+            "start": 125.72,
+            "end": 126.14,
+            "confidence": 0
+          },
+          {
+            "word": " and",
+            "start": 126.14,
+            "end": 127.04,
+            "confidence": 0.3
+          },
+          {
+            "word": " worry.",
+            "start": 127.04,
+            "end": 127.54,
+            "confidence": 0.58
+          }
+        ]
+      },
+      {
+        "id": "seg_44",
+        "start": 128.14,
+        "end": 133.3,
+        "text": "The artist was not waiting for a better pencil—they were waiting to feel fearless!",
+        "words": [
+          {
+            "word": " The",
+            "start": 128.14,
+            "end": 128.32,
+            "confidence": 0.95
+          },
+          {
+            "word": " artist",
+            "start": 128.32,
+            "end": 128.66,
+            "confidence": 0.99
+          },
+          {
+            "word": " was",
+            "start": 128.66,
+            "end": 128.94,
+            "confidence": 0.91
+          },
+          {
+            "word": " not",
+            "start": 128.94,
+            "end": 129.28,
+            "confidence": 0.99
+          },
+          {
+            "word": " waiting",
+            "start": 129.28,
+            "end": 129.66,
+            "confidence": 0.99
+          },
+          {
+            "word": " for",
+            "start": 129.66,
+            "end": 129.96,
+            "confidence": 0.99
+          },
+          {
+            "word": " a",
+            "start": 129.96,
+            "end": 130.1,
+            "confidence": 0.97
+          },
+          {
+            "word": " better",
+            "start": 130.1,
+            "end": 130.28,
+            "confidence": 1
+          },
+          {
+            "word": " pencil—they",
+            "start": 130.28,
+            "end": 131.48,
+            "confidence": 0.53
+          },
+          {
+            "word": " were",
+            "start": 131.48,
+            "end": 131.64,
+            "confidence": 0.98
+          },
+          {
+            "word": " waiting",
+            "start": 131.64,
+            "end": 131.98,
+            "confidence": 0.98
+          },
+          {
+            "word": " to",
+            "start": 131.98,
+            "end": 132.22,
+            "confidence": 0.99
+          },
+          {
+            "word": " feel",
+            "start": 132.22,
+            "end": 132.64,
+            "confidence": 0.93
+          },
+          {
+            "word": " fearless!",
+            "start": 132.64,
+            "end": 133.3,
+            "confidence": 0.92
+          }
+        ]
+      },
+      {
+        "id": "seg_45",
+        "start": 133.74,
+        "end": 138.54,
+        "text": "But no amount of tidying could promise that feeling would arrive —and they day kept",
+        "words": [
+          {
+            "word": " But",
+            "start": 133.74,
+            "end": 133.9,
+            "confidence": 0.95
+          },
+          {
+            "word": " no",
+            "start": 133.9,
+            "end": 134.22,
+            "confidence": 0.98
+          },
+          {
+            "word": " amount",
+            "start": 134.22,
+            "end": 134.56,
+            "confidence": 1
+          },
+          {
+            "word": " of",
+            "start": 134.56,
+            "end": 134.66,
+            "confidence": 1
+          },
+          {
+            "word": " tidying",
+            "start": 134.66,
+            "end": 135.18,
+            "confidence": 0.98
+          },
+          {
+            "word": " could",
+            "start": 135.18,
+            "end": 135.4,
+            "confidence": 0.97
+          },
+          {
+            "word": " promise",
+            "start": 135.4,
+            "end": 135.88,
+            "confidence": 0.99
+          },
+          {
+            "word": " that",
+            "start": 135.88,
+            "end": 136.16,
+            "confidence": 0.98
+          },
+          {
+            "word": " feeling",
+            "start": 136.16,
+            "end": 136.56,
+            "confidence": 0.99
+          },
+          {
+            "word": " would",
+            "start": 136.56,
+            "end": 136.8,
+            "confidence": 0.99
+          },
+          {
+            "word": " arrive",
+            "start": 136.8,
+            "end": 137.18,
+            "confidence": 0.95
+          },
+          {
+            "word": " —and",
+            "start": 137.18,
+            "end": 137.88,
+            "confidence": 0.32
+          },
+          {
+            "word": " they",
+            "start": 137.88,
+            "end": 137.98,
+            "confidence": 0
+          },
+          {
+            "word": " day",
+            "start": 137.98,
+            "end": 138.28,
+            "confidence": 0.79
+          },
+          {
+            "word": " kept",
+            "start": 138.28,
+            "end": 138.54,
+            "confidence": 0.91
+          }
+        ]
+      },
+      {
+        "id": "seg_46",
+        "start": 138.54,
+        "end": 140.7,
+        "text": "slipping past window…",
+        "words": [
+          {
+            "word": " slipping",
+            "start": 138.54,
+            "end": 139.04,
+            "confidence": 0.99
+          },
+          {
+            "word": " past",
+            "start": 139.04,
+            "end": 139.5,
+            "confidence": 0.98
+          },
+          {
+            "word": " window…",
+            "start": 139.5,
+            "end": 140.7,
+            "confidence": 0.01
+          }
+        ]
+      },
+      {
+        "id": "seg_47",
+        "start": 140.7,
+        "end": 148.2,
+        "text": "One evening tried lift envelope but couldn't so stopped asking how do I finish everything?",
+        "words": [
+          {
+            "word": " One",
+            "start": 140.7,
+            "end": 141.1,
+            "confidence": 0.74
+          },
+          {
+            "word": " evening",
+            "start": 141.1,
+            "end": 141.52,
+            "confidence": 0.99
+          },
+          {
+            "word": " tried",
+            "start": 141.52,
+            "end": 142.06,
+            "confidence": 0
+          },
+          {
+            "word": " lift",
+            "start": 142.06,
+            "end": 142.74,
+            "confidence": 0.02
+          },
+          {
+            "word": " envelope",
+            "start": 142.74,
+            "end": 143.32,
+            "confidence": 0.07
+          },
+          {
+            "word": " but",
+            "start": 143.32,
+            "end": 143.9,
+            "confidence": 0.05
+          },
+          {
+            "word": " couldn't",
+            "start": 143.9,
+            "end": 144.42,
+            "confidence": 0.93
+          },
+          {
+            "word": " so",
+            "start": 144.42,
+            "end": 145.1,
+            "confidence": 0.02
+          },
+          {
+            "word": " stopped",
+            "start": 145.1,
+            "end": 145.62,
+            "confidence": 0.15
+          },
+          {
+            "word": " asking",
+            "start": 145.62,
+            "end": 146.14,
+            "confidence": 0.94
+          },
+          {
+            "word": " how",
+            "start": 146.14,
+            "end": 146.86,
+            "confidence": 0.12
+          },
+          {
+            "word": " do",
+            "start": 146.86,
+            "end": 147.02,
+            "confidence": 0.51
+          },
+          {
+            "word": " I",
+            "start": 147.02,
+            "end": 147.16,
+            "confidence": 0.85
+          },
+          {
+            "word": " finish",
+            "start": 147.16,
+            "end": 147.54,
+            "confidence": 0.99
+          },
+          {
+            "word": " everything?",
+            "start": 147.54,
+            "end": 148.2,
+            "confidence": 0.97
+          }
+        ]
+      },
+      {
+        "id": "seg_48",
+        "start": 148.2,
+        "end": 150.58,
+        "text": "They asked a smaller question.",
+        "words": [
+          {
+            "word": " They",
+            "start": 148.2,
+            "end": 148.98,
+            "confidence": 0.55
+          },
+          {
+            "word": " asked",
+            "start": 148.98,
+            "end": 149.34,
+            "confidence": 0.97
+          },
+          {
+            "word": " a",
+            "start": 149.34,
+            "end": 149.58,
+            "confidence": 0.99
+          },
+          {
+            "word": " smaller",
+            "start": 149.58,
+            "end": 150.04,
+            "confidence": 0.99
+          },
+          {
+            "word": " question.",
+            "start": 150.04,
+            "end": 150.58,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_49",
+        "start": 151.26,
+        "end": 154.22,
+        "text": "What can I do when switch on this lamp?",
+        "words": [
+          {
+            "word": " What",
+            "start": 151.26,
+            "end": 151.48,
+            "confidence": 0.29
+          },
+          {
+            "word": " can",
+            "start": 151.48,
+            "end": 151.76,
+            "confidence": 0.99
+          },
+          {
+            "word": " I",
+            "start": 151.76,
+            "end": 151.9,
+            "confidence": 0.99
+          },
+          {
+            "word": " do",
+            "start": 151.9,
+            "end": 152.24,
+            "confidence": 1
+          },
+          {
+            "word": " when",
+            "start": 152.24,
+            "end": 152.68,
+            "confidence": 0.97
+          },
+          {
+            "word": " switch",
+            "start": 152.68,
+            "end": 153.16,
+            "confidence": 0.01
+          },
+          {
+            "word": " on",
+            "start": 153.16,
+            "end": 153.58,
+            "confidence": 0.98
+          },
+          {
+            "word": " this",
+            "start": 153.58,
+            "end": 153.86,
+            "confidence": 0.96
+          },
+          {
+            "word": " lamp?",
+            "start": 153.86,
+            "end": 154.22,
+            "confidence": 0.99
+          }
+        ]
+      },
+      {
+        "id": "seg_50",
+        "start": 154.5,
+        "end": 162.28,
+        "text": "Not make masterpiece, not win the exhibition—just break seal read first line and write my name",
+        "words": [
+          {
+            "word": " Not",
+            "start": 154.5,
+            "end": 154.74,
+            "confidence": 0.92
+          },
+          {
+            "word": " make",
+            "start": 154.74,
+            "end": 154.96,
+            "confidence": 0.99
+          },
+          {
+            "word": " masterpiece,",
+            "start": 154.96,
+            "end": 155.48,
+            "confidence": 0
+          },
+          {
+            "word": " not",
+            "start": 156.16,
+            "end": 156.42,
+            "confidence": 0.97
+          },
+          {
+            "word": " win",
+            "start": 156.42,
+            "end": 156.8,
+            "confidence": 0.96
+          },
+          {
+            "word": " the",
+            "start": 156.8,
+            "end": 156.94,
+            "confidence": 0.86
+          },
+          {
+            "word": " exhibition—just",
+            "start": 156.94,
+            "end": 158.28,
+            "confidence": 0.59
+          },
+          {
+            "word": " break",
+            "start": 158.28,
+            "end": 158.68,
+            "confidence": 0.99
+          },
+          {
+            "word": " seal",
+            "start": 158.68,
+            "end": 159.18,
+            "confidence": 0.01
+          },
+          {
+            "word": " read",
+            "start": 159.18,
+            "end": 159.88,
+            "confidence": 0.01
+          },
+          {
+            "word": " first",
+            "start": 159.88,
+            "end": 160.34,
+            "confidence": 0.53
+          },
+          {
+            "word": " line",
+            "start": 160.34,
+            "end": 160.82,
+            "confidence": 0.97
+          },
+          {
+            "word": " and",
+            "start": 160.82,
+            "end": 161.28,
+            "confidence": 0.8
+          },
+          {
+            "word": " write",
+            "start": 161.28,
+            "end": 161.64,
+            "confidence": 0.95
+          },
+          {
+            "word": " my",
+            "start": 161.64,
+            "end": 161.88,
+            "confidence": 0.86
+          },
+          {
+            "word": " name",
+            "start": 161.88,
+            "end": 162.28,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_51",
+        "start": 162.28,
+        "end": 168.24,
+        "text": "An ordinary plan for an ordinary moment that did NOT require feeling ready",
+        "words": [
+          {
+            "word": " An",
+            "start": 162.28,
+            "end": 162.94,
+            "confidence": 0.04
+          },
+          {
+            "word": " ordinary",
+            "start": 162.94,
+            "end": 163.5,
+            "confidence": 0.94
+          },
+          {
+            "word": " plan",
+            "start": 163.5,
+            "end": 163.98,
+            "confidence": 0.99
+          },
+          {
+            "word": " for",
+            "start": 163.98,
+            "end": 164.48,
+            "confidence": 0.9
+          },
+          {
+            "word": " an",
+            "start": 164.48,
+            "end": 164.6,
+            "confidence": 0.93
+          },
+          {
+            "word": " ordinary",
+            "start": 164.6,
+            "end": 165.14,
+            "confidence": 0.99
+          },
+          {
+            "word": " moment",
+            "start": 165.14,
+            "end": 165.66,
+            "confidence": 0.99
+          },
+          {
+            "word": " that",
+            "start": 165.66,
+            "end": 166.16,
+            "confidence": 0.9
+          },
+          {
+            "word": " did",
+            "start": 166.16,
+            "end": 166.34,
+            "confidence": 0.87
+          },
+          {
+            "word": " NOT",
+            "start": 166.34,
+            "end": 166.64,
+            "confidence": 0.01
+          },
+          {
+            "word": " require",
+            "start": 166.64,
+            "end": 167.24,
+            "confidence": 0.99
+          },
+          {
+            "word": " feeling",
+            "start": 167.24,
+            "end": 167.72,
+            "confidence": 0.96
+          },
+          {
+            "word": " ready",
+            "start": 167.72,
+            "end": 168.24,
+            "confidence": 0.96
+          }
+        ]
+      },
+      {
+        "id": "seg_52",
+        "start": 168.8,
+        "end": 172.72,
+        "text": "Their hands still shook The 1st pencil mark went crooked",
+        "words": [
+          {
+            "word": " Their",
+            "start": 168.56,
+            "end": 168.98,
+            "confidence": 0.2
+          },
+          {
+            "word": " hands",
+            "start": 168.98,
+            "end": 169.4,
+            "confidence": 0.75
+          },
+          {
+            "word": " still",
+            "start": 169.4,
+            "end": 169.78,
+            "confidence": 0.96
+          },
+          {
+            "word": " shook",
+            "start": 169.78,
+            "end": 170.18,
+            "confidence": 0.98
+          },
+          {
+            "word": " The",
+            "start": 170.18,
+            "end": 170.86,
+            "confidence": 0.31
+          },
+          {
+            "word": " 1st",
+            "start": 170.86,
+            "end": 171.28,
+            "confidence": 0.49
+          },
+          {
+            "word": " pencil",
+            "start": 171.28,
+            "end": 171.62,
+            "confidence": 0.98
+          },
+          {
+            "word": " mark",
+            "start": 171.62,
+            "end": 171.96,
+            "confidence": 0.89
+          },
+          {
+            "word": " went",
+            "start": 171.96,
+            "end": 172.24,
+            "confidence": 0.98
+          },
+          {
+            "word": " crooked",
+            "start": 172.24,
+            "end": 172.72,
+            "confidence": 0.96
+          }
+        ]
+      },
+      {
+        "id": "seg_53",
+        "start": 172.72,
+        "end": 176.84,
+        "text": "They rubbed it away, then caught themselves reaching for the eraser again.",
+        "words": [
+          {
+            "word": " They",
+            "start": 172.72,
+            "end": 173.18,
+            "confidence": 0.42
+          },
+          {
+            "word": " rubbed",
+            "start": 173.18,
+            "end": 173.58,
+            "confidence": 0.97
+          },
+          {
+            "word": " it",
+            "start": 173.58,
+            "end": 173.64,
+            "confidence": 1
+          },
+          {
+            "word": " away,",
+            "start": 173.64,
+            "end": 173.94,
+            "confidence": 1
+          },
+          {
+            "word": " then",
+            "start": 174.26,
+            "end": 174.44,
+            "confidence": 0.99
+          },
+          {
+            "word": " caught",
+            "start": 174.44,
+            "end": 174.78,
+            "confidence": 1
+          },
+          {
+            "word": " themselves",
+            "start": 174.78,
+            "end": 175.24,
+            "confidence": 1
+          },
+          {
+            "word": " reaching",
+            "start": 175.24,
+            "end": 175.66,
+            "confidence": 0.99
+          },
+          {
+            "word": " for",
+            "start": 175.66,
+            "end": 175.94,
+            "confidence": 1
+          },
+          {
+            "word": " the",
+            "start": 175.94,
+            "end": 176.06,
+            "confidence": 1
+          },
+          {
+            "word": " eraser",
+            "start": 176.06,
+            "end": 176.44,
+            "confidence": 0.9
+          },
+          {
+            "word": " again.",
+            "start": 176.44,
+            "end": 176.84,
+            "confidence": 0.99
+          }
+        ]
+      },
+      {
+        "id": "seg_54",
+        "start": 177.46,
+        "end": 184.06,
+        "text": "For a moment they merely closed their form—instead let them next crooked mark stay and made",
+        "words": [
+          {
+            "word": " For",
+            "start": 177.46,
+            "end": 177.64,
+            "confidence": 0.99
+          },
+          {
+            "word": " a",
+            "start": 177.64,
+            "end": 177.78,
+            "confidence": 1
+          },
+          {
+            "word": " moment",
+            "start": 177.78,
+            "end": 178.06,
+            "confidence": 1
+          },
+          {
+            "word": " they",
+            "start": 178.06,
+            "end": 178.34,
+            "confidence": 0.26
+          },
+          {
+            "word": " merely",
+            "start": 178.34,
+            "end": 178.76,
+            "confidence": 0.96
+          },
+          {
+            "word": " closed",
+            "start": 178.76,
+            "end": 179.26,
+            "confidence": 0.99
+          },
+          {
+            "word": " their",
+            "start": 179.26,
+            "end": 179.54,
+            "confidence": 0
+          },
+          {
+            "word": " form—instead",
+            "start": 179.54,
+            "end": 181.02,
+            "confidence": 0.54
+          },
+          {
+            "word": " let",
+            "start": 181.02,
+            "end": 181.56,
+            "confidence": 0
+          },
+          {
+            "word": " them",
+            "start": 181.56,
+            "end": 181.78,
+            "confidence": 0.01
+          },
+          {
+            "word": " next",
+            "start": 181.78,
+            "end": 182.16,
+            "confidence": 0.22
+          },
+          {
+            "word": " crooked",
+            "start": 182.16,
+            "end": 182.54,
+            "confidence": 0.74
+          },
+          {
+            "word": " mark",
+            "start": 182.54,
+            "end": 182.88,
+            "confidence": 0.92
+          },
+          {
+            "word": " stay",
+            "start": 182.88,
+            "end": 183.38,
+            "confidence": 0.97
+          },
+          {
+            "word": " and",
+            "start": 183.38,
+            "end": 183.88,
+            "confidence": 0.38
+          },
+          {
+            "word": " made",
+            "start": 183.88,
+            "end": 184.06,
+            "confidence": 0.96
+          }
+        ]
+      },
+      {
+        "id": "seg_55",
+        "start": 184.06,
+        "end": 186.58,
+        "text": "second one on sheet beside that form!",
+        "words": [
+          {
+            "word": " second",
+            "start": 184.06,
+            "end": 184.54,
+            "confidence": 0.01
+          },
+          {
+            "word": " one",
+            "start": 184.54,
+            "end": 184.84,
+            "confidence": 0.91
+          },
+          {
+            "word": " on",
+            "start": 184.84,
+            "end": 185.08,
+            "confidence": 0.95
+          },
+          {
+            "word": " sheet",
+            "start": 185.08,
+            "end": 185.46,
+            "confidence": 0.01
+          },
+          {
+            "word": " beside",
+            "start": 185.46,
+            "end": 185.92,
+            "confidence": 0.88
+          },
+          {
+            "word": " that",
+            "start": 185.92,
+            "end": 186.22,
+            "confidence": 0.01
+          },
+          {
+            "word": " form!",
+            "start": 186.22,
+            "end": 186.58,
+            "confidence": 0.94
+          }
+        ]
+      },
+      {
+        "id": "seg_56",
+        "start": 187.02,
+        "end": 192.7,
+        "text": "The fear was still there —the envelope did not turn weightless in a flash…",
+        "words": [
+          {
+            "word": " The",
+            "start": 187.02,
+            "end": 187.3,
+            "confidence": 0.95
+          },
+          {
+            "word": " fear",
+            "start": 187.3,
+            "end": 187.64,
+            "confidence": 0.91
+          },
+          {
+            "word": " was",
+            "start": 187.64,
+            "end": 187.9,
+            "confidence": 0.99
+          },
+          {
+            "word": " still",
+            "start": 187.9,
+            "end": 188.26,
+            "confidence": 0.97
+          },
+          {
+            "word": " there",
+            "start": 188.26,
+            "end": 188.62,
+            "confidence": 0.99
+          },
+          {
+            "word": " —the",
+            "start": 188.62,
+            "end": 189.28,
+            "confidence": 0.29
+          },
+          {
+            "word": " envelope",
+            "start": 189.28,
+            "end": 189.72,
+            "confidence": 0.92
+          },
+          {
+            "word": " did",
+            "start": 189.72,
+            "end": 190.04,
+            "confidence": 0.95
+          },
+          {
+            "word": " not",
+            "start": 190.04,
+            "end": 190.34,
+            "confidence": 0.98
+          },
+          {
+            "word": " turn",
+            "start": 190.34,
+            "end": 190.76,
+            "confidence": 0.99
+          },
+          {
+            "word": " weightless",
+            "start": 190.76,
+            "end": 191.48,
+            "confidence": 0.94
+          },
+          {
+            "word": " in",
+            "start": 191.48,
+            "end": 191.68,
+            "confidence": 0.97
+          },
+          {
+            "word": " a",
+            "start": 191.68,
+            "end": 191.82,
+            "confidence": 0.99
+          },
+          {
+            "word": " flash…",
+            "start": 191.82,
+            "end": 192.7,
+            "confidence": 0.5
+          }
+        ]
+      },
+      {
+        "id": "seg_57",
+        "start": 192.7,
+        "end": 195.9,
+        "text": "It simply became little easier to move...",
+        "words": [
+          {
+            "word": " It",
+            "start": 192.7,
+            "end": 192.84,
+            "confidence": 0.49
+          },
+          {
+            "word": " simply",
+            "start": 192.84,
+            "end": 193.2,
+            "confidence": 0.93
+          },
+          {
+            "word": " became",
+            "start": 193.2,
+            "end": 193.62,
+            "confidence": 0.98
+          },
+          {
+            "word": " little",
+            "start": 193.62,
+            "end": 194.1,
+            "confidence": 0.01
+          },
+          {
+            "word": " easier",
+            "start": 194.1,
+            "end": 194.74,
+            "confidence": 0.96
+          },
+          {
+            "word": " to",
+            "start": 194.74,
+            "end": 195,
+            "confidence": 0.99
+          },
+          {
+            "word": " move...",
+            "start": 195,
+            "end": 195.9,
+            "confidence": 0.51
+          }
+        ]
+      },
+      {
+        "id": "seg_58",
+        "start": 195.9,
+        "end": 197.88,
+        "text": "That's enough of tonight….",
+        "words": [
+          {
+            "word": " That's",
+            "start": 195.9,
+            "end": 196.42,
+            "confidence": 0.41
+          },
+          {
+            "word": " enough",
+            "start": 196.42,
+            "end": 196.76,
+            "confidence": 0.97
+          },
+          {
+            "word": " of",
+            "start": 196.76,
+            "end": 196.98,
+            "confidence": 0
+          },
+          {
+            "word": " tonight….",
+            "start": 196.98,
+            "end": 197.88,
+            "confidence": 0.39
+          }
+        ]
+      },
+      {
+        "id": "seg_59",
+        "start": 197.88,
+        "end": 201.5,
+        "text": "The next evening they returned to the desk, not because",
+        "words": [
+          {
+            "word": " The",
+            "start": 197.88,
+            "end": 198.12,
+            "confidence": 0.69
+          },
+          {
+            "word": " next",
+            "start": 198.12,
+            "end": 198.38,
+            "confidence": 1
+          },
+          {
+            "word": " evening",
+            "start": 198.38,
+            "end": 198.8,
+            "confidence": 0.99
+          },
+          {
+            "word": " they",
+            "start": 198.8,
+            "end": 199.22,
+            "confidence": 0.37
+          },
+          {
+            "word": " returned",
+            "start": 199.22,
+            "end": 199.72,
+            "confidence": 0.97
+          },
+          {
+            "word": " to",
+            "start": 199.72,
+            "end": 199.92,
+            "confidence": 0.99
+          },
+          {
+            "word": " the",
+            "start": 199.92,
+            "end": 200.02,
+            "confidence": 1
+          },
+          {
+            "word": " desk,",
+            "start": 200.02,
+            "end": 200.42,
+            "confidence": 1
+          },
+          {
+            "word": " not",
+            "start": 200.98,
+            "end": 201.18,
+            "confidence": 0.99
+          },
+          {
+            "word": " because",
+            "start": 201.18,
+            "end": 201.5,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_60",
+        "start": 201.5,
+        "end": 204.2,
+        "text": "They had suddenly become a different person but",
+        "words": [
+          {
+            "word": " They",
+            "start": 201.5,
+            "end": 201.68,
+            "confidence": 0
+          },
+          {
+            "word": " had",
+            "start": 201.68,
+            "end": 201.82,
+            "confidence": 0.97
+          },
+          {
+            "word": " suddenly",
+            "start": 201.82,
+            "end": 202.24,
+            "confidence": 0.99
+          },
+          {
+            "word": " become",
+            "start": 202.24,
+            "end": 202.62,
+            "confidence": 0.98
+          },
+          {
+            "word": " a",
+            "start": 202.62,
+            "end": 202.82,
+            "confidence": 0.98
+          },
+          {
+            "word": " different",
+            "start": 202.82,
+            "end": 203.08,
+            "confidence": 0.99
+          },
+          {
+            "word": " person",
+            "start": 203.08,
+            "end": 203.6,
+            "confidence": 0.99
+          },
+          {
+            "word": " but",
+            "start": 203.6,
+            "end": 204.2,
+            "confidence": 0.22
+          }
+        ]
+      },
+      {
+        "id": "seg_61",
+        "start": 204.2,
+        "end": 205.46,
+        "text": "Because they knew where",
+        "words": [
+          {
+            "word": " Because",
+            "start": 204.2,
+            "end": 204.52,
+            "confidence": 0.02
+          },
+          {
+            "word": " they",
+            "start": 204.52,
+            "end": 204.76,
+            "confidence": 0.8
+          },
+          {
+            "word": " knew",
+            "start": 204.76,
+            "end": 205.12,
+            "confidence": 0.99
+          },
+          {
+            "word": " where",
+            "start": 205.12,
+            "end": 205.46,
+            "confidence": 0.99
+          }
+        ]
+      },
+      {
+        "id": "seg_62",
+        "start": 205.46,
+        "end": 206.02,
+        "text": "To begin.",
+        "words": [
+          {
+            "word": " To",
+            "start": 205.46,
+            "end": 205.66,
+            "confidence": 0.01
+          },
+          {
+            "word": " begin.",
+            "start": 205.66,
+            "end": 206.02,
+            "confidence": 0.99
+          }
+        ]
+      },
+      {
+        "id": "seg_63",
+        "start": 206.78,
+        "end": 208.5,
+        "text": "THE EXHIBITION MIGHT SAY YES",
+        "words": [
+          {
+            "word": " THE",
+            "start": 206.78,
+            "end": 206.84,
+            "confidence": 0
+          },
+          {
+            "word": " EXHIBITION",
+            "start": 206.84,
+            "end": 207.54,
+            "confidence": 0.82
+          },
+          {
+            "word": " MIGHT",
+            "start": 207.54,
+            "end": 207.92,
+            "confidence": 0.93
+          },
+          {
+            "word": " SAY",
+            "start": 207.92,
+            "end": 208.14,
+            "confidence": 0.96
+          },
+          {
+            "word": " YES",
+            "start": 208.14,
+            "end": 208.5,
+            "confidence": 0.94
+          }
+        ]
+      },
+      {
+        "id": "seg_64",
+        "start": 208.5,
+        "end": 210.28,
+        "text": "It might say NO",
+        "words": [
+          {
+            "word": " It",
+            "start": 208.5,
+            "end": 209.24,
+            "confidence": 0.11
+          },
+          {
+            "word": " might",
+            "start": 209.24,
+            "end": 209.52,
+            "confidence": 0.69
+          },
+          {
+            "word": " say",
+            "start": 209.52,
+            "end": 209.86,
+            "confidence": 0.98
+          },
+          {
+            "word": " NO",
+            "start": 209.86,
+            "end": 210.28,
+            "confidence": 0.37
+          }
+        ]
+      },
+      {
+        "id": "seg_65",
+        "start": 210.28,
+        "end": 211.02,
+        "text": "For now",
+        "words": [
+          {
+            "word": " For",
+            "start": 210.28,
+            "end": 210.76,
+            "confidence": 0.08
+          },
+          {
+            "word": " now",
+            "start": 210.76,
+            "end": 211.02,
+            "confidence": 0.98
+          }
+        ]
+      },
+      {
+        "id": "seg_66",
+        "start": 211.02,
+        "end": 212.36,
+        "text": "The paper was open",
+        "words": [
+          {
+            "word": " The",
+            "start": 211.02,
+            "end": 211.46,
+            "confidence": 0.04
+          },
+          {
+            "word": " paper",
+            "start": 211.46,
+            "end": 211.74,
+            "confidence": 0.97
+          },
+          {
+            "word": " was",
+            "start": 211.74,
+            "end": 211.98,
+            "confidence": 0.97
+          },
+          {
+            "word": " open",
+            "start": 211.98,
+            "end": 212.36,
+            "confidence": 0.94
+          }
+        ]
+      },
+      {
+        "id": "seg_67",
+        "start": 212.36,
+        "end": 213.18,
+        "text": "The pencil",
+        "words": [
+          {
+            "word": " The",
+            "start": 212.36,
+            "end": 212.84,
+            "confidence": 0.54
+          },
+          {
+            "word": " pencil",
+            "start": 212.84,
+            "end": 213.18,
+            "confidence": 0.99
+          }
+        ]
+      },
+      {
+        "id": "seg_68",
+        "start": 213.18,
+        "end": 213.82,
+        "text": "Was moving",
+        "words": [
+          {
+            "word": " Was",
+            "start": 213.18,
+            "end": 213.42,
+            "confidence": 0.01
+          },
+          {
+            "word": " moving",
+            "start": 213.42,
+            "end": 213.82,
+            "confidence": 0.98
+          }
+        ]
+      },
+      {
+        "id": "seg_69",
+        "start": 213.82,
+        "end": 214.3,
+        "text": "And",
+        "words": [
+          {
+            "word": " And",
+            "start": 213.82,
+            "end": 214.3,
+            "confidence": 0.72
+          }
+        ]
+      },
+      {
+        "id": "seg_70",
+        "start": 214.3,
+        "end": 215.1,
+        "text": "The heavy thing on",
+        "words": [
+          {
+            "word": " The",
+            "start": 214.3,
+            "end": 214.44,
+            "confidence": 0.08
+          },
+          {
+            "word": " heavy",
+            "start": 214.44,
+            "end": 214.66,
+            "confidence": 0.97
+          },
+          {
+            "word": " thing",
+            "start": 214.66,
+            "end": 214.94,
+            "confidence": 0.92
+          },
+          {
+            "word": " on",
+            "start": 214.94,
+            "end": 215.1,
+            "confidence": 0.74
+          }
+        ]
+      },
+      {
+        "id": "seg_71",
+        "start": 215.1,
+        "end": 215.56,
+        "text": "The desk",
+        "words": [
+          {
+            "word": " The",
+            "start": 215.1,
+            "end": 215.2,
+            "confidence": 0.07
+          },
+          {
+            "word": " desk",
+            "start": 215.2,
+            "end": 215.56,
+            "confidence": 0.99
+          }
+        ]
+      },
+      {
+        "id": "seg_72",
+        "start": 215.56,
+        "end": 217.9,
+        "text": "WAS JUST AN ENVELOPE AGAIN",
+        "words": [
+          {
+            "word": " WAS",
+            "start": 215.56,
+            "end": 215.98,
+            "confidence": 0
+          },
+          {
+            "word": " JUST",
+            "start": 215.98,
+            "end": 216.32,
+            "confidence": 0.88
+          },
+          {
+            "word": " AN",
+            "start": 216.32,
+            "end": 216.54,
+            "confidence": 0.94
+          },
+          {
+            "word": " ENVELOPE",
+            "start": 216.54,
+            "end": 217.16,
+            "confidence": 0.66
+          },
+          {
+            "word": " AGAIN",
+            "start": 217.16,
+            "end": 217.9,
+            "confidence": 0.99
+          }
+        ]
+      },
+      {
+        "id": "seg_73",
+        "start": 217.9,
+        "end": 218.54,
+        "text": "Starting",
+        "words": [
+          {
+            "word": " Starting",
+            "start": 217.9,
+            "end": 218.54,
+            "confidence": 0.44
+          }
+        ]
+      },
+      {
+        "id": "seg_74",
+        "start": 218.54,
+        "end": 219.72,
+        "text": "Had NOT Erased",
+        "words": [
+          {
+            "word": " Had",
+            "start": 218.54,
+            "end": 218.88,
+            "confidence": 0.26
+          },
+          {
+            "word": " NOT",
+            "start": 218.88,
+            "end": 219.18,
+            "confidence": 0.12
+          },
+          {
+            "word": " Erased",
+            "start": 219.18,
+            "end": 219.72,
+            "confidence": 0.69
+          }
+        ]
+      },
+      {
+        "id": "seg_75",
+        "start": 219.72,
+        "end": 220.56,
+        "text": "Uncertainty",
+        "words": [
+          {
+            "word": " Uncertainty",
+            "start": 219.72,
+            "end": 220.56,
+            "confidence": 0.94
+          }
+        ]
+      },
+      {
+        "id": "seg_76",
+        "start": 220.56,
+        "end": 222.24,
+        "text": "IT HAD MADE A LITTLE ROOM",
+        "words": [
+          {
+            "word": " IT",
+            "start": 220.56,
+            "end": 221.08,
+            "confidence": 0.04
+          },
+          {
+            "word": " HAD",
+            "start": 221.08,
+            "end": 221.26,
+            "confidence": 0.77
+          },
+          {
+            "word": " MADE",
+            "start": 221.26,
+            "end": 221.5,
+            "confidence": 0.97
+          },
+          {
+            "word": " A",
+            "start": 221.5,
+            "end": 221.64,
+            "confidence": 0.98
+          },
+          {
+            "word": " LITTLE",
+            "start": 221.64,
+            "end": 221.94,
+            "confidence": 0.96
+          },
+          {
+            "word": " ROOM",
+            "start": 221.94,
+            "end": 222.24,
+            "confidence": 0.91
+          }
+        ]
+      },
+      {
+        "id": "seg_77",
+        "start": 222.24,
+        "end": 223.46,
+        "text": "TO WORK BESIDE IT",
+        "words": [
+          {
+            "word": " TO",
+            "start": 222.24,
+            "end": 222.44,
+            "confidence": 0.98
+          },
+          {
+            "word": " WORK",
+            "start": 222.44,
+            "end": 222.82,
+            "confidence": 0.99
+          },
+          {
+            "word": " BESIDE",
+            "start": 222.82,
+            "end": 223.26,
+            "confidence": 0.65
+          },
+          {
+            "word": " IT",
+            "start": 223.26,
+            "end": 223.46,
+            "confidence": 0.99
+          }
+        ]
+      }
+    ],
+    "originalScriptFormat": "auto",
+    "createdAt": "2026-10-31T00:24:15.615Z",
+    "updatedAt": "2026-10-31T00:24:15.615Z"
+  }
+]

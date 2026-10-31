@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Voice, VoiceCategory } from '../../../shared/src/types';
-import { Play, Volume2, Check, Sparkles, Plus, Info, Edit3, Trash2, Save, ChevronDown, ChevronUp, Globe, Wand2, X, Zap } from 'lucide-react';
+import { Play, Pause, Volume2, Check, Sparkles, Plus, Info, Edit3, Trash2, Save, ChevronDown, ChevronUp, Globe, Wand2, X, Zap } from 'lucide-react';
 import { ApiClient } from '../services/api';
 import { VoiceCloneModal } from './VoiceCloneModal';
 import { VoiceDesignModal } from './VoiceDesignModal';
@@ -10,7 +10,10 @@ interface VoiceSelectorProps {
   voices: Voice[];
   selectedVoice: Voice;
   onSelectVoice: (voice: Voice) => void;
-  onAudioPlay: (url: string) => void;
+  onAudioPlay: (url: string, showBottomBar?: boolean) => void;
+  onAudioPause?: () => void;
+  currentAudioUrl?: string | null;
+  isPlaying?: boolean;
   onSaveCustomVoice?: (voice: Voice) => void;
   onDeleteCustomVoice?: (voiceId: string) => void;
   compact?: boolean;
@@ -35,6 +38,9 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
   selectedVoice,
   onSelectVoice,
   onAudioPlay,
+  onAudioPause,
+  currentAudioUrl,
+  isPlaying = false,
   onSaveCustomVoice,
   onDeleteCustomVoice,
   compact = false
@@ -42,7 +48,13 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
   const [engineFilter, setEngineFilter] = useState<'all' | 'open-source' | 'fish-audio'>('all');
   const [activeCategory, setActiveCategory] = useState<VoiceCategory | 'My Custom Voices' | 'All'>('All');
   const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
   const [showAllVoices, setShowAllVoices] = useState<boolean>(false);
+
+  // Cache preview audio URLs per voice so repeated clicks don't hit the server or overlap
+  const previewCacheRef = useRef<Record<string, string>>({});
+  // Sequence counter to discard stale in-flight responses if user clicked another voice
+  const activePreviewSeq = useRef<number>(0);
   
   // Custom Voice Modal State (for creating or editing)
   const [showAddCustomModal, setShowAddCustomModal] = useState<boolean>(false);
@@ -75,16 +87,69 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
 
   const handleGeneratePreview = async (voice: Voice, e: React.MouseEvent) => {
     e.stopPropagation();
+
+    const cachedUrl = previewCacheRef.current[voice.id];
+    const existingUrl = voice.previewAudioUrl || (voice as any).sampleAudioUrl || cachedUrl;
+
+    // If this preview is currently playing, clicking it pauses it!
+    const isThisVoicePlaying = isPlaying && (
+      playingVoiceId === voice.id ||
+      (currentAudioUrl && (currentAudioUrl === existingUrl || currentAudioUrl === cachedUrl))
+    );
+
+    if (isThisVoicePlaying) {
+      if (onAudioPause) {
+        onAudioPause();
+      }
+      setPlayingVoiceId(null);
+      return;
+    }
+
+    // Immediately silence any other playing audio in the entire app
+    if (window.__voiceforge_pause_all_audio) {
+      window.__voiceforge_pause_all_audio();
+    } else if (onAudioPause) {
+      onAudioPause();
+    }
+
+    // If already generated or existing custom preview, play immediately without waiting for an API response
+    if (existingUrl) {
+      previewCacheRef.current[voice.id] = existingUrl;
+      setPlayingVoiceId(voice.id);
+      onAudioPlay(existingUrl, false);
+      return;
+    }
+
+    // New API request with sequence cancellation token
+    const currentSeq = ++activePreviewSeq.current;
+    setPreviewingId(voice.id);
+
     try {
-      setPreviewingId(voice.id);
-      const res = await ApiClient.generatePreview(voice.id, undefined, 'mp3', voice.provider);
+      const res = await ApiClient.generatePreview(
+        voice.id,
+        undefined,
+        'mp3',
+        voice.provider,
+        voice.language,
+        voice.name
+      );
+      // If a newer preview was requested while this one was generating, discard this stale result
+      if (activePreviewSeq.current !== currentSeq) {
+        return;
+      }
       if (res.audioUrl) {
-        onAudioPlay(res.audioUrl);
+        previewCacheRef.current[voice.id] = res.audioUrl;
+        setPlayingVoiceId(voice.id);
+        onAudioPlay(res.audioUrl, false);
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to generate preview audio.');
+      if (activePreviewSeq.current === currentSeq) {
+        alert(err.message || 'Failed to generate preview audio.');
+      }
     } finally {
-      setPreviewingId(null);
+      if (activePreviewSeq.current === currentSeq) {
+        setPreviewingId(null);
+      }
     }
   };
 
@@ -267,6 +332,12 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
           const isPreviewing = previewingId === voice.id;
           const isKokoro = voice.id.startsWith('kokoro_');
           const isOpenSource = voice.provider === 'open-source-tts' || voice.id.startsWith('edge_') || isKokoro;
+          const cachedUrl = previewCacheRef.current[voice.id];
+          const existingUrl = voice.previewAudioUrl || (voice as any).sampleAudioUrl || cachedUrl;
+          const isThisVoicePlaying = isPlaying && (
+            playingVoiceId === voice.id ||
+            (currentAudioUrl && (currentAudioUrl === existingUrl || currentAudioUrl === cachedUrl))
+          );
 
           return (
             <div
@@ -409,10 +480,12 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
                   >
                     {isPreviewing ? (
                       <Sparkles className="w-3 h-3 animate-spin text-white dark:text-black" />
+                    ) : isThisVoicePlaying ? (
+                      <Pause className="w-3 h-3 fill-current text-amber-500" />
                     ) : (
                       <Play className="w-3 h-3 fill-current" />
                     )}
-                    <span>{isPreviewing ? '...' : 'Preview'}</span>
+                    <span>{isPreviewing ? 'Loading...' : isThisVoicePlaying ? 'Pause' : 'Preview'}</span>
                   </button>
                 </div>
               </div>

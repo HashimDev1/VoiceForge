@@ -250,15 +250,18 @@ export const ChunkItem: React.FC<ChunkItemProps> = ({
       {/* Chunk Controls & Actions */}
       <div className="flex items-center justify-between pt-2 border-t border-studio-border/50">
         <div className="flex items-center gap-2">
-          {chunk.audioUrl && (
-            <button
-              onClick={() => (isPlaying ? onPause() : onPlay(chunk.audioUrl!))}
-              className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-indigo-500/30 transition"
-            >
-              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              <span>{isPlaying ? 'Pause' : 'Play Audio'}</span>
-            </button>
-          )}
+          {chunk.audioUrl && (() => {
+            const isThisChunkPlaying = isPlaying && (currentAudioUrl === chunk.audioUrl || chunk.takes?.some((t) => t.audioUrl === currentAudioUrl));
+            return (
+              <button
+                onClick={() => (isThisChunkPlaying ? onPause() : onPlay(chunk.audioUrl!))}
+                className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-indigo-500/30 transition"
+              >
+                {isThisChunkPlaying ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5" />}
+                <span>{isThisChunkPlaying ? 'Pause' : 'Play Audio'}</span>
+              </button>
+            );
+          })()}
 
           <button
             onClick={() => onRegenerate(chunk.id)}

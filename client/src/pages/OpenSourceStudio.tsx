@@ -24,7 +24,8 @@ import { Voice } from '../../../shared/src/types';
 import { ApiClient } from '../services/api';
 
 interface OpenSourceStudioProps {
-  onAudioPlay?: (url: string) => void;
+  onAudioPlay?: (url: string, showBottomBar?: boolean) => void;
+  onAudioPause?: () => void;
   onSendToScriptStudio?: (text: string, voiceId: string, audioUrl?: string) => void;
 }
 
@@ -69,6 +70,7 @@ const SAMPLE_SCRIPTS = [
 
 export const OpenSourceStudio: React.FC<OpenSourceStudioProps> = ({
   onAudioPlay,
+  onAudioPause,
   onSendToScriptStudio
 }) => {
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -167,25 +169,32 @@ export const OpenSourceStudio: React.FC<OpenSourceStudioProps> = ({
   };
 
   const handlePlayAudio = (url: string) => {
+    if (window.__voiceforge_pause_all_audio) {
+      window.__voiceforge_pause_all_audio();
+    }
     if (audioElement) {
       audioElement.pause();
     }
-    const audio = new Audio(url);
-    setAudioElement(audio);
     setPlayingUrl(url);
-    audio.play().catch(console.error);
-    audio.onended = () => setPlayingUrl(null);
 
     if (onAudioPlay) {
       onAudioPlay(url);
+    } else {
+      const audio = new Audio(url);
+      setAudioElement(audio);
+      audio.play().catch(console.error);
+      audio.onended = () => setPlayingUrl(null);
     }
   };
 
   const handleStopAudio = () => {
+    if (onAudioPause) {
+      onAudioPause();
+    }
     if (audioElement) {
       audioElement.pause();
-      setPlayingUrl(null);
     }
+    setPlayingUrl(null);
   };
 
   const currentTake = generatedTakes[activeTakeIndex] || null;
@@ -208,44 +217,35 @@ export const OpenSourceStudio: React.FC<OpenSourceStudioProps> = ({
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-studio-border pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-700 text-white flex items-center justify-center shadow-md font-mono font-bold">
+      {/* Page Header matching Script Studio */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-studio-border pb-5 pt-1">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold shadow-sm shrink-0">
               <Cpu className="w-4 h-4" />
             </div>
-            <h1 className="text-2xl font-serif font-extrabold text-slate-900 dark:text-white">
-              Open-Source AI Studio.
+            <h1 className="text-2xl sm:text-3xl font-serif font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Open-Source AI Studio<span className="text-indigo-600 dark:text-indigo-400">.</span>
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800">
-              KOKORO-82M & EDGE-TTS
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-              100% FREE & UNLIMITED
+            <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-studio-800 text-slate-700 dark:text-slate-300 border border-studio-border uppercase tracking-wider">
+              100% Free & Unlimited
             </span>
           </div>
-          <p className="text-xs font-mono text-slate-500 uppercase tracking-wider mt-1">
-            LOCAL NEURAL AI • ELEVENLABS-GRADE AUDIO CADENCE • ZERO API KEYS • ZERO COST
+          <p className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest pl-11">
+            LOCAL NEURAL AI • KOKORO-82M & EDGE-TTS • ZERO API KEYS
           </p>
         </div>
 
-        {/* Engine Diagnostic & Quick Health Status */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleTestEngine}
             disabled={testStatus?.running}
-            className="px-3.5 py-1.5 text-xs font-medium rounded-xl border border-studio-border hover:bg-slate-100 dark:hover:bg-studio-800 transition flex items-center gap-2 text-slate-700 dark:text-slate-300 shadow-sm"
+            className="px-3.5 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider border border-studio-border bg-white dark:bg-studio-900 text-slate-900 dark:text-slate-100 hover:border-black transition flex items-center gap-2 shadow-sm cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${testStatus?.running ? 'animate-spin' : ''}`} />
-            <span>{testStatus?.running ? 'Testing Models...' : 'Check Engine Status'}</span>
+            <span>{testStatus?.running ? 'Testing...' : 'Check Status'}</span>
           </button>
-
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-studio-850 border border-studio-border text-xs font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-slate-700 dark:text-slate-300 font-semibold">Kokoro + Edge Active</span>
-          </div>
         </div>
       </div>
 
@@ -455,6 +455,10 @@ export const OpenSourceStudio: React.FC<OpenSourceStudioProps> = ({
                       src={currentTake.url}
                       controls
                       className="w-full h-10 rounded-lg accent-indigo-600"
+                      onPlay={() => {
+                        if (onAudioPause) onAudioPause();
+                        if (audioElement) audioElement.pause();
+                      }}
                     />
                   </div>
 

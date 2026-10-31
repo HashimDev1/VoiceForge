@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Sparkles, 
   Mic, 
@@ -27,7 +27,8 @@ interface CloneVoiceStudioProps {
   onSaveCustomVoice?: (voice: Voice) => void;
   onDeleteCustomVoice?: (voiceId: string) => void;
   onOpenCloneModal: () => void;
-  onAudioPlay?: (url: string) => void;
+  onAudioPlay?: (url: string, showBottomBar?: boolean) => void;
+  onAudioPause?: () => void;
   onSendToScriptStudio?: (text: string, voice: Voice) => void;
 }
 
@@ -38,6 +39,7 @@ export const CloneVoiceStudio: React.FC<CloneVoiceStudioProps> = ({
   onDeleteCustomVoice,
   onOpenCloneModal,
   onAudioPlay,
+  onAudioPause,
   onSendToScriptStudio
 }) => {
   // Filter all custom and cloned voices
@@ -64,6 +66,28 @@ export const CloneVoiceStudio: React.FC<CloneVoiceStudioProps> = ({
     return clonedVoices.length > 0 ? clonedVoices[0] : selectedVoice;
   }, [selectedVoice, clonedVoices]);
 
+  // Auto-adapt test prompt text to the active character voice's language
+  useEffect(() => {
+    if (!activeTestVoice) return;
+    const lang = (activeTestVoice.language || '').toLowerCase();
+    const isDefault = !testText || 
+      testText.includes("Hello! I am your cloned character voice") || 
+      testText.includes("नमस्ते! मैं आपकी क्लोन") ||
+      testText.includes("السلام علیکم! میں آپ کا کلون");
+    
+    if (isDefault) {
+      if (lang.includes('hindi')) {
+        setTestText("नमस्ते! मैं आपकी क्लोन की गई आवाज़ हूँ। मैं हिंदी में कहानियाँ और संवाद बोल सकता हूँ।");
+      } else if (lang.includes('urdu')) {
+        setTestText("السلام علیکم! میں آپ کا کلون کیا ہوا وائس اوور ہوں۔ میں اردو میں کسی भी اسکرپٹ کو پڑھ سکتا ہوں۔");
+      } else if (lang.includes('spanish')) {
+        setTestText("¡Hola! Soy tu voz clonada de personaje. Puedo leer guiones, narraciones y doblajes en español.");
+      } else {
+        setTestText("Hello! I am your cloned character voice. I can read scripts, voice animations, and perform dialogue with my custom timbre.");
+      }
+    }
+  }, [activeTestVoice?.id, activeTestVoice?.language]);
+
   const handleGenerateTest = async () => {
     if (!activeTestVoice) {
       setError('Please select or clone a character voice first.');
@@ -87,7 +111,7 @@ export const CloneVoiceStudio: React.FC<CloneVoiceStudioProps> = ({
       });
       setGeneratedAudioUrl(result.audioUrl);
       if (onAudioPlay) {
-        onAudioPlay(result.audioUrl);
+        onAudioPlay(result.audioUrl, false);
       }
     } catch (err: any) {
       setError(err?.message || 'Failed to synthesize test audio.');
@@ -100,75 +124,77 @@ export const CloneVoiceStudio: React.FC<CloneVoiceStudioProps> = ({
     if (!audioUrl) return;
     if (currentPlayingUrl === audioUrl) {
       setCurrentPlayingUrl(null);
+      if (onAudioPause) onAudioPause();
     } else {
+      if (window.__voiceforge_pause_all_audio) {
+        window.__voiceforge_pause_all_audio();
+      }
       setCurrentPlayingUrl(audioUrl);
-      if (onAudioPlay) onAudioPlay(audioUrl);
+      if (onAudioPlay) onAudioPlay(audioUrl, false);
     }
   };
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
-      {/* Hero Banner Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-purple-600/10 border border-amber-500/20 p-6 sm:p-8 backdrop-blur-md">
-        <div className="absolute top-0 right-0 -mr-10 -mt-10 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-mono font-bold tracking-wide uppercase">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              <span>Offline Zero-Shot AI Cloner</span>
-              <span className="w-1 h-1 rounded-full bg-amber-400" />
-              <span>Kokoro-82M & Cloud</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-serif font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Character Voice Cloner Studio.
-            </h1>
-            <p className="text-sm font-sans text-slate-600 dark:text-slate-300 leading-relaxed">
-              Clone your characters, actors, or yourself from a short 5–15 second audio sample or microphone recording. 
-              Our neural engine extracts pitch ($F_0$), harmonic timbre, and spectral acoustic profiles for instant, 100% free offline synthesis.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <button
-              onClick={onOpenCloneModal}
-              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
+      {/* Page Header matching Script Studio */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-studio-border pb-5 pt-1">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold shadow-sm shrink-0">
               <Sparkles className="w-4 h-4" />
-              <span>+ Clone New Voice</span>
-            </button>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-serif font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Clone Voice Studio<span className="text-indigo-600 dark:text-indigo-400">.</span>
+            </h1>
+            <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-studio-800 text-slate-700 dark:text-slate-300 border border-studio-border uppercase tracking-wider">
+              AI Voice Cloning
+            </span>
+          </div>
+          <p className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest pl-11">
+            ZERO-SHOT NEURAL VOICE CLONING & CUSTOM TIMBRE PROFILES
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenCloneModal}
+            className="px-5 py-2.5 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 rounded-xl text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 shadow-sm transition cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Clone New Voice</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Feature Highlights Grid matching Script Studio panel tokens */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-studio-900 border border-studio-border flex items-center gap-3 text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">
+          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <Zap className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="font-bold text-slate-900 dark:text-white uppercase">100% Free & Unlimited</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">Offline Kokoro-82M synthesis</div>
           </div>
         </div>
 
-        {/* Feature Highlights Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-6 pt-6 border-t border-amber-500/15">
-          <div className="flex items-center gap-3 text-xs font-mono text-slate-700 dark:text-slate-300">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <Zap className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="font-bold text-slate-900 dark:text-white uppercase">100% Free & Unlimited</div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">Offline Kokoro-82M synthesis</div>
-            </div>
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-studio-900 border border-studio-border flex items-center gap-3 text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">
+          <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <Activity className="w-4 h-4" />
           </div>
-
-          <div className="flex items-center gap-3 text-xs font-mono text-slate-700 dark:text-slate-300">
-            <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-              <Activity className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="font-bold text-slate-900 dark:text-white uppercase">Acoustic Pitch Matching</div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">Autocorrelation & Spectral Centroid</div>
-            </div>
+          <div>
+            <div className="font-bold text-slate-900 dark:text-white uppercase">Acoustic Pitch Matching</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">Autocorrelation & Timbre Extraction</div>
           </div>
+        </div>
 
-          <div className="flex items-center gap-3 text-xs font-mono text-slate-700 dark:text-slate-300">
-            <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-              <Layers className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="font-bold text-slate-900 dark:text-white uppercase">Multi-Studio Ready</div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">Use in Script Studio & Translations</div>
-            </div>
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-studio-900 border border-studio-border flex items-center gap-3 text-xs font-mono text-slate-700 dark:text-slate-300 shadow-sm">
+          <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+            <Layers className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="font-bold text-slate-900 dark:text-white uppercase">Multi-Studio Ready</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">Export to Script Studio & Dubbing</div>
           </div>
         </div>
       </div>
@@ -260,17 +286,17 @@ export const CloneVoiceStudio: React.FC<CloneVoiceStudioProps> = ({
                     {/* Bottom Actions & Controls */}
                     <div className="pt-2 border-t border-studio-border/60 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
-                        {voice.sampleAudioUrl && (
+                        {((voice as any).previewAudioUrl || (voice as any).sampleAudioUrl) && (
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handlePlayVoiceSample(voice.sampleAudioUrl);
+                              handlePlayVoiceSample((voice as any).previewAudioUrl || (voice as any).sampleAudioUrl);
                             }}
                             className="p-1.5 rounded-lg bg-slate-100 dark:bg-studio-800 text-slate-700 dark:text-slate-200 hover:bg-amber-500 hover:text-white transition"
                             title="Play sample reference"
                           >
-                            {currentPlayingUrl === voice.sampleAudioUrl ? (
+                            {currentPlayingUrl === ((voice as any).previewAudioUrl || (voice as any).sampleAudioUrl) ? (
                               <Pause className="w-3.5 h-3.5" />
                             ) : (
                               <Play className="w-3.5 h-3.5" />
@@ -489,7 +515,9 @@ export const CloneVoiceStudio: React.FC<CloneVoiceStudioProps> = ({
                   src={generatedAudioUrl}
                   controls
                   className="w-full h-10 accent-amber-500 rounded-lg"
-                  autoPlay
+                  onPlay={() => {
+                    if (onAudioPause) onAudioPause();
+                  }}
                 />
 
                 {onSendToScriptStudio && activeTestVoice && (

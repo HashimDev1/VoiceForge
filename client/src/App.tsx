@@ -12,6 +12,8 @@ import { Projects } from './pages/Projects';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
 import { CloneVoiceStudio } from './pages/CloneVoiceStudio';
+import { GoogleFlowStudio } from './pages/GoogleFlowStudio';
+import { CaptionsStudio } from './pages/CaptionsStudio';
 import { VoiceCloneModal } from './components/VoiceCloneModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useProjectStore } from './hooks/useProjectStore';
@@ -74,6 +76,9 @@ export function App() {
     volume,
     playbackRate,
     play,
+    playPreview,
+    closeBottomBar,
+    isBottomBarVisible,
     pause,
     seek,
     changeVolume,
@@ -92,25 +97,31 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-studio-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-300">
-      {/* Sidebar Navigation (Desktop + Mobile Drawer) */}
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        apiHealth={apiHealth}
-        collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
-        onNewProject={handleNewProject}
-        onOpenCloneVoice={() => setIsCloneModalOpen(true)}
-        mobileOpen={mobileOpen}
-        setMobileOpen={setMobileOpen}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
+      {/* Sidebar Navigation (Desktop + Mobile Drawer) - Hidden on Dashboard */}
+      {activeTab !== 'dashboard' && (
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          apiHealth={apiHealth}
+          collapsed={sidebarCollapsed}
+          setCollapsed={setSidebarCollapsed}
+          onNewProject={handleNewProject}
+          onOpenCloneVoice={() => setIsCloneModalOpen(true)}
+          mobileOpen={mobileOpen}
+          setMobileOpen={setMobileOpen}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+      )}
 
       {/* Main Viewport Container */}
       <div
         className={`transition-all duration-300 flex-1 flex flex-col ${
-          sidebarCollapsed ? 'md:pl-20' : 'md:pl-64'
+          activeTab === 'dashboard'
+            ? 'pl-0'
+            : sidebarCollapsed
+            ? 'md:pl-20'
+            : 'md:pl-64'
         }`}
       >
         {/* Top Navbar Header - Only displayed on the Script Studio page */}
@@ -127,7 +138,13 @@ export function App() {
         )}
 
         {/* Main Tab Viewport */}
-        <main className="flex-1 p-4 sm:p-6 pb-28 md:pb-28 overflow-y-auto">
+        <main
+          className={`flex-1 overflow-y-auto ${
+            activeTab === 'dashboard'
+              ? 'p-4 sm:p-8 flex items-center justify-center'
+              : 'p-4 sm:p-6 pb-28 md:pb-28'
+          }`}
+        >
           {activeTab === 'dashboard' && (
             <Dashboard
               projects={projects}
@@ -135,7 +152,19 @@ export function App() {
               onNewVoiceover={handleNewProject}
               onOpenScriptStudio={() => setActiveTab('script-studio')}
               onNavigateTab={(tab) => setActiveTab(tab)}
+              theme={theme}
+              onToggleTheme={toggleTheme}
             />
+          )}
+
+          {activeTab === 'captions' && (
+            <ErrorBoundary><CaptionsStudio /></ErrorBoundary>
+          )}
+
+          {activeTab === 'google-flow' && (
+            <ErrorBoundary>
+              <GoogleFlowStudio />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'clone-voice' && (
@@ -147,7 +176,8 @@ export function App() {
                 onSaveCustomVoice={saveCustomVoice}
                 onDeleteCustomVoice={deleteCustomVoice}
                 onOpenCloneModal={() => setIsCloneModalOpen(true)}
-                onAudioPlay={play}
+                onAudioPlay={playPreview}
+                onAudioPause={pause}
                 onSendToScriptStudio={(textVal, voice) => {
                   setScriptText(textVal);
                   setVoice(voice);
@@ -190,6 +220,7 @@ export function App() {
           {activeTab === 'open-source-tts' && (
             <OpenSourceStudio
               onAudioPlay={play}
+              onAudioPause={pause}
               onSendToScriptStudio={(textVal, voiceId) => {
                 setScriptText(textVal);
                 const matched = voices.find((v) => v.id === voiceId);
@@ -206,7 +237,10 @@ export function App() {
               voices={voices}
               selectedVoice={activeProject.selectedVoice}
               onSelectVoice={setVoice}
-              onAudioPlay={play}
+              onAudioPlay={playPreview}
+              onAudioPause={pause}
+              currentAudioUrl={currentUrl}
+              isPlaying={isPlaying}
               onSaveCustomVoice={saveCustomVoice}
               onDeleteCustomVoice={deleteCustomVoice}
             />
@@ -215,7 +249,8 @@ export function App() {
           {activeTab === 'voice-translator' && (
             <VoiceTranslator
               voices={voices}
-              onAudioPlay={play}
+              onAudioPlay={playPreview}
+              onAudioPause={pause}
               currentAudioUrl={currentUrl}
               isPlaying={isPlaying}
             />
@@ -249,13 +284,17 @@ export function App() {
         </main>
 
         {/* Mobile Navigation Bottom Bar */}
-        <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        {activeTab !== 'dashboard' && (
+          <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        )}
 
-        {/* Persistent Bottom Audio Player Bar */}
-        {currentUrl && (
+        {/* Persistent Bottom Audio Player Bar - Never shows on Dashboard or for voice previews */}
+        {currentUrl && isBottomBarVisible && activeTab !== 'dashboard' && (
           <div
             className={`fixed bottom-14 md:bottom-0 right-0 z-40 p-3 sm:p-4 transition-all duration-300 ${
-              sidebarCollapsed ? 'md:left-20' : 'md:left-64'
+              sidebarCollapsed
+                ? 'md:left-20'
+                : 'md:left-64'
             } left-0`}
           >
             <AudioPlayer
@@ -270,6 +309,7 @@ export function App() {
               onSeek={seek}
               onVolumeChange={changeVolume}
               onPlaybackRateChange={changePlaybackRate}
+              onClose={closeBottomBar}
               title="Studio Audio Playback"
             />
           </div>

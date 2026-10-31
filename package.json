@@ -11,6 +11,7 @@
     "build:server": "npm --prefix server run build",
     "build": "npm --prefix client run build && npm --prefix server run build",
     "start": "node server/dist/server/src/index.js",
+    "chrome:flow": "start_chrome_with_flow.bat",
     "postinstall": "npm --prefix client install --include=dev && npm --prefix server install --include=dev",
     "test": "node tests/runner.js"
   },

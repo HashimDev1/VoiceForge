@@ -16,10 +16,20 @@ const router = Router();
 router.get('/audio/file/:filename', async (req: Request, res: Response) => {
   try {
     const filename = path.basename(req.params.filename);
-    const filePath = path.join(config.storageDir, filename);
+    let filePath = path.join(config.storageDir, filename);
 
-    if (!isPathSafe(config.storageDir, filePath)) {
-      return res.status(403).json({ error: 'Access denied.' });
+    if (!fs.existsSync(filePath)) {
+      const altPaths = [
+        path.resolve(process.cwd(), 'temp_storage', filename),
+        path.resolve(process.cwd(), '..', 'temp_storage', filename),
+        path.resolve(process.cwd(), 'server', 'temp_storage', filename)
+      ];
+      for (const alt of altPaths) {
+        if (fs.existsSync(alt)) {
+          filePath = alt;
+          break;
+        }
+      }
     }
 
     if (!fs.existsSync(filePath)) {

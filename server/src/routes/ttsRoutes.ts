@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { FishAudioService } from '../services/fishAudioService';
 import { OpenSourceTtsService } from '../services/openSourceTtsService';
 import { ProjectService } from '../services/projectService';
+import { VoiceStorageService } from '../services/voiceStorageService';
 import { logger } from '../utils/logger';
 
 const router = Router();
@@ -186,14 +187,88 @@ router.post('/tts', async (req: Request, res: Response) => {
   }
 });
 
+export function getLanguagePreviewText(language?: string, voiceName?: string): string {
+  const lang = (language || '').toLowerCase();
+  if (lang.includes('hindi')) {
+    return voiceName
+      ? `नमस्ते! मैं ${voiceName} हूँ। यह मेरी आवाज़ का पूर्वावलोकन है। कहानी में आगे क्या हुआ, वह सब कुछ बदल देगा।`
+      : `नमस्ते! यह आवाज़ का पूर्वावलोकन है। कहानी में आगे क्या हुआ, वह सब कुछ बदल देगा।`;
+  }
+  if (lang.includes('urdu')) {
+    return voiceName
+      ? `السلام علیکم! میں ${voiceName} ہوں۔ یہ میری آواز کا پیش نظارہ ہے۔ کہانی میں آگے کیا ہوا اس نے سب کچھ بدل دیا۔`
+      : `السلام علیکم! یہ آواز کا پیش نظارہ ہے۔ کہانی میں آگے کیا ہوا اس نے سب کچھ بدل دیا۔`;
+  }
+  if (lang.includes('spanish')) {
+    return `¡Hola! Esta es una vista previa de la voz. Lo que sucedió después cambiaría todo.`;
+  }
+  if (lang.includes('french')) {
+    return `Bonjour! Ceci est un aperçu vocal. Ce qui s'est passé ensuite allait tout changer.`;
+  }
+  if (lang.includes('german')) {
+    return `Hallo! Dies ist eine Hörprobe der Stimme. Was als Nächstes geschah, sollte alles verändern.`;
+  }
+  if (lang.includes('japanese')) {
+    return `こんにちは！これは音声のプレビューです。その後に起こったことがすべてを変えることになります。`;
+  }
+  if (lang.includes('arabic')) {
+    return `مرحباً! هذه معاينة للصوت. ما حدث بعد ذلك سيغير كل شيء.`;
+  }
+  if (lang.includes('chinese')) {
+    return `你好！这是声音预览。接下来发生的事情将改变一切。`;
+  }
+  if (lang.includes('portuguese')) {
+    return `Olá! Esta é uma prévia da voz. O que aconteceu a seguir mudaria tudo.`;
+  }
+  if (lang.includes('russian')) {
+    return `Здравствуйте! Это предварительный просмотр голоса. То, что произошло дальше, изменило всё.`;
+  }
+  if (lang.includes('italian')) {
+    return `Ciao! Questa è un'anteprima della voce. Quello che è successo بعد avrebbe cambiato tutto.`;
+  }
+  if (lang.includes('korean')) {
+    return `안녕하세요! 이것은 음성 미리보기입니다. 다음에 일어난 일은 모든 것을 바꿀 것입니다.`;
+  }
+  return "Welcome to today's story. What happened next would change everything.";
+}
+
 /**
  * POST /api/tts/preview
- * Generates voice preview
+ * Generates voice preview in the voice's native language
  */
 router.post('/tts/preview', async (req: Request, res: Response) => {
   try {
-    const { reference_id, previewText, speechSpeed, format = 'mp3' } = req.body;
-    const text = previewText || "Welcome to today's story. What happened next would change everything.";
+    const { reference_id, previewText, speechSpeed, format = 'mp3', language, voiceName } = req.body;
+
+    // 1. Check if it's a custom cloned voice that already has a stored previewAudioUrl
+    const customVoices = await VoiceStorageService.getCustomVoices().catch(() => []);
+    const matchedCustom = customVoices.find((v) => v.id === reference_id);
+
+    if (matchedCustom?.previewAudioUrl) {
+      return res.json({
+        success: true,
+        audioUrl: matchedCustom.previewAudioUrl
+      });
+    }
+
+    // 2. Determine voice language
+    let effectiveLang = language || matchedCustom?.language;
+    if (!effectiveLang && reference_id) {
+      if (reference_id.startsWith('hi-') || reference_id.includes('Hindi')) effectiveLang = 'Hindi';
+      else if (reference_id.startsWith('ur-') || reference_id.includes('Urdu')) effectiveLang = 'Urdu';
+      else if (reference_id.startsWith('es-')) effectiveLang = 'Spanish';
+      else if (reference_id.startsWith('fr-')) effectiveLang = 'French';
+      else if (reference_id.startsWith('de-')) effectiveLang = 'German';
+      else if (reference_id.startsWith('ja-')) effectiveLang = 'Japanese';
+      else if (reference_id.startsWith('ar-')) effectiveLang = 'Arabic';
+      else if (reference_id.startsWith('zh-')) effectiveLang = 'Chinese';
+      else if (reference_id.startsWith('pt-')) effectiveLang = 'Portuguese';
+      else if (reference_id.startsWith('ru-')) effectiveLang = 'Russian';
+      else if (reference_id.startsWith('it-')) effectiveLang = 'Italian';
+      else if (reference_id.startsWith('ko-')) effectiveLang = 'Korean';
+    }
+
+    const text = previewText || getLanguagePreviewText(effectiveLang, voiceName || matchedCustom?.name);
 
     if (OpenSourceTtsService.isOpenSourceVoice(reference_id)) {
       const osResult = await OpenSourceTtsService.generateTTS({
@@ -204,6 +279,12 @@ router.post('/tts/preview', async (req: Request, res: Response) => {
       });
 
       const savedFile = await ProjectService.saveAudioFile(osResult.audioBuffer, 'preview_os');
+
+      if (matchedCustom && !matchedCustom.previewAudioUrl) {
+        matchedCustom.previewAudioUrl = savedFile.fileUrl;
+        await VoiceStorageService.saveCustomVoice(matchedCustom).catch(() => {});
+      }
+
       return res.json({
         success: true,
         audioUrl: savedFile.fileUrl
@@ -218,6 +299,11 @@ router.post('/tts/preview', async (req: Request, res: Response) => {
     });
 
     const savedFile = await ProjectService.saveAudioFile(ttsResult.audioBuffer, 'preview');
+
+    if (matchedCustom && !matchedCustom.previewAudioUrl) {
+      matchedCustom.previewAudioUrl = savedFile.fileUrl;
+      await VoiceStorageService.saveCustomVoice(matchedCustom).catch(() => {});
+    }
 
     res.json({
       success: true,

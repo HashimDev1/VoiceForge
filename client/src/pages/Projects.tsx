@@ -18,20 +18,27 @@ export const Projects: React.FC<ProjectsProps> = ({
 }) => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      <div className="flex items-center justify-between border-b border-studio-border pb-4">
-        <div>
-          <h1 className="text-2xl font-serif font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <FolderKanban className="w-5 h-5 text-black dark:text-white" />
-            <span>Voiceover Projects.</span>
-          </h1>
-          <p className="text-xs font-mono text-slate-500 uppercase tracking-wider mt-0.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-studio-border pb-5 pt-1">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold shadow-sm shrink-0">
+              <FolderKanban className="w-4 h-4" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-serif font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Voiceover Projects<span className="text-indigo-600 dark:text-indigo-400">.</span>
+            </h1>
+            <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 dark:bg-studio-800 text-slate-700 dark:text-slate-300 border border-studio-border uppercase tracking-wider">
+              {projects.length} Saved
+            </span>
+          </div>
+          <p className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest pl-11">
             MANAGE DRAFTS & VOICEOVER PROJECTS
           </p>
         </div>
 
         <button
           onClick={onNewProject}
-          className="px-4 py-2.5 bg-black text-white dark:bg-white dark:text-black rounded-xl text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 shadow-md transition"
+          className="px-5 py-2.5 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 rounded-xl text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 shadow-sm transition cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>New Project</span>

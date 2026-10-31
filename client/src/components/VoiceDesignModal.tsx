@@ -94,6 +94,9 @@ export const VoiceDesignModal: React.FC<VoiceDesignModalProps> = ({
     }
 
     if (audioRef.current) audioRef.current.pause();
+    if (window.__voiceforge_pause_all_audio) {
+      window.__voiceforge_pause_all_audio();
+    }
 
     const audio = new Audio(candidate.audioUrl);
     audioRef.current = audio;

@@ -17,7 +17,11 @@ try {
   execSync(`${tsNodeCmd} tests/voiceTranslation.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/sentenceDubbing.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/speechRecognition.test.ts`, { stdio: 'inherit' });
+  execSync(`${tsNodeCmd} tests/transcriptionStudio.test.ts`, { stdio: 'inherit' });
+  execSync(`${tsNodeCmd} tests/referenceAlignment.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/openSourceTts.test.ts`, { stdio: 'inherit' });
+  execSync(`${tsNodeCmd} tests/flowStudio.test.ts`, { stdio: 'inherit' });
+  execSync(`${tsNodeCmd} tests/captionStudio2.test.ts`, { stdio: 'inherit' });
   console.log('\n✅ ALL UNIT TESTS PASSED SUCCESSFULLY!');
 } catch (err) {
   console.error('\n❌ TEST RUNNER FAILED:', err.message);

@@ -7,7 +7,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, '../shared/src'),
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(__dirname, './src'),
+      'flow-sdk': path.resolve(__dirname, './src/lib/flowSdk.ts')
     }
   },
   server: {

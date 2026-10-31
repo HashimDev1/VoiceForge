@@ -6,7 +6,6 @@ import {
   FolderKanban, 
   History, 
   Settings, 
-  Radio, 
   ChevronLeft, 
   ChevronRight,
   Plus,
@@ -15,12 +14,16 @@ import {
   Sun,
   Moon,
   Globe,
-  Cpu
+  Subtitles,
+  Cpu,
+  Film
 } from 'lucide-react';
 import { ApiHealthResponse } from '../../../shared/src/types';
 
 export type TabType =
   | 'dashboard'
+  | 'captions'
+  | 'google-flow'
   | 'clone-voice'
   | 'open-source-tts'
   | 'voice-generator'
@@ -44,6 +47,12 @@ interface SidebarProps {
   onToggleTheme: () => void;
 }
 
+interface NavItem {
+  id: TabType;
+  label: string;
+  icon: any;
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
@@ -57,20 +66,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   theme,
   onToggleTheme
 }) => {
-  const navItems: {
-    id: TabType;
-    label: string;
-    icon: any;
-    isNew?: boolean;
-    badgeText?: string;
-    prefixEmoji?: string;
-  }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'clone-voice', label: 'Clone Voice', icon: Sparkles, isNew: true, badgeText: 'AI FREE', prefixEmoji: '✨' },
-    { id: 'open-source-tts', label: 'Open-Source TTS', icon: Cpu, isNew: true, prefixEmoji: '⚡' },
+  const serviceItems: NavItem[] = [
+    { id: 'google-flow', label: 'Flow Studio', icon: Film },
+    { id: 'captions', label: 'Caption Studio', icon: Subtitles },
+    { id: 'clone-voice', label: 'Clone Voice', icon: Sparkles },
+    { id: 'open-source-tts', label: 'Open-Source TTS', icon: Cpu },
     { id: 'voice-generator', label: 'Fish Audio Studio', icon: Mic },
-    { id: 'voice-translator', label: 'Voice Translator', icon: Globe, isNew: true, prefixEmoji: '🌍' },
-    { id: 'script-studio', label: 'Script Studio', icon: FileText },
+    { id: 'voice-translator', label: 'Transcription Studio', icon: Subtitles },
+    { id: 'script-studio', label: 'Script Studio', icon: FileText }
+  ];
+
+  const managementItems: NavItem[] = [
     { id: 'projects', label: 'Projects', icon: FolderKanban },
     { id: 'history', label: 'History', icon: History },
     { id: 'settings', label: 'Settings', icon: Settings }
@@ -81,46 +87,72 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setMobileOpen(false);
   };
 
+  const renderNavButton = (item: NavItem) => {
+    const Icon = item.icon;
+    const isActive = activeTab === item.id;
+
+    return (
+      <button
+        key={item.id}
+        onClick={() => handleSelectTab(item.id)}
+        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
+          isActive
+            ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm font-bold'
+            : 'text-slate-700 hover:text-black dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-studio-850'
+        } ${collapsed && !mobileOpen ? 'justify-center px-0' : ''}`}
+        title={collapsed && !mobileOpen ? item.label : undefined}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Icon
+            className={`w-4 h-4 flex-shrink-0 ${
+              isActive
+                ? 'text-white dark:text-black'
+                : 'text-slate-500 dark:text-slate-400'
+            }`}
+          />
+          {(!collapsed || mobileOpen) && (
+            <span className="truncate">{item.label}</span>
+          )}
+        </div>
+      </button>
+    );
+  };
+
   return (
     <>
       {/* Mobile Backdrop Overlay */}
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
         />
       )}
 
-      {/* Main Sidebar Container */}
+      {/* Main Sidebar Container matching Script Studio theme tokens */}
       <aside
-        className={`fixed top-0 bottom-0 z-50 bg-studio-900 border-r border-studio-border transition-all duration-300 flex flex-col justify-between ${
-          /* Mobile Drawer Position */
+        className={`fixed top-0 bottom-0 z-50 bg-white dark:bg-studio-900 border-r border-studio-border transition-all duration-300 flex flex-col justify-between shadow-sm ${
           mobileOpen ? 'left-0 w-72' : '-left-full md:left-0'
-        } ${
-          /* Desktop Width */
-          collapsed ? 'md:w-20' : 'md:w-64'
-        }`}
+        } ${collapsed ? 'md:w-20' : 'md:w-64'}`}
       >
-        <div>
+        <div className="flex-1 overflow-y-auto">
           {/* Top Brand Header */}
           <div className="h-16 px-4 flex items-center justify-between border-b border-studio-border">
             {(!collapsed || mobileOpen) ? (
               <div className="flex items-center gap-2.5">
-                {/* Geometric Minimal Icon matching screenshot */}
-                <div className="w-8 h-8 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-extrabold text-sm shadow-md font-mono">
+                <div className="w-8 h-8 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-sm shadow-sm font-mono">
                   ◆
                 </div>
                 <div>
-                  <h1 className="font-serif font-extrabold tracking-tight text-lg leading-none text-slate-900 dark:text-white">
+                  <h1 className="font-serif font-extrabold tracking-tight text-lg leading-tight text-slate-900 dark:text-white">
                     VoiceForge
                   </h1>
-                  <span className="text-[9px] font-mono tracking-widest text-slate-700 dark:text-slate-400 font-bold uppercase block mt-0.5">
+                  <span className="text-[9px] font-mono tracking-widest text-slate-500 dark:text-slate-400 font-bold uppercase block mt-0.5">
                     AI VOICE-OVER STUDIO
                   </span>
                 </div>
               </div>
             ) : (
-              <div className="w-9 h-9 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-extrabold text-sm mx-auto shadow-md font-mono">
+              <div className="w-8 h-8 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-sm mx-auto shadow-sm font-mono">
                 ◆
               </div>
             )}
@@ -129,7 +161,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setCollapsed(!collapsed)}
-                className="hidden md:flex p-1.5 rounded-lg text-slate-700 hover:text-black dark:text-slate-300 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-studio-800 transition"
+                className="hidden md:flex p-1.5 rounded-lg text-slate-600 hover:text-black dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-studio-800 transition cursor-pointer"
                 title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
                 {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -137,26 +169,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => setMobileOpen(false)}
-                className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-studio-primary"
+                className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-black dark:hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* Quick Action Buttons */}
-          <div className="p-3 space-y-1.5">
+          {/* Quick Action Buttons matching Script Studio button styles */}
+          <div className="p-3 space-y-2 border-b border-studio-border/60">
             <button
               onClick={() => {
                 onNewProject();
                 setMobileOpen(false);
               }}
-              className={`w-full py-2.5 px-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md hover:opacity-95 transition group ${
+              className={`w-full py-2.5 px-3 bg-black dark:bg-white text-white dark:text-black hover:opacity-90 rounded-xl font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition cursor-pointer ${
                 collapsed && !mobileOpen ? 'px-0' : ''
               }`}
               title="New Voiceover Project"
             >
-              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+              <Plus className="w-4 h-4 stroke-[2.5]" />
               {(!collapsed || mobileOpen) && <span>New Voiceover</span>}
             </button>
 
@@ -168,81 +200,76 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }
                 setMobileOpen(false);
               }}
-              className={`w-full py-2 px-3 bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-amber-500/15 hover:from-amber-500/25 hover:to-orange-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-xl font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition group shadow-xs ${
+              className={`w-full py-2 px-3 bg-white dark:bg-studio-900 text-slate-900 dark:text-slate-100 hover:border-black rounded-xl font-mono font-bold text-xs uppercase tracking-wider border border-studio-border flex items-center justify-center gap-2 shadow-sm transition cursor-pointer ${
                 collapsed && !mobileOpen ? 'px-0' : ''
               }`}
               title="Clone Character Voice"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500 group-hover:rotate-12 transition-transform duration-200" />
+              <Sparkles className="w-3.5 h-3.5 text-black dark:text-white" />
               {(!collapsed || mobileOpen) && <span>Clone Voice</span>}
             </button>
           </div>
 
-          {/* Navigation Items */}
-          <nav className="px-2 py-2 space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
+          {/* Navigation Section */}
+          <nav className="p-2 space-y-3">
+            {/* Overview / Dashboard */}
+            <div className="space-y-0.5">
+              {renderNavButton({
+                id: 'dashboard',
+                label: 'Dashboard',
+                icon: LayoutDashboard
+              })}
+            </div>
 
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleSelectTab(item.id as TabType)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all ${
-                    isActive
-                      ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
-                      : 'text-slate-600 hover:text-black dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-studio-850'
-                  } ${collapsed && !mobileOpen ? 'justify-center px-0' : ''}`}
-                  title={collapsed && !mobileOpen ? item.label : undefined}
-                >
-                  <div className="flex items-center gap-2.5">
-                    {item.prefixEmoji ? (
-                      <span className="text-sm leading-none">{item.prefixEmoji}</span>
-                    ) : (
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-white dark:text-black' : 'text-slate-500 dark:text-slate-400'}`} />
-                    )}
-                    {(!collapsed || mobileOpen) && <span>{item.label}</span>}
-                  </div>
-                  {(!collapsed || mobileOpen) && (item.badgeText || item.isNew) && (
-                    <span
-                      className={`text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-full tracking-widest uppercase ${
-                        item.badgeText === 'AI FREE'
-                          ? 'bg-amber-500/20 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300 border border-amber-500/30'
-                          : 'bg-emerald-500 text-white dark:bg-emerald-400 dark:text-black'
-                      }`}
-                    >
-                      {item.badgeText || 'NEW'}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+            {/* Studio Services */}
+            <div>
+              {(!collapsed || mobileOpen) && (
+                <div className="px-3 pt-2 pb-1 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                  STUDIO SERVICES
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {serviceItems.map(renderNavButton)}
+              </div>
+            </div>
+
+            {/* Management */}
+            <div>
+              {(!collapsed || mobileOpen) && (
+                <div className="px-3 pt-2 pb-1 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                  MANAGEMENT
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {managementItems.map(renderNavButton)}
+              </div>
+            </div>
           </nav>
         </div>
 
-        {/* Bottom Status Card & Theme Switcher */}
+        {/* Bottom Theme Toggle & Engine Status */}
         <div className="p-3 border-t border-studio-border space-y-2">
           {/* Theme Toggle Button */}
           <button
             onClick={onToggleTheme}
-            className={`w-full py-2 px-3 bg-slate-100 dark:bg-studio-850 border border-studio-border rounded-xl text-xs font-mono font-bold flex items-center justify-between text-slate-800 dark:text-slate-200 hover:border-black transition ${
+            className={`w-full py-2 px-3 bg-white dark:bg-studio-900 hover:border-black border border-studio-border rounded-xl text-xs font-mono font-bold uppercase tracking-wider flex items-center justify-between text-slate-900 dark:text-slate-100 transition shadow-sm cursor-pointer ${
               collapsed && !mobileOpen ? 'justify-center px-0' : ''
             }`}
             title="Toggle Light / Dark Mode"
           >
             {(!collapsed || mobileOpen) ? (
               <>
-                <span className="uppercase text-[10px] tracking-wider font-bold text-slate-600 dark:text-slate-400">Theme</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">THEME</span>
                 <div className="flex items-center gap-1.5 text-xs font-mono font-bold">
                   {theme === 'dark' ? (
                     <>
                       <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Dark</span>
+                      <span>DARK</span>
                     </>
                   ) : (
                     <>
                       <Sun className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Light</span>
+                      <span>LIGHT</span>
                     </>
                   )}
                 </div>
@@ -252,37 +279,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </button>
 
-          {/* Fish Audio Provider Badge */}
+          {/* Engine Status Pill */}
           <div
-            className={`bg-slate-100 dark:bg-studio-850 border border-studio-border rounded-xl p-3 flex items-center gap-3 ${
+            className={`bg-white dark:bg-studio-900 border border-studio-border rounded-xl p-2.5 flex items-center gap-2.5 shadow-sm ${
               collapsed && !mobileOpen ? 'justify-center p-2' : ''
             }`}
           >
-            <div className="relative">
-              <span
-                className={`block w-2.5 h-2.5 rounded-full ${
-                  apiHealth.fishAudioConnected ? 'bg-emerald-500 shadow-sm shadow-emerald-500' : 'bg-rose-500 animate-ping'
-                }`}
-              />
-            </div>
+            <span
+              className={`block w-2 h-2 rounded-full flex-shrink-0 ${
+                apiHealth.fishAudioConnected
+                  ? 'bg-emerald-500 shadow-xs shadow-emerald-500/50'
+                  : 'bg-emerald-500'
+              }`}
+            />
 
             {(!collapsed || mobileOpen) && (
-              <div className="overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono font-bold uppercase text-slate-800 dark:text-slate-200">Fish Audio</span>
-                  <span
-                    className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                      apiHealth.fishAudioConnected
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                        : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                    }`}
-                  >
-                    {apiHealth.fishAudioConnected ? 'CONNECTED' : 'KEY MISSING'}
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5 font-mono" title={apiHealth.message}>
-                  {apiHealth.fishAudioConnected ? `MODEL ${apiHealth.model}` : 'Set FISH_API_KEY'}
-                </p>
+              <div className="flex-1 min-w-0 flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
+                  ENGINE
+                </span>
+                <span
+                  className="text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-studio-border bg-slate-100 dark:bg-studio-800 text-slate-700 dark:text-slate-300"
+                >
+                  READY
+                </span>
               </div>
             )}
           </div>

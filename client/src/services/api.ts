@@ -9,7 +9,11 @@ import {
   AsrTranscriptionResult,
   VoiceTranslationProject,
   TranslationOutput,
-  VoiceAnalysisResult
+  VoiceAnalysisResult,
+  TranscriptionProject,
+  TranscriptionSegment,
+  ScriptChoice,
+  ReferenceScriptFormat
 } from '../../../shared/src/types';
 
 async function safeJson(res: Response): Promise<any> {
@@ -145,12 +149,14 @@ export class ApiClient {
     reference_id: string,
     speechSpeed?: number,
     format?: string,
-    provider?: 'fish-audio' | 'open-source-tts'
+    provider?: 'fish-audio' | 'open-source-tts',
+    language?: string,
+    voiceName?: string
   ): Promise<{ audioUrl: string; providerUsed?: string }> {
     const res = await fetch('/api/tts/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reference_id, speechSpeed, format, provider })
+      body: JSON.stringify({ reference_id, speechSpeed, format, provider, language, voiceName })
     });
 
     const data = await safeJson(res);
@@ -404,5 +410,126 @@ export class ApiClient {
       throw new Error(data.error || 'Failed to delete translation output.');
     }
     return data.project;
+  }
+
+  // ==========================================
+  // Voiceover Transcription Studio API Methods
+  // ==========================================
+
+  public static async transcribeMedia(payload: {
+    filename: string;
+    originalName?: string;
+    mediaType?: 'audio' | 'video';
+    languageCode?: string;
+    scriptChoice?: ScriptChoice;
+    originalScript?: string;
+    scriptFormat?: ReferenceScriptFormat;
+  }): Promise<TranscriptionProject> {
+    const res = await fetch('/api/translation/transcribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await safeJson(res);
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Transcription failed.');
+    }
+    return data.project;
+  }
+
+  public static async detectScriptFormat(text: string): Promise<ReferenceScriptFormat> {
+    const res = await fetch('/api/translation/detect-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await safeJson(res);
+    if (!res.ok || !data.success) {
+      return 'auto';
+    }
+    return data.detectedFormat || 'auto';
+  }
+
+  public static async resolveReviewItem(payload: {
+    projectId: string;
+    reviewItemId?: string;
+    action?: 'accepted' | 'rejected' | 'edited';
+    editedText?: string;
+    acceptAll?: boolean;
+  }): Promise<TranscriptionProject> {
+    const res = await fetch(`/api/translation/transcription-projects/${encodeURIComponent(payload.projectId)}/resolve-review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await safeJson(res);
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to resolve review item.');
+    }
+    return data.project;
+  }
+
+  public static async convertTranscriptionScript(payload: {
+    projectId: string;
+    scriptChoice: ScriptChoice;
+  }): Promise<TranscriptionProject> {
+    const res = await fetch('/api/translation/convert-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await safeJson(res);
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to convert transcript script.');
+    }
+    return data.project;
+  }
+
+  public static async updateTranscriptSegments(
+    projectId: string,
+    segments: TranscriptionSegment[]
+  ): Promise<TranscriptionProject> {
+    const res = await fetch(`/api/translation/transcription-projects/${encodeURIComponent(projectId)}/segments`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ segments })
+    });
+    const data = await safeJson(res);
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to save updated segments.');
+    }
+    return data.project;
+  }
+
+  public static async getTranscriptionProjects(): Promise<TranscriptionProject[]> {
+    const res = await fetch('/api/translation/transcription-projects');
+    const data = await safeJson(res);
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to fetch transcription projects.');
+    }
+    return data.projects || [];
+  }
+
+  public static async getTranscriptionProject(id: string): Promise<TranscriptionProject> {
+    const res = await fetch(`/api/translation/transcription-projects/${encodeURIComponent(id)}`);
+    const data = await safeJson(res);
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to fetch transcription project.');
+    }
+    return data.project;
+  }
+
+  public static async deleteTranscriptionProject(id: string): Promise<void> {
+    const res = await fetch(`/api/translation/transcription-projects/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+    const data = await safeJson(res);
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to delete transcription project.');
+    }
+  }
+
+  public static getExportDownloadUrl(projectId: string, format: 'txt' | 'srt' | 'vtt' | 'json'): string {
+    return `/api/translation/transcription-projects/${encodeURIComponent(projectId)}/export/${format}`;
   }
 }

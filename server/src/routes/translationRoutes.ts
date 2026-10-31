@@ -8,8 +8,22 @@ import { sanitizeFilename } from '../utils/sanitize';
 import { VoiceTranslationPipelineService } from '../services/voiceTranslationPipelineService';
 import { YouTubeService } from '../services/youtubeService';
 import { VoiceTranslationStorageService } from '../services/voiceTranslationStorageService';
+import { TranscriptionStorageService } from '../services/transcriptionStorageService';
+import { ScriptConversionService } from '../services/scriptConversionService';
+import { ReferenceAlignmentService } from '../services/referenceAlignmentService';
+import { TranscriptExportHelper } from '../utils/transcriptExportHelper';
+import { SpeechRecognitionService } from '../services/speechRecognitionService';
 import { FFmpegHelper } from '../utils/ffmpegHelper';
-import { VoiceTranslationProject } from '../../../shared/src/types';
+import {
+  VoiceTranslationProject,
+  TranscriptionProject,
+  TranscriptionSegment,
+  ScriptChoice,
+  TranscriptionExportFormat,
+  ReferenceScriptFormat,
+  AlignmentReviewItem,
+  ReviewResolutionState
+} from '../../../shared/src/types';
 
 const router = Router();
 
@@ -230,6 +244,343 @@ router.delete('/projects/:id/outputs/:outputId', async (req: Request, res: Respo
   try {
     const updated = await VoiceTranslationStorageService.deleteOutput(req.params.id, req.params.outputId);
     res.json({ success: true, project: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==========================================
+// Voiceover Transcription Studio Endpoints
+// ==========================================
+
+/**
+ * POST /api/translation/transcribe
+ * Performs automatic language detection and timestamped transcription
+ */
+router.post('/transcribe', async (req: Request, res: Response) => {
+  try {
+    const {
+      filename,
+      originalName,
+      mediaType,
+      languageCode,
+      scriptChoice,
+      originalScript,
+      scriptFormat
+    } = req.body;
+
+    if (!filename || typeof filename !== 'string') {
+      return res.status(400).json({ success: false, error: 'A media filename is required.' });
+    }
+
+    const mediaPath = path.join(config.storageDir, filename);
+    if (!fs.existsSync(mediaPath)) {
+      return res.status(404).json({ success: false, error: `Media file not found on server: ${filename}` });
+    }
+
+    const isVideo = mediaType === 'video' || ['.mp4', '.mov', '.webm', '.mkv'].includes(path.extname(filename).toLowerCase());
+
+    // Extract audio stream if video
+    let audioPath = mediaPath;
+    let tempExtractedAudio: string | null = null;
+    if (isVideo) {
+      const extName = `extracted_asr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.mp3`;
+      tempExtractedAudio = path.join(config.storageDir, extName);
+      audioPath = await FFmpegHelper.extractAudio(mediaPath, tempExtractedAudio);
+    }
+
+    const audioBuffer = await fs.promises.readFile(audioPath);
+    const mediaDuration = await FFmpegHelper.getMediaDuration(mediaPath);
+
+    // Run speech recognition with automatic language detection
+    const asrResult = await SpeechRecognitionService.transcribeAudio(
+      audioBuffer,
+      originalName || filename,
+      languageCode
+    );
+
+    if (tempExtractedAudio && fs.existsSync(tempExtractedAudio)) {
+      await fs.promises.unlink(tempExtractedAudio).catch(() => {});
+    }
+
+    if (asrResult.error && (!asrResult.segments || asrResult.segments.length === 0)) {
+      return res.status(422).json({
+        success: false,
+        error: asrResult.error
+      });
+    }
+
+    const detectedCode = (asrResult.language_code || 'en').toLowerCase();
+    const detectedName = asrResult.language || 'English';
+    const isHindiOrUrdu = ['hi', 'ur'].includes(detectedCode);
+
+    // Apply Hindi/Urdu script conversion if requested
+    let finalSegments = asrResult.segments || [];
+    const chosenScript: ScriptChoice = scriptChoice || 'original';
+    if (isHindiOrUrdu && chosenScript !== 'original') {
+      finalSegments = ScriptConversionService.convertTranscriptSegments(
+        finalSegments,
+        chosenScript,
+        detectedCode
+      );
+    }
+
+    // Apply Reference-Guided Transcription if original script is provided
+    let reviewItems: AlignmentReviewItem[] = [];
+    let detectedFormat: ReferenceScriptFormat | undefined = undefined;
+    let omittedPassages: string[] = [];
+
+    if (typeof originalScript === 'string' && originalScript.trim().length > 0) {
+      const alignment = ReferenceAlignmentService.alignTranscriptWithReference({
+        recognizedSegments: finalSegments,
+        referenceScript: originalScript.trim(),
+        scriptFormat: scriptFormat || 'auto',
+        detectedLanguageCode: detectedCode
+      });
+
+      finalSegments = alignment.alignedSegments;
+      reviewItems = alignment.reviewItems;
+      detectedFormat = alignment.detectedScriptFormat;
+      omittedPassages = alignment.omittedReferencePassages;
+    }
+
+    const mins = Math.floor(mediaDuration / 60);
+    const secs = Math.floor(mediaDuration % 60);
+    const durationFormatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+    const projectId = `trans_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const newProject: TranscriptionProject = {
+      id: projectId,
+      filename,
+      originalName: originalName || filename,
+      mediaUrl: `/api/audio/file/${filename}`,
+      mediaType: isVideo ? 'video' : 'audio',
+      duration: mediaDuration > 0 ? mediaDuration : (asrResult.duration || 0),
+      durationFormatted,
+      detectedLanguage: detectedName,
+      detectedLanguageCode: detectedCode,
+      confidenceScore: asrResult.language_probability,
+      isAmbiguousHindiUrdu: Boolean(asrResult.is_ambiguous_hindi_urdu || isHindiOrUrdu),
+      selectedScript: chosenScript,
+      userCorrectedLanguage: languageCode || undefined,
+      segments: finalSegments,
+      originalScript: originalScript ? originalScript.trim() : undefined,
+      originalScriptFormat: scriptFormat || 'auto',
+      detectedScriptFormat: detectedFormat,
+      reviewItems: reviewItems.length > 0 ? reviewItems : undefined,
+      omittedReferencePassages: omittedPassages.length > 0 ? omittedPassages : undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const saved = await TranscriptionStorageService.saveProject(newProject);
+    res.json({ success: true, project: saved });
+  } catch (error: any) {
+    logger.error('Transcription error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Transcription processing failed.' });
+  }
+});
+
+/**
+ * POST /api/translation/detect-script
+ * Detects whether reference text is Devanagari, Urdu script, Roman Urdu, or English
+ */
+router.post('/detect-script', (req: Request, res: Response) => {
+  try {
+    const { text } = req.body;
+    const detected = ReferenceAlignmentService.detectScriptFormat(text || '');
+    res.json({ success: true, detectedFormat: detected });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/translation/transcription-projects/:id/resolve-review
+ * Resolves one or all review items without corrupting audio timestamps
+ */
+router.post('/transcription-projects/:id/resolve-review', async (req: Request, res: Response) => {
+  try {
+    const { reviewItemId, action, editedText, acceptAll } = req.body;
+    const project = await TranscriptionStorageService.getProjectById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Project not found.' });
+    }
+
+    if (acceptAll) {
+      const resolved = ReferenceAlignmentService.acceptAllCorrections({
+        segments: project.segments,
+        reviewItems: project.reviewItems || []
+      });
+      project.segments = resolved.segments;
+      project.reviewItems = resolved.reviewItems;
+    } else if (reviewItemId && action) {
+      const resolved = ReferenceAlignmentService.resolveReviewItem({
+        segments: project.segments,
+        reviewItems: project.reviewItems || [],
+        reviewItemId,
+        action,
+        editedText
+      });
+      project.segments = resolved.segments;
+      project.reviewItems = resolved.reviewItems;
+    }
+
+    project.updatedAt = new Date().toISOString();
+    const saved = await TranscriptionStorageService.saveProject(project);
+    res.json({ success: true, project: saved });
+  } catch (error: any) {
+    logger.error('Resolve review error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/translation/convert-script
+ * Converts transcription segments between Devanagari and Roman Urdu
+ */
+router.post('/convert-script', async (req: Request, res: Response) => {
+  try {
+    const { projectId, scriptChoice } = req.body;
+
+    if (!projectId || !scriptChoice) {
+      return res.status(400).json({ success: false, error: 'Project ID and scriptChoice are required.' });
+    }
+
+    const project = await TranscriptionStorageService.getProjectById(projectId);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Transcription project not found.' });
+    }
+
+    const langCode = project.detectedLanguageCode || 'hi';
+    const converted = ScriptConversionService.convertTranscriptSegments(
+      project.segments,
+      scriptChoice as ScriptChoice,
+      langCode
+    );
+
+    project.segments = converted;
+    project.selectedScript = scriptChoice;
+    const saved = await TranscriptionStorageService.saveProject(project);
+
+    res.json({ success: true, project: saved });
+  } catch (error: any) {
+    logger.error('Script conversion error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * PUT /api/translation/transcription-projects/:id/segments
+ * Updates transcript segments without modifying timestamps
+ */
+router.put('/transcription-projects/:id/segments', async (req: Request, res: Response) => {
+  try {
+    const { segments } = req.body;
+
+    if (!Array.isArray(segments)) {
+      return res.status(400).json({ success: false, error: 'Segments array is required.' });
+    }
+
+    const updated = await TranscriptionStorageService.updateSegments(req.params.id, segments);
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Transcription project not found.' });
+    }
+
+    res.json({ success: true, project: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/translation/transcription-projects
+ * Lists all transcription projects
+ */
+router.get('/transcription-projects', async (req: Request, res: Response) => {
+  try {
+    const projects = await TranscriptionStorageService.getAllProjects();
+    res.json({ success: true, projects });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/translation/transcription-projects/:id
+ * Retrieves single transcription project
+ */
+router.get('/transcription-projects/:id', async (req: Request, res: Response) => {
+  try {
+    const project = await TranscriptionStorageService.getProjectById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Transcription project not found.' });
+    }
+    res.json({ success: true, project });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/translation/transcription-projects/:id/export/:format
+ * Downloads transcript formatted as TXT, SRT, VTT, or JSON
+ */
+router.get('/transcription-projects/:id/export/:format', async (req: Request, res: Response) => {
+  try {
+    const { id, format } = req.params;
+    const project = await TranscriptionStorageService.getProjectById(id);
+
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'Transcription project not found.' });
+    }
+
+    const baseName = sanitizeFilename(path.basename(project.originalName, path.extname(project.originalName))) || 'transcript';
+    const fmt = (format || 'txt').toLowerCase();
+
+    if (fmt === 'srt') {
+      const srtContent = TranscriptExportHelper.toSrt(project.segments);
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${baseName}.srt"`);
+      return res.send(srtContent);
+    }
+
+    if (fmt === 'vtt') {
+      const vttContent = TranscriptExportHelper.toVtt(project.segments, project.originalName);
+      res.setHeader('Content-Type', 'text/vtt; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${baseName}.vtt"`);
+      return res.send(vttContent);
+    }
+
+    if (fmt === 'json') {
+      const jsonContent = TranscriptExportHelper.toJson(project);
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${baseName}.json"`);
+      return res.send(jsonContent);
+    }
+
+    // Default to timestamped TXT
+    const txtContent = TranscriptExportHelper.toTxt(project.segments, project.originalName);
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${baseName}.txt"`);
+    return res.send(txtContent);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/translation/transcription-projects/:id
+ * Deletes a transcription project
+ */
+router.delete('/transcription-projects/:id', async (req: Request, res: Response) => {
+  try {
+    const deleted = await TranscriptionStorageService.deleteProject(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: 'Transcription project not found.' });
+    }
+    res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

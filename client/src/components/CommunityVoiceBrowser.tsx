@@ -72,6 +72,9 @@ export const CommunityVoiceBrowser: React.FC<CommunityVoiceBrowserProps> = ({
     if (audioRef.current) {
       audioRef.current.pause();
     }
+    if (window.__voiceforge_pause_all_audio) {
+      window.__voiceforge_pause_all_audio();
+    }
 
     const audio = new Audio(audioUrl);
     audioRef.current = audio;

@@ -224,6 +224,13 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
+      if (window.__voiceforge_pause_all_audio) {
+        window.__voiceforge_pause_all_audio();
+      }
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        setIsPlayingPreview(false);
+      }
       audioRef.current.play();
       setIsPlaying(true);
     }
@@ -238,6 +245,13 @@ export const VoiceCloneModal: React.FC<VoiceCloneModalProps> = ({
       previewAudioRef.current.pause();
       setIsPlayingPreview(false);
     } else {
+      if (window.__voiceforge_pause_all_audio) {
+        window.__voiceforge_pause_all_audio();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
       previewAudioRef.current.play();
       setIsPlayingPreview(true);
     }

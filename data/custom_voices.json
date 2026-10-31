@@ -1,5 +1,18 @@
 [
   {
+    "id": "kokoro_cloned_char_1793132620689_wn2ft",
+    "name": "गहन कथावाचक 2026 10 26 02 40 [slow, mysterious] 4 December 1872. Samandar ke",
+    "language": "Hindi",
+    "style": "Cloned Character",
+    "gender": "Male",
+    "description": "Cloned neural character voice (am_puck (34%), am_eric (33%), am_michael (33%))",
+    "category": "Storytelling",
+    "provider": "open-source-tts",
+    "isCustom": true,
+    "isCloned": true,
+    "tags": []
+  },
+  {
     "id": "kokoro_cloned_char_1792982889398_0zp0f",
     "name": "गहन कथावाचक (Samandar Ke)",
     "language": "Hindi",
@@ -21,6 +34,7 @@
     "gender": "Male",
     "description": "Cloned neural character voice (am_puck (34%), am_eric (33%), am_michael (33%))",
     "category": "Storytelling",
+    "previewAudioUrl": "/api/audio/file/clone_preview_char_1792982465539_y41sd_1792982524763_trqrgf.mp3",
     "provider": "open-source-tts",
     "isCustom": true,
     "isCloned": true,

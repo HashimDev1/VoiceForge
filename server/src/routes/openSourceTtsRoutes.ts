@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { OpenSourceTtsService, OPEN_SOURCE_VOICES } from '../services/openSourceTtsService';
 import { ProjectService } from '../services/projectService';
+import { VoiceStorageService } from '../services/voiceStorageService';
+import { getLanguagePreviewText } from './ttsRoutes';
 import { logger } from '../utils/logger';
 
 const router = Router();
@@ -132,9 +134,39 @@ router.post('/generate', async (req: Request, res: Response) => {
  */
 router.post('/preview', async (req: Request, res: Response) => {
   try {
-    const { voice, voiceId, previewText, speechSpeed, format = 'mp3' } = req.body;
-    const text = previewText || "Welcome to today's story. What happened next would change everything.";
+    const { voice, voiceId, previewText, speechSpeed, format = 'mp3', language, voiceName } = req.body;
     const selectedVoice = voiceId || voice || 'en-US-ChristopherNeural';
+
+    // 1. Check if it's a custom cloned voice that already has a stored previewAudioUrl
+    const customVoices = await VoiceStorageService.getCustomVoices().catch(() => []);
+    const matchedCustom = customVoices.find((v) => v.id === selectedVoice);
+
+    if (matchedCustom?.previewAudioUrl) {
+      return res.json({
+        success: true,
+        service: 'open-source-tts',
+        audioUrl: matchedCustom.previewAudioUrl
+      });
+    }
+
+    // 2. Determine voice language
+    let effectiveLang = language || matchedCustom?.language;
+    if (!effectiveLang && selectedVoice) {
+      if (selectedVoice.startsWith('hi-') || selectedVoice.includes('Hindi')) effectiveLang = 'Hindi';
+      else if (selectedVoice.startsWith('ur-') || selectedVoice.includes('Urdu')) effectiveLang = 'Urdu';
+      else if (selectedVoice.startsWith('es-')) effectiveLang = 'Spanish';
+      else if (selectedVoice.startsWith('fr-')) effectiveLang = 'French';
+      else if (selectedVoice.startsWith('de-')) effectiveLang = 'German';
+      else if (selectedVoice.startsWith('ja-')) effectiveLang = 'Japanese';
+      else if (selectedVoice.startsWith('ar-')) effectiveLang = 'Arabic';
+      else if (selectedVoice.startsWith('zh-')) effectiveLang = 'Chinese';
+      else if (selectedVoice.startsWith('pt-')) effectiveLang = 'Portuguese';
+      else if (selectedVoice.startsWith('ru-')) effectiveLang = 'Russian';
+      else if (selectedVoice.startsWith('it-')) effectiveLang = 'Italian';
+      else if (selectedVoice.startsWith('ko-')) effectiveLang = 'Korean';
+    }
+
+    const text = previewText || getLanguagePreviewText(effectiveLang, voiceName || matchedCustom?.name);
 
     const result = await OpenSourceTtsService.generateTTS({
       text,
@@ -144,6 +176,11 @@ router.post('/preview', async (req: Request, res: Response) => {
     });
 
     const savedFile = await ProjectService.saveAudioFile(result.audioBuffer, 'opensource_preview');
+
+    if (matchedCustom && !matchedCustom.previewAudioUrl) {
+      matchedCustom.previewAudioUrl = savedFile.fileUrl;
+      await VoiceStorageService.saveCustomVoice(matchedCustom).catch(() => {});
+    }
 
     res.json({
       success: true,

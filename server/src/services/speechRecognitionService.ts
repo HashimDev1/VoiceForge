@@ -6,28 +6,51 @@ import { config } from '../config';
 import { logger } from '../utils/logger';
 import { FishAudioService } from './fishAudioService';
 import { TranslationEngineService } from './translationEngineService';
+import { TranscriptionSegment, TranscriptionWord } from '../../../shared/src/types';
 
 const execFileAsync = util.promisify(execFile);
-
-export interface AsrSegment {
-  start: number;
-  end: number;
-  text: string;
-}
 
 export interface SpeechRecognitionResult {
   text: string;
   duration?: number;
   language?: string;
   language_code?: string;
-  segments?: AsrSegment[];
-  provider: 'groq' | 'openai' | 'fish_audio' | 'huggingface' | 'local' | 'fallback';
+  language_probability?: number;
+  is_ambiguous_hindi_urdu?: boolean;
+  segments?: TranscriptionSegment[];
+  provider: 'local' | 'groq' | 'openai' | 'fish_audio' | 'huggingface' | 'fallback';
+  error?: string;
 }
 
 export class SpeechRecognitionService {
   /**
-   * Transcribe audio to text with automatic provider failover.
-   * Priority: Groq Whisper -> OpenAI Whisper -> Fish Audio ASR -> HuggingFace Whisper -> Graceful Fallback
+   * Discovers the working Python executable that has faster-whisper installed.
+   */
+  public static getPythonPath(): string {
+    const candidates = [
+      'python',
+      'C:\\Users\\Muhammad Hashim\\AppData\\Local\\Programs\\Python\\Python312\\python.exe',
+      'C:\\Users\\Muhammad Hashim\\AppData\\Local\\Programs\\Python\\Python314\\python.exe',
+      'py'
+    ];
+
+    for (const c of candidates) {
+      if (c === 'python' || c === 'py' || fs.existsSync(c)) {
+        return c;
+      }
+    }
+    return 'python';
+  }
+
+  /**
+   * Transcribe audio to text with automatic language detection, genuine timestamps,
+   * and word-level alignment using faster-whisper or cloud Whisper.
+   * 
+   * Priority:
+   * 1. High-accuracy Local faster-whisper engine (Free, Offline, genuine timestamps & word alignment)
+   * 2. Groq Whisper API (whisper-large-v3-turbo, if configured)
+   * 3. OpenAI Whisper API (whisper-1, if configured)
+   * 4. Fish Audio ASR (if configured and credits available)
    */
   public static async transcribeAudio(
     audioBuffer: Buffer,
@@ -45,11 +68,35 @@ export class SpeechRecognitionService {
       ? 'audio/webm'
       : 'audio/mpeg';
 
-    const langCode = targetOrSourceLanguage
+    const langCode = (targetOrSourceLanguage && targetOrSourceLanguage.toLowerCase() !== 'auto')
       ? TranslationEngineService.normalizeLangCode(targetOrSourceLanguage)
       : undefined;
 
-    // 1. Try Groq Whisper API (Fastest & Generous Free Tier)
+    // 1. Try High-Accuracy Local faster-whisper Engine (Offline, Zero cost, exact timestamps)
+    try {
+      logger.info(`[ASR] Attempting local speech-to-text transcription via faster-whisper engine...`);
+      const tempExt = ext.startsWith('.') ? ext : '.mp3';
+      const tempPath = path.join(config.storageDir, `asr_temp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}${tempExt}`);
+      await fs.promises.writeFile(tempPath, audioBuffer);
+      try {
+        const localResult = await this.transcribeWithPython(tempPath, langCode);
+        if (localResult && (localResult.text || (localResult.segments && localResult.segments.length > 0))) {
+          logger.info(`[ASR] Successfully transcribed ${localResult.text.length} chars via Local Engine (${localResult.segments?.length || 0} segments, detected: ${localResult.language} [${localResult.language_code}] prob: ${localResult.language_probability}).`);
+          return {
+            ...localResult,
+            provider: 'local'
+          };
+        }
+      } finally {
+        if (fs.existsSync(tempPath)) {
+          await fs.promises.unlink(tempPath).catch(() => {});
+        }
+      }
+    } catch (localErr: any) {
+      logger.warn('[ASR] Local faster-whisper engine failed, checking cloud providers:', localErr.message || localErr);
+    }
+
+    // 2. Try Groq Whisper API (Fastest Cloud Whisper API)
     const groqKey = config.groqApiKey || process.env.GROQ_API_KEY;
     if (groqKey && groqKey !== 'YOUR_GROQ_API_KEY_HERE') {
       try {
@@ -64,7 +111,7 @@ export class SpeechRecognitionService {
       }
     }
 
-    // 2. Try OpenAI Whisper API
+    // 3. Try OpenAI Whisper API
     const openaiKey = config.openaiApiKey || process.env.OPENAI_API_KEY;
     if (openaiKey && openaiKey !== 'YOUR_OPENAI_API_KEY_HERE') {
       try {
@@ -79,7 +126,7 @@ export class SpeechRecognitionService {
       }
     }
 
-    // 3. Try Fish Audio ASR
+    // 4. Try Fish Audio ASR
     const fishKey = config.fishApiKey;
     if (fishKey && fishKey !== 'YOUR_FISH_AUDIO_API_KEY_HERE') {
       try {
@@ -90,9 +137,10 @@ export class SpeechRecognitionService {
           return {
             text: result.text,
             duration: result.duration,
-            language: result.language,
-            language_code: result.language_code,
-            segments: (result.segments || []).map((s: any) => ({
+            language: result.language || 'English',
+            language_code: result.language_code || 'en',
+            segments: (result.segments || []).map((s: any, idx: number) => ({
+              id: `seg_${idx + 1}`,
               start: Number(s.start || s.start_time || 0),
               end: Number(s.end || s.end_time || 0),
               text: String(s.text || '').trim()
@@ -101,92 +149,86 @@ export class SpeechRecognitionService {
           };
         }
       } catch (fishErr: any) {
-        const msg = fishErr.message || String(fishErr);
-        if (msg.includes('402') || msg.toLowerCase().includes('insufficient')) {
-          logger.warn('[ASR] Fish Audio ASR returned 402 (Insufficient API credits on fish.audio/app/developers). Trying fallbacks...');
-        } else {
-          logger.warn('[ASR] Fish Audio ASR failed:', msg);
-        }
+        logger.warn('[ASR] Fish Audio ASR failed:', fishErr.message || fishErr);
       }
     }
 
-    // 4. Try Hugging Face Inference API
-    const hfKey = config.huggingFaceApiKey || process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
-    if (hfKey) {
-      try {
-        logger.info(`[ASR] Attempting transcription via Hugging Face Whisper...`);
-        const result = await this.transcribeWithHuggingFace(audioBuffer, mimeType, hfKey);
-        if (result && result.text) {
-          logger.info(`[ASR] Successfully transcribed via Hugging Face.`);
-          return { ...result, provider: 'huggingface' };
-        }
-      } catch (hfErr: any) {
-        logger.warn('[ASR] Hugging Face Whisper failed:', hfErr.message || hfErr);
-      }
-    }
-
-    // 5. Try High-Accuracy Free Local / Python Speech Recognition Engine
-    try {
-      logger.info(`[ASR] Attempting local speech-to-text transcription via Python engine...`);
-      const tempExt = ext.startsWith('.') ? ext : '.mp3';
-      const tempPath = path.join(config.storageDir, `asr_temp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}${tempExt}`);
-      await fs.promises.writeFile(tempPath, audioBuffer);
-      try {
-        const localResult = await this.transcribeWithPython(tempPath, langCode || 'en');
-        if (localResult && localResult.text && localResult.text.trim()) {
-          logger.info(`[ASR] Successfully transcribed ${localResult.text.length} chars via Local Engine (${localResult.segments?.length || 0} segments).`);
-          return {
-            text: localResult.text,
-            duration: localResult.duration,
-            language: targetOrSourceLanguage || 'English',
-            language_code: langCode || 'en',
-            segments: localResult.segments || [],
-            provider: 'local'
-          };
-        }
-      } finally {
-        if (fs.existsSync(tempPath)) {
-          await fs.promises.unlink(tempPath).catch(() => {});
-        }
-      }
-    } catch (localErr: any) {
-      logger.warn('[ASR] Local Speech Recognition failed, using fallback:', localErr.message || localErr);
-    }
-
-    // 6. Safe Fallback when no speech could be recognized
-    logger.warn('[ASR] All ASR providers unavailable or audio silent. Using fallback transcription text.');
+    // 5. If truly no speech detected or invalid audio, report honest failure
+    logger.warn('[ASR] All transcription providers failed or audio contains no discernible speech.');
     return {
-      text: 'Welcome to VoiceForge Studio. This is an original demonstration voice recording to show multilingual AI voice translation.',
+      text: '',
       provider: 'fallback',
       language: targetOrSourceLanguage || 'English',
       language_code: langCode || 'en',
-      segments: []
+      language_probability: 0.0,
+      segments: [],
+      error: 'No recognizable speech detected in this media file.'
     };
   }
 
   /**
-   * Transcribe via local Python script using speech_recognition
+   * Transcribe via local Python script using faster-whisper
    */
-  private static async transcribeWithPython(
+  public static async transcribeWithPython(
     audioPath: string,
-    langCode: string
-  ): Promise<{ text: string; duration?: number; segments?: AsrSegment[] }> {
+    langCode?: string
+  ): Promise<Omit<SpeechRecognitionResult, 'provider'>> {
     const scriptPath = path.resolve(__dirname, '../scripts/transcribe_audio.py');
-    const { stdout } = await execFileAsync('python', [scriptPath, audioPath, langCode], {
-      maxBuffer: 20 * 1024 * 1024
+    const pythonExe = this.getPythonPath();
+
+    const args = [scriptPath, audioPath];
+    if (langCode && langCode.trim()) {
+      args.push(langCode.trim());
+    }
+
+    const { stdout, stderr } = await execFileAsync(pythonExe, args, {
+      maxBuffer: 50 * 1024 * 1024,
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
     });
 
-    const parsed = JSON.parse(stdout || '{}');
-    return {
-      text: parsed.text || '',
-      duration: parsed.duration,
-      segments: Array.isArray(parsed.segments)
-        ? parsed.segments.map((s: any) => ({
-            start: Number(s.start || 0),
-            end: Number(s.end || 0),
-            text: String(s.text || '').trim()
+    if (stderr && stderr.includes('Error')) {
+      logger.warn('[ASR] transcribe_audio.py stderr:', stderr);
+    }
+
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(stdout || '{}');
+    } catch (e: any) {
+      throw new Error(`Failed to parse ASR python output: ${stdout}`);
+    }
+
+    if (parsed.error) {
+      throw new Error(`ASR engine error: ${parsed.error}`);
+    }
+
+    const rawSegments = Array.isArray(parsed.segments) ? parsed.segments : [];
+    const segments: TranscriptionSegment[] = rawSegments.map((s: any, idx: number) => {
+      const words: TranscriptionWord[] = Array.isArray(s.words)
+        ? s.words.map((w: any) => ({
+            word: String(w.word || ''),
+            start: Number(w.start || 0),
+            end: Number(w.end || 0),
+            confidence: typeof w.probability === 'number' ? w.probability : undefined
           }))
-        : []
+        : [];
+
+      return {
+        id: s.id || `seg_${idx + 1}`,
+        start: Number(s.start || 0),
+        end: Number(s.end || 0),
+        text: String(s.text || '').trim(),
+        words
+      };
+    });
+
+    return {
+      text: (parsed.text || '').trim(),
+      duration: parsed.duration,
+      language: parsed.language || 'English',
+      language_code: parsed.language_code || 'en',
+      language_probability: typeof parsed.language_probability === 'number' ? parsed.language_probability : undefined,
+      is_ambiguous_hindi_urdu: Boolean(parsed.is_ambiguous_hindi_urdu),
+      segments
     };
   }
 
@@ -226,17 +268,30 @@ export class SpeechRecognitionService {
 
     const data: any = await response.json();
     const rawSegments = Array.isArray(data.segments) ? data.segments : [];
-    const segments: AsrSegment[] = rawSegments.map((s: any) => ({
+    const segments: TranscriptionSegment[] = rawSegments.map((s: any, idx: number) => ({
+      id: `seg_${idx + 1}`,
       start: Number(s.start || 0),
       end: Number(s.end || 0),
-      text: String(s.text || '').trim()
-    })).filter((s: AsrSegment) => s.text.length > 0);
+      text: String(s.text || '').trim(),
+      words: Array.isArray(s.words)
+        ? s.words.map((w: any) => ({
+            word: String(w.word || ''),
+            start: Number(w.start || 0),
+            end: Number(w.end || 0)
+          }))
+        : []
+    })).filter((s: TranscriptionSegment) => s.text.length > 0);
+
+    const detectedLang = data.language || langCode || 'en';
+    const isHindiUrdu = ['hi', 'ur', 'hindi', 'urdu'].includes(detectedLang.toLowerCase());
 
     return {
       text: (data.text || '').trim(),
       duration: typeof data.duration === 'number' ? data.duration : undefined,
-      language: data.language || langCode || 'en',
-      language_code: langCode || 'en',
+      language: detectedLang,
+      language_code: langCode || detectedLang.slice(0, 2),
+      language_probability: 0.95,
+      is_ambiguous_hindi_urdu: isHindiUrdu,
       segments
     };
   }
@@ -276,47 +331,31 @@ export class SpeechRecognitionService {
 
     const data: any = await response.json();
     const rawSegments = Array.isArray(data.segments) ? data.segments : [];
-    const segments: AsrSegment[] = rawSegments.map((s: any) => ({
+    const segments: TranscriptionSegment[] = rawSegments.map((s: any, idx: number) => ({
+      id: `seg_${idx + 1}`,
       start: Number(s.start || 0),
       end: Number(s.end || 0),
-      text: String(s.text || '').trim()
-    })).filter((s: AsrSegment) => s.text.length > 0);
+      text: String(s.text || '').trim(),
+      words: Array.isArray(s.words)
+        ? s.words.map((w: any) => ({
+            word: String(w.word || ''),
+            start: Number(w.start || 0),
+            end: Number(w.end || 0)
+          }))
+        : []
+    })).filter((s: TranscriptionSegment) => s.text.length > 0);
+
+    const detectedLang = data.language || langCode || 'en';
+    const isHindiUrdu = ['hi', 'ur', 'hindi', 'urdu'].includes(detectedLang.toLowerCase());
 
     return {
       text: (data.text || '').trim(),
       duration: typeof data.duration === 'number' ? data.duration : undefined,
-      language: data.language || langCode || 'en',
-      language_code: langCode || 'en',
+      language: detectedLang,
+      language_code: langCode || detectedLang.slice(0, 2),
+      language_probability: 0.95,
+      is_ambiguous_hindi_urdu: isHindiUrdu,
       segments
-    };
-  }
-
-  /**
-   * Transcribe via Hugging Face Inference API
-   */
-  private static async transcribeWithHuggingFace(
-    audioBuffer: Buffer,
-    mimeType: string,
-    apiKey: string
-  ): Promise<Omit<SpeechRecognitionResult, 'provider'>> {
-    const response = await fetch('https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': mimeType || 'audio/mpeg'
-      },
-      body: new Uint8Array(audioBuffer)
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Hugging Face API returned ${response.status}: ${errText}`);
-    }
-
-    const data: any = await response.json();
-    return {
-      text: (data.text || '').trim(),
-      segments: []
     };
   }
 }

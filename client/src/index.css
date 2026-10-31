@@ -44,14 +44,14 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(107, 114, 128, 0.2);
+  background: rgba(107, 114, 128, 0.25);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(107, 114, 128, 0.4);
+  background: rgba(107, 114, 128, 0.45);
 }
 
-/* Custom Studio UI elements matching minimalist screenshot aesthetic */
+/* Custom Studio UI elements */
 .glass-panel {
   background: var(--bg-studio-900);
   border: 1px solid var(--border-studio);
@@ -74,4 +74,69 @@
 
 .title-display {
   font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* ========================================================
+   Caption Studio 2.0 Motion Graphics Animation Engine
+   ======================================================== */
+@keyframes caption-pop {
+  0% { transform: scale(0.62); opacity: 0.2; }
+  70% { transform: scale(1.14); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes caption-punch {
+  0% { transform: scale(0.4) rotate(-3.5deg); opacity: 0; }
+  65% { transform: scale(1.22) rotate(1deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes caption-bounce {
+  0%, 100% { transform: translateY(0); }
+  35% { transform: translateY(-11px) scale(1.09); }
+  65% { transform: translateY(2px) scale(0.97); }
+}
+
+@keyframes caption-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.14); }
+}
+
+@keyframes caption-zoom {
+  0% { transform: scale(0.72); opacity: 0.2; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes caption-slide {
+  0% { transform: translateY(16px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes caption-fade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes caption-blur-focus {
+  0% { filter: blur(7px); opacity: 0.2; transform: scale(0.95); }
+  100% { filter: blur(0px); opacity: 1; transform: scale(1); }
+}
+
+@keyframes caption-glitch {
+  0% { transform: translate(0); text-shadow: -2px 0 #00ffff, 2px 0 #ff0055; }
+  25% { transform: translate(-2px, 1px); text-shadow: 2px 0 #00ffff, -2px 0 #ff0055; }
+  50% { transform: translate(1px, -1px); text-shadow: -1px 0 #00ffff, 1px 0 #ff0055; }
+  75% { transform: translate(-1px, 2px); text-shadow: 2px 0 #00ffff, -1px 0 #ff0055; }
+  100% { transform: translate(0); text-shadow: 0 0 transparent; }
+}
+
+@keyframes caption-type {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes caption-gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }

@@ -70,7 +70,8 @@ export class ProjectService {
 
     const files = await fs.promises.readdir(config.storageDir);
     for (const file of files) {
-      if (!file.endsWith('.mp3') && !file.endsWith('.zip')) {
+      const isCaptionedVideo = file.startsWith('captioned_') && file.endsWith('.mp4');
+      if (!file.endsWith('.mp3') && !file.endsWith('.zip') && !isCaptionedVideo) {
         continue;
       }
       const filePath = path.join(config.storageDir, file);
@@ -86,7 +87,7 @@ export class ProjectService {
     }
 
     if (cleanedCount > 0) {
-      logger.info(`Cleaned up ${cleanedCount} expired audio file(s).`);
+      logger.info(`Cleaned up ${cleanedCount} expired media file(s).`);
     }
     return cleanedCount;
   }

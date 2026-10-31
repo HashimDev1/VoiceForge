@@ -1,0 +1,4636 @@
+[
+  {
+    "id": "trans_1793283849489_j5as0",
+    "filename": "test_hindi.mp3",
+    "originalName": "test_hindi.mp3",
+    "mediaUrl": "/api/audio/file/test_hindi.mp3",
+    "mediaType": "audio",
+    "duration": 4.704,
+    "durationFormatted": "00:04",
+    "detectedLanguage": "Hindi",
+    "detectedLanguageCode": "hi",
+    "confidenceScore": 0.9848,
+    "isAmbiguousHindiUrdu": true,
+    "selectedScript": "original",
+    "segments": [
+      {
+        "id": "seg_1",
+        "start": 0,
+        "end": 3.26,
+        "text": "नमस्ते, यहा मुझ स्पोर्च का हिंदी कलोन तैस्ट है",
+        "words": [
+          {
+            "word": " नमस्ते,",
+            "start": 0,
+            "end": 0.76,
+            "confidence": 0.77
+          },
+          {
+            "word": " यहा",
+            "start": 0.92,
+            "end": 1.12,
+            "confidence": 0.73
+          },
+          {
+            "word": " मुझ",
+            "start": 1.12,
+            "end": 1.36,
+            "confidence": 0.36
+          },
+          {
+            "word": " स्पोर्च",
+            "start": 1.36,
+            "end": 1.8,
+            "confidence": 0.63
+          },
+          {
+            "word": " का",
+            "start": 1.8,
+            "end": 2.02,
+            "confidence": 0.9
+          },
+          {
+            "word": " हिंदी",
+            "start": 2.02,
+            "end": 2.4,
+            "confidence": 0.71
+          },
+          {
+            "word": " कलोन",
+            "start": 2.4,
+            "end": 2.74,
+            "confidence": 0.48
+          },
+          {
+            "word": " तैस्ट",
+            "start": 2.74,
+            "end": 3.08,
+            "confidence": 0.61
+          },
+          {
+            "word": " है",
+            "start": 3.08,
+            "end": 3.26,
+            "confidence": 0.91
+          }
+        ],
+        "alignmentStatus": "spoken_addition"
+      }
+    ],
+    "originalScript": "नमस्ते आप कैसे हैं। मैं ठीक हूँ।",
+    "originalScriptFormat": "hindi_devanagari",
+    "detectedScriptFormat": "hindi_devanagari",
+    "reviewItems": [
+      {
+        "id": "rev_seg_1_mvtmwhzk",
+        "segmentId": "seg_1",
+        "start": 0,
+        "end": 3.26,
+        "recognizedText": "नमस्ते, यहा मुझ स्पोर्च का हिंदी कलोन तैस्ट है",
+        "suggestedText": "नमस्ते, यहा मुझ स्पोर्च का हिंदी कलोन तैस्ट है",
+        "status": "spoken_addition",
+        "statusLabel": "Spoken Addition (Not in Script)",
+        "confidence": 0.37,
+        "resolvedState": "accepted"
+      }
+    ],
+    "omittedReferencePassages": [
+      "नमस्ते आप कैसे हैं",
+      "मैं ठीक हूँ"
+    ],
+    "createdAt": "2026-10-29T14:24:09.489Z",
+    "updatedAt": "2026-10-29T14:24:09.538Z"
+  },
+  {
+    "id": "trans_1793282165761_5cqec",
+    "filename": "input_1793274050424__-_-2026-10-29-16-34-_-_-_-1872_-_-_-_-_-_.mp3",
+    "originalName": "Mary_Celeste_Narration.mp3",
+    "mediaUrl": "/api/audio/file/input_1793274050424__-_-2026-10-29-16-34-_-_-_-1872_-_-_-_-_-_.mp3",
+    "mediaType": "audio",
+    "duration": 79.43825,
+    "durationFormatted": "01:19",
+    "detectedLanguage": "Hindi",
+    "detectedLanguageCode": "hi",
+    "confidenceScore": 1,
+    "isAmbiguousHindiUrdu": true,
+    "selectedScript": "original",
+    "userCorrectedLanguage": "hi",
+    "segments": [
+      {
+        "id": "seg_1",
+        "start": 0.54,
+        "end": 4.66,
+        "text": "अट्लान्तिकोऊष्यं, दीसेमबर आथारसु भहत्तरू, समन्दर मैं जहाज अकेला तैर रहा है.",
+        "words": [
+          {
+            "word": " अट्लान्तिकोऊष्यं,",
+            "start": 0.54,
+            "end": 1.04,
+            "confidence": 0.51
+          },
+          {
+            "word": " दीसेमबर",
+            "start": 1.16,
+            "end": 1.56,
+            "confidence": 0.61
+          },
+          {
+            "word": " आथारसु",
+            "start": 1.56,
+            "end": 2,
+            "confidence": 0.55
+          },
+          {
+            "word": " भहत्तरू,",
+            "start": 2,
+            "end": 2.48,
+            "confidence": 0.59
+          },
+          {
+            "word": " समन्दर",
+            "start": 2.56,
+            "end": 3.02,
+            "confidence": 0.69
+          },
+          {
+            "word": " मैं",
+            "start": 3.02,
+            "end": 3.16,
+            "confidence": 0.49
+          },
+          {
+            "word": " जहाज",
+            "start": 3.16,
+            "end": 3.64,
+            "confidence": 0.75
+          },
+          {
+            "word": " अकेला",
+            "start": 3.64,
+            "end": 4.1,
+            "confidence": 0.74
+          },
+          {
+            "word": " तैर",
+            "start": 4.1,
+            "end": 4.26,
+            "confidence": 0.58
+          },
+          {
+            "word": " रहा",
+            "start": 4.26,
+            "end": 4.5,
+            "confidence": 0.93
+          },
+          {
+            "word": " है.",
+            "start": 4.5,
+            "end": 4.66,
+            "confidence": 0.93
+          }
+        ],
+        "alignmentStatus": "spoken_addition"
+      },
+      {
+        "id": "seg_2",
+        "start": 4.76,
+        "end": 7.98,
+        "text": "उसके सेल्स हवा में हिल रहे हैं",
+        "words": [
+          {
+            "word": " उसके",
+            "start": 4.76,
+            "end": 5.02,
+            "confidence": 0.89
+          },
+          {
+            "word": " सेल्ज",
+            "start": 5.02,
+            "end": 5.38,
+            "confidence": 0.74
+          },
+          {
+            "word": " हवा",
+            "start": 5.38,
+            "end": 5.64,
+            "confidence": 0.79
+          },
+          {
+            "word": " में",
+            "start": 5.64,
+            "end": 5.82,
+            "confidence": 0.74
+          },
+          {
+            "word": " हिल",
+            "start": 5.82,
+            "end": 5.96,
+            "confidence": 0.77
+          },
+          {
+            "word": " रہे",
+            "start": 5.96,
+            "end": 6.14,
+            "confidence": 0.66
+          },
+          {
+            "word": " है,",
+            "start": 6.14,
+            "end": 6.28,
+            "confidence": 0.83
+          },
+          {
+            "word": " कारगो",
+            "start": 6.4,
+            "end": 6.74,
+            "confidence": 0.84
+          },
+          {
+            "word": " अБही",
+            "start": 6.74,
+            "end": 7.06,
+            "confidence": 0.63
+          },
+          {
+            "word": " भी",
+            "start": 7.06,
+            "end": 7.16,
+            "confidence": 0.9
+          },
+          {
+            "word": " अंधर",
+            "start": 7.16,
+            "end": 7.48,
+            "confidence": 0.71
+          },
+          {
+            "word": " है!",
+            "start": 7.48,
+            "end": 7.98,
+            "confidence": 0.84
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "उसके सेल्स हवा में हिल रहे हैं"
+      },
+      {
+        "id": "seg_3",
+        "start": 8.14,
+        "end": 9.64,
+        "text": "खाने-पीने का सामान मौजूद है",
+        "words": [
+          {
+            "word": " खाने",
+            "start": 8.14,
+            "end": 8.46,
+            "confidence": 0.84
+          },
+          {
+            "word": " पीने",
+            "start": 8.46,
+            "end": 8.68,
+            "confidence": 0.92
+          },
+          {
+            "word": " का",
+            "start": 8.68,
+            "end": 8.8,
+            "confidence": 0.89
+          },
+          {
+            "word": " समान",
+            "start": 8.8,
+            "end": 9.14,
+            "confidence": 0.8
+          },
+          {
+            "word": " मौझुद",
+            "start": 9.14,
+            "end": 9.48,
+            "confidence": 0.66
+          },
+          {
+            "word": " है?",
+            "start": 9.48,
+            "end": 9.64,
+            "confidence": 0.92
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "खाने-पीने का सामान मौजूद है"
+      },
+      {
+        "id": "seg_4",
+        "start": 9.82,
+        "end": 12.74,
+        "text": "लेकिन उस पर एक भी इंसान नहीं",
+        "words": [
+          {
+            "word": " ज़ाघ",
+            "start": 9.82,
+            "end": 10.1,
+            "confidence": 0.52
+          },
+          {
+            "word": " दूब",
+            "start": 10.1,
+            "end": 10.42,
+            "confidence": 0.63
+          },
+          {
+            "word": " नहीं",
+            "start": 10.42,
+            "end": 10.66,
+            "confidence": 0.84
+          },
+          {
+            "word": " रखा,",
+            "start": 10.66,
+            "end": 10.9,
+            "confidence": 0.6
+          },
+          {
+            "word": " लिकिन",
+            "start": 11,
+            "end": 11.3,
+            "confidence": 0.72
+          },
+          {
+            "word": " उسपर",
+            "start": 11.3,
+            "end": 11.68,
+            "confidence": 0.67
+          },
+          {
+            "word": " एक",
+            "start": 11.68,
+            "end": 12,
+            "confidence": 0.89
+          },
+          {
+            "word": " भھی",
+            "start": 12,
+            "end": 12.14,
+            "confidence": 0.54
+          },
+          {
+            "word": " इन्सान",
+            "start": 12.14,
+            "end": 12.5,
+            "confidence": 0.69
+          },
+          {
+            "word": " न",
+            "start": 12.5,
+            "end": 12.64,
+            "confidence": 0.9
+          },
+          {
+            "word": " ही.",
+            "start": 12.64,
+            "end": 12.74,
+            "confidence": 0.45
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "लेकिन उस पर एक भी इंसान नहीं"
+      },
+      {
+        "id": "seg_5",
+        "start": 12.74,
+        "end": 19.88,
+        "text": "केप्तिन गायब, उसकी भीवी गआयभ, अंकी सुल की बेटी ड़ीगईएज़, और क्रू के साथ मैमबरस का लिए कोई निशान नहीं।",
+        "words": [
+          {
+            "word": " केप्तिन",
+            "start": 12.74,
+            "end": 13.56,
+            "confidence": 0.39
+          },
+          {
+            "word": " गायब,",
+            "start": 13.56,
+            "end": 13.88,
+            "confidence": 0.56
+          },
+          {
+            "word": " उसकी",
+            "start": 14.06,
+            "end": 14.34,
+            "confidence": 0.84
+          },
+          {
+            "word": " भीवी",
+            "start": 14.34,
+            "end": 14.66,
+            "confidence": 0.85
+          },
+          {
+            "word": " गआयभ,",
+            "start": 14.66,
+            "end": 15,
+            "confidence": 0.56
+          },
+          {
+            "word": " अंकी",
+            "start": 15.16,
+            "end": 15.42,
+            "confidence": 0.57
+          },
+          {
+            "word": " सुल",
+            "start": 15.42,
+            "end": 15.92,
+            "confidence": 0.2
+          },
+          {
+            "word": " की",
+            "start": 15.92,
+            "end": 16.1,
+            "confidence": 0.62
+          },
+          {
+            "word": " बेटी",
+            "start": 16.1,
+            "end": 16.42,
+            "confidence": 0.83
+          },
+          {
+            "word": " ड़ीगईएज़,",
+            "start": 16.42,
+            "end": 16.8,
+            "confidence": 0.53
+          },
+          {
+            "word": " और",
+            "start": 16.86,
+            "end": 17.06,
+            "confidence": 0.89
+          },
+          {
+            "word": " क्रू",
+            "start": 17.06,
+            "end": 17.3,
+            "confidence": 0.77
+          },
+          {
+            "word": " के",
+            "start": 17.3,
+            "end": 17.46,
+            "confidence": 0.76
+          },
+          {
+            "word": " साथ",
+            "start": 17.46,
+            "end": 17.84,
+            "confidence": 0.8
+          },
+          {
+            "word": " मैमबरस",
+            "start": 17.84,
+            "end": 18.26,
+            "confidence": 0.55
+          },
+          {
+            "word": " का",
+            "start": 18.26,
+            "end": 18.38,
+            "confidence": 0.85
+          },
+          {
+            "word": " लिए",
+            "start": 18.38,
+            "end": 18.58,
+            "confidence": 0.6
+          },
+          {
+            "word": " कोई",
+            "start": 18.58,
+            "end": 18.84,
+            "confidence": 0.74
+          },
+          {
+            "word": " निशान",
+            "start": 18.84,
+            "end": 19.18,
+            "confidence": 0.87
+          },
+          {
+            "word": " नहीं।",
+            "start": 19.18,
+            "end": 19.88,
+            "confidence": 0.82
+          }
+        ],
+        "alignmentStatus": "spoken_addition"
+      },
+      {
+        "id": "seg_6",
+        "start": 19.88,
+        "end": 24.58,
+        "text": "कुछ दिन पहले तक इस पर दस लोग ज़िंदा थे",
+        "words": [
+          {
+            "word": " जहاز",
+            "start": 19.88,
+            "end": 20.28,
+            "confidence": 0.61
+          },
+          {
+            "word": " कानाम",
+            "start": 20.28,
+            "end": 20.68,
+            "confidence": 0.71
+          },
+          {
+            "word": " ठा",
+            "start": 20.68,
+            "end": 20.86,
+            "confidence": 0.65
+          },
+          {
+            "word": " मैरी",
+            "start": 20.86,
+            "end": 21.4,
+            "confidence": 0.8
+          },
+          {
+            "word": " सलेस्ट,",
+            "start": 21.4,
+            "end": 21.82,
+            "confidence": 0.73
+          },
+          {
+            "word": " कुछ",
+            "start": 22.18,
+            "end": 22.4,
+            "confidence": 0.81
+          },
+          {
+            "word": " दिन",
+            "start": 22.4,
+            "end": 22.58,
+            "confidence": 0.88
+          },
+          {
+            "word": " پहले",
+            "start": 22.58,
+            "end": 22.96,
+            "confidence": 0.7
+          },
+          {
+            "word": " तक",
+            "start": 22.96,
+            "end": 23.14,
+            "confidence": 0.82
+          },
+          {
+            "word": " इस",
+            "start": 23.14,
+            "end": 23.32,
+            "confidence": 0.84
+          },
+          {
+            "word": " पर",
+            "start": 23.32,
+            "end": 23.52,
+            "confidence": 0.84
+          },
+          {
+            "word": " दस",
+            "start": 23.52,
+            "end": 23.8,
+            "confidence": 0.83
+          },
+          {
+            "word": " लोग",
+            "start": 23.8,
+            "end": 24.08,
+            "confidence": 0.88
+          },
+          {
+            "word": " जिन्दा",
+            "start": 24.08,
+            "end": 24.42,
+            "confidence": 0.72
+          },
+          {
+            "word": " थे",
+            "start": 24.42,
+            "end": 24.58,
+            "confidence": 0.74
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "कुछ दिन पहले तक इस पर दस लोग ज़िंदा थे"
+      },
+      {
+        "id": "seg_7",
+        "start": 24.58,
+        "end": 28.32,
+        "text": "फिर कुछ ऐसा हुआ कि उन्होंने जहाज़ छोड़ दिया",
+        "words": [
+          {
+            "word": " फिर",
+            "start": 24.58,
+            "end": 24.9,
+            "confidence": 0.58
+          },
+          {
+            "word": " कुछ",
+            "start": 24.9,
+            "end": 25.16,
+            "confidence": 0.76
+          },
+          {
+            "word": " आसा",
+            "start": 25.16,
+            "end": 25.52,
+            "confidence": 0.48
+          },
+          {
+            "word": " हूए",
+            "start": 25.52,
+            "end": 25.78,
+            "confidence": 0.65
+          },
+          {
+            "word": " की",
+            "start": 25.78,
+            "end": 25.94,
+            "confidence": 0.63
+          },
+          {
+            "word": " उनहोंने",
+            "start": 25.94,
+            "end": 26.26,
+            "confidence": 0.64
+          },
+          {
+            "word": " अपना",
+            "start": 26.26,
+            "end": 26.48,
+            "confidence": 0.92
+          },
+          {
+            "word": " जाहाज",
+            "start": 26.48,
+            "end": 26.86,
+            "confidence": 0.8
+          },
+          {
+            "word": " चोर",
+            "start": 26.86,
+            "end": 27.2,
+            "confidence": 0.66
+          },
+          {
+            "word": " दिया,",
+            "start": 27.2,
+            "end": 27.42,
+            "confidence": 0.83
+          },
+          {
+            "word": " मैंगर",
+            "start": 27.58,
+            "end": 27.84,
+            "confidence": 0.69
+          },
+          {
+            "word": " क्यों?",
+            "start": 27.84,
+            "end": 28.32,
+            "confidence": 0.71
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "फिर कुछ ऐसा हुआ कि उन्होंने जहाज़ छोड़ दिया"
+      },
+      {
+        "id": "seg_8",
+        "start": 28.54,
+        "end": 31.68,
+        "text": "अगर जहाज़ डूब रहा था तो वो अभी भी तैर कैसे रहा था",
+        "words": [
+          {
+            "word": " अकर",
+            "start": 28.54,
+            "end": 28.74,
+            "confidence": 0.67
+          },
+          {
+            "word": " ज़ाध",
+            "start": 28.74,
+            "end": 29.04,
+            "confidence": 0.45
+          },
+          {
+            "word": " डौबनेवाला",
+            "start": 29.04,
+            "end": 29.74,
+            "confidence": 0.67
+          },
+          {
+            "word": " था,",
+            "start": 29.74,
+            "end": 29.96,
+            "confidence": 0.74
+          },
+          {
+            "word": " तो",
+            "start": 30.16,
+            "end": 30.2,
+            "confidence": 0.89
+          },
+          {
+            "word": " वो",
+            "start": 30.2,
+            "end": 30.34,
+            "confidence": 0.78
+          },
+          {
+            "word": " ईभीतक",
+            "start": 30.34,
+            "end": 30.74,
+            "confidence": 0.57
+          },
+          {
+            "word": " टैर",
+            "start": 30.74,
+            "end": 31.06,
+            "confidence": 0.59
+          },
+          {
+            "word": " कैसे",
+            "start": 31.06,
+            "end": 31.32,
+            "confidence": 0.89
+          },
+          {
+            "word": " रहाता.",
+            "start": 31.32,
+            "end": 31.68,
+            "confidence": 0.82
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "अगर जहाज़ डूब रहा था तो वो अभी भी तैर कैसे रहा था"
+      },
+      {
+        "id": "seg_9",
+        "start": 32.08,
+        "end": 35.68,
+        "text": "अगर किसी ने हमला किया तो कार्गो और सामान वहीं क्यों छोड़ दिया गया",
+        "words": [
+          {
+            "word": " अگर",
+            "start": 32.08,
+            "end": 32.36,
+            "confidence": 0.71
+          },
+          {
+            "word": " किसी",
+            "start": 32.36,
+            "end": 32.6,
+            "confidence": 0.87
+          },
+          {
+            "word": " ने",
+            "start": 32.6,
+            "end": 32.74,
+            "confidence": 0.65
+          },
+          {
+            "word": " हम्ला",
+            "start": 32.74,
+            "end": 33.04,
+            "confidence": 0.76
+          },
+          {
+            "word": " कियا,",
+            "start": 33.04,
+            "end": 33.32,
+            "confidence": 0.6
+          },
+          {
+            "word": " उखारगो",
+            "start": 33.48,
+            "end": 34,
+            "confidence": 0.64
+          },
+          {
+            "word": " और",
+            "start": 34,
+            "end": 34.14,
+            "confidence": 0.83
+          },
+          {
+            "word": " सामान",
+            "start": 34.14,
+            "end": 34.56,
+            "confidence": 0.84
+          },
+          {
+            "word": " वही",
+            "start": 34.56,
+            "end": 34.86,
+            "confidence": 0.87
+          },
+          {
+            "word": " क्झों",
+            "start": 34.86,
+            "end": 35.08,
+            "confidence": 0.49
+          },
+          {
+            "word": " छोरडिय",
+            "start": 35.08,
+            "end": 35.42,
+            "confidence": 0.65
+          },
+          {
+            "word": " या",
+            "start": 35.42,
+            "end": 35.48,
+            "confidence": 0.31
+          },
+          {
+            "word": " गया.",
+            "start": 35.48,
+            "end": 35.68,
+            "confidence": 0.69
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "अगर किसी ने हमला किया तो कार्गो और सामान वहीं क्यों छोड़ दिया गया"
+      },
+      {
+        "id": "seg_10",
+        "start": 35.68,
+        "end": 39.96,
+        "text": "और अगर सब लोग लाइफ़बोट में निकल गए तो फिर उनका कोई निशान क्यों नहीं मिला",
+        "words": [
+          {
+            "word": " और",
+            "start": 35.68,
+            "end": 36.18,
+            "confidence": 0.56
+          },
+          {
+            "word": " अगर",
+            "start": 36.18,
+            "end": 36.38,
+            "confidence": 0.87
+          },
+          {
+            "word": " सब",
+            "start": 36.38,
+            "end": 36.66,
+            "confidence": 0.93
+          },
+          {
+            "word": " लोग",
+            "start": 36.66,
+            "end": 36.88,
+            "confidence": 0.94
+          },
+          {
+            "word": " life",
+            "start": 36.88,
+            "end": 37.12,
+            "confidence": 0.02
+          },
+          {
+            "word": " boat",
+            "start": 37.12,
+            "end": 37.4,
+            "confidence": 0.58
+          },
+          {
+            "word": " में",
+            "start": 37.4,
+            "end": 37.56,
+            "confidence": 0.86
+          },
+          {
+            "word": " निकल",
+            "start": 37.56,
+            "end": 37.78,
+            "confidence": 0.8
+          },
+          {
+            "word": " रहा",
+            "start": 37.78,
+            "end": 37.94,
+            "confidence": 0.4
+          },
+          {
+            "word": " है,",
+            "start": 37.94,
+            "end": 37.98,
+            "confidence": 0.54
+          },
+          {
+            "word": " तु",
+            "start": 38.14,
+            "end": 38.22,
+            "confidence": 0.7
+          },
+          {
+            "word": " फिर",
+            "start": 38.22,
+            "end": 38.34,
+            "confidence": 0.76
+          },
+          {
+            "word": " उनका",
+            "start": 38.34,
+            "end": 38.62,
+            "confidence": 0.79
+          },
+          {
+            "word": " कोई",
+            "start": 38.62,
+            "end": 38.92,
+            "confidence": 0.81
+          },
+          {
+            "word": " नीसान",
+            "start": 38.92,
+            "end": 39.28,
+            "confidence": 0.63
+          },
+          {
+            "word": " क्यो",
+            "start": 39.28,
+            "end": 39.54,
+            "confidence": 0.79
+          },
+          {
+            "word": " नहीं",
+            "start": 39.54,
+            "end": 39.66,
+            "confidence": 0.9
+          },
+          {
+            "word": " मिला.",
+            "start": 39.66,
+            "end": 39.96,
+            "confidence": 0.73
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "और अगर सब लोग लाइफ़बोट में निकल गए तो फिर उनका कोई निशान क्यों नहीं मिला"
+      },
+      {
+        "id": "seg_11",
+        "start": 40.36,
+        "end": 44.18,
+        "text": "मैरी सेलेस्टे कोई fictional horror story नहीं",
+        "words": [
+          {
+            "word": " मैरी",
+            "start": 40.36,
+            "end": 40.76,
+            "confidence": 0.78
+          },
+          {
+            "word": " सलेस्त",
+            "start": 40.76,
+            "end": 41.14,
+            "confidence": 0.69
+          },
+          {
+            "word": " को",
+            "start": 41.14,
+            "end": 41.3,
+            "confidence": 0.86
+          },
+          {
+            "word": " इप",
+            "start": 41.3,
+            "end": 41.4,
+            "confidence": 0.36
+          },
+          {
+            "word": " विक्षनल",
+            "start": 41.4,
+            "end": 41.84,
+            "confidence": 0.63
+          },
+          {
+            "word": "-होरर",
+            "start": 41.84,
+            "end": 42.16,
+            "confidence": 0.43
+          },
+          {
+            "word": " स्टोरी",
+            "start": 42.16,
+            "end": 42.44,
+            "confidence": 0.64
+          },
+          {
+            "word": " न",
+            "start": 42.44,
+            "end": 42.54,
+            "confidence": 0.94
+          },
+          {
+            "word": " ही,",
+            "start": 42.54,
+            "end": 42.68,
+            "confidence": 0.43
+          },
+          {
+            "word": " यह",
+            "start": 42.8,
+            "end": 42.96,
+            "confidence": 0.95
+          },
+          {
+            "word": " एक",
+            "start": 42.96,
+            "end": 43.18,
+            "confidence": 0.78
+          },
+          {
+            "word": " हकी",
+            "start": 43.18,
+            "end": 43.48,
+            "confidence": 0.6
+          },
+          {
+            "word": " की",
+            "start": 43.48,
+            "end": 43.64,
+            "confidence": 0.72
+          },
+          {
+            "word": " जहाज",
+            "start": 43.64,
+            "end": 44,
+            "confidence": 0.76
+          },
+          {
+            "word": " था.",
+            "start": 44,
+            "end": 44.18,
+            "confidence": 0.7
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "मैरी सेलेस्टे कोई fictional horror story नहीं"
+      },
+      {
+        "id": "seg_12",
+        "start": 44.68,
+        "end": 49.46,
+        "text": "और इसकी कहानी आज भी एक ऐसे सवाल पर ख़त्म होती है जिसका जवाब किसी के पास नहीं—",
+        "words": [
+          {
+            "word": " औ़",
+            "start": 44.68,
+            "end": 44.8,
+            "confidence": 0.46
+          },
+          {
+            "word": " इसकी",
+            "start": 44.8,
+            "end": 45.06,
+            "confidence": 0.72
+          },
+          {
+            "word": " खाहनी",
+            "start": 45.06,
+            "end": 45.5,
+            "confidence": 0.6
+          },
+          {
+            "word": " आजघ",
+            "start": 45.5,
+            "end": 45.88,
+            "confidence": 0.65
+          },
+          {
+            "word": " भी",
+            "start": 45.88,
+            "end": 46,
+            "confidence": 0.88
+          },
+          {
+            "word": " एख",
+            "start": 46,
+            "end": 46.16,
+            "confidence": 0.56
+          },
+          {
+            "word": " ऐसे",
+            "start": 46.16,
+            "end": 46.48,
+            "confidence": 0.65
+          },
+          {
+            "word": " सवाल",
+            "start": 46.48,
+            "end": 46.82,
+            "confidence": 0.85
+          },
+          {
+            "word": " पर",
+            "start": 46.82,
+            "end": 46.98,
+            "confidence": 0.88
+          },
+          {
+            "word": " खतम",
+            "start": 46.98,
+            "end": 47.3,
+            "confidence": 0.57
+          },
+          {
+            "word": " होती",
+            "start": 47.3,
+            "end": 47.56,
+            "confidence": 0.9
+          },
+          {
+            "word": " है",
+            "start": 47.56,
+            "end": 47.72,
+            "confidence": 0.97
+          },
+          {
+            "word": " जिसका",
+            "start": 47.72,
+            "end": 48.18,
+            "confidence": 0.65
+          },
+          {
+            "word": " जबाब",
+            "start": 48.18,
+            "end": 48.58,
+            "confidence": 0.78
+          },
+          {
+            "word": " किसी",
+            "start": 48.58,
+            "end": 48.88,
+            "confidence": 0.87
+          },
+          {
+            "word": " के",
+            "start": 48.88,
+            "end": 49,
+            "confidence": 0.7
+          },
+          {
+            "word": " पास",
+            "start": 49,
+            "end": 49.22,
+            "confidence": 0.86
+          },
+          {
+            "word": " नہी.",
+            "start": 49.22,
+            "end": 49.46,
+            "confidence": 0.67
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "और इसकी कहानी आज भी एक ऐसे सवाल पर ख़त्म होती है जिसका जवाब किसी के पास नहीं—"
+      },
+      {
+        "id": "seg_13",
+        "start": 49.46,
+        "end": 52.02,
+        "text": "आखिर उन दस लोगों के साथ हुआ क्या था",
+        "words": [
+          {
+            "word": " आखिर",
+            "start": 49.46,
+            "end": 49.94,
+            "confidence": 0.66
+          },
+          {
+            "word": " उन",
+            "start": 49.94,
+            "end": 50.14,
+            "confidence": 0.87
+          },
+          {
+            "word": " 10",
+            "start": 50.14,
+            "end": 50.44,
+            "confidence": 0.53
+          },
+          {
+            "word": " लोगं",
+            "start": 50.44,
+            "end": 50.76,
+            "confidence": 0.76
+          },
+          {
+            "word": " के",
+            "start": 50.76,
+            "end": 50.96,
+            "confidence": 0.75
+          },
+          {
+            "word": " सात",
+            "start": 50.96,
+            "end": 51.22,
+            "confidence": 0.75
+          },
+          {
+            "word": " हुवा",
+            "start": 51.22,
+            "end": 51.62,
+            "confidence": 0.7
+          },
+          {
+            "word": " क्या",
+            "start": 51.62,
+            "end": 51.84,
+            "confidence": 0.83
+          },
+          {
+            "word": " था?",
+            "start": 51.84,
+            "end": 52.02,
+            "confidence": 0.78
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "आखिर उन दस लोगों के साथ हुआ क्या था"
+      },
+      {
+        "id": "seg_14",
+        "start": 52.42,
+        "end": 53.84,
+        "text": "इस राज को समझने किलिए,",
+        "words": [
+          {
+            "word": " इस",
+            "start": 52.42,
+            "end": 52.56,
+            "confidence": 0.88
+          },
+          {
+            "word": " राज",
+            "start": 52.56,
+            "end": 52.9,
+            "confidence": 0.91
+          },
+          {
+            "word": " को",
+            "start": 52.9,
+            "end": 53.06,
+            "confidence": 0.89
+          },
+          {
+            "word": " समझने",
+            "start": 53.06,
+            "end": 53.5,
+            "confidence": 0.77
+          },
+          {
+            "word": " किलिए,",
+            "start": 53.5,
+            "end": 53.84,
+            "confidence": 0.7
+          }
+        ],
+        "alignmentStatus": "spoken_addition"
+      },
+      {
+        "id": "seg_15",
+        "start": 53.98,
+        "end": 55.38,
+        "text": "हमें उस वक लड़ना होँगा",
+        "words": [
+          {
+            "word": " हमें",
+            "start": 53.98,
+            "end": 54.22,
+            "confidence": 0.85
+          },
+          {
+            "word": " उस",
+            "start": 54.22,
+            "end": 54.4,
+            "confidence": 0.95
+          },
+          {
+            "word": " वक",
+            "start": 54.4,
+            "end": 54.58,
+            "confidence": 0.73
+          },
+          {
+            "word": " लड़ना",
+            "start": 54.58,
+            "end": 55.06,
+            "confidence": 0.53
+          },
+          {
+            "word": " होँगा",
+            "start": 55.06,
+            "end": 55.38,
+            "confidence": 0.79
+          }
+        ],
+        "alignmentStatus": "spoken_addition"
+      },
+      {
+        "id": "seg_16",
+        "start": 55.38,
+        "end": 58.12,
+        "text": "जब मैरी सलेस्ट अपने आह्फरी ऽच्छर पर निकली ती.",
+        "words": [
+          {
+            "word": " जब",
+            "start": 55.38,
+            "end": 55.66,
+            "confidence": 0.83
+          },
+          {
+            "word": " मैरी",
+            "start": 55.66,
+            "end": 56.04,
+            "confidence": 0.82
+          },
+          {
+            "word": " सलेस्ट",
+            "start": 56.04,
+            "end": 56.46,
+            "confidence": 0.72
+          },
+          {
+            "word": " अपने",
+            "start": 56.46,
+            "end": 56.84,
+            "confidence": 0.89
+          },
+          {
+            "word": " आह्फरी",
+            "start": 56.84,
+            "end": 57.24,
+            "confidence": 0.53
+          },
+          {
+            "word": " ऽच्छर",
+            "start": 57.24,
+            "end": 57.54,
+            "confidence": 0.4
+          },
+          {
+            "word": " पर",
+            "start": 57.54,
+            "end": 57.68,
+            "confidence": 0.78
+          },
+          {
+            "word": " निकली",
+            "start": 57.68,
+            "end": 57.96,
+            "confidence": 0.61
+          },
+          {
+            "word": " ती.",
+            "start": 57.96,
+            "end": 58.12,
+            "confidence": 0.37
+          }
+        ],
+        "alignmentStatus": "spoken_addition"
+      },
+      {
+        "id": "seg_17",
+        "start": 58.54,
+        "end": 60.48,
+        "text": "साथ नवमऴर 1872 को",
+        "words": [
+          {
+            "word": " साथ",
+            "start": 58.54,
+            "end": 58.9,
+            "confidence": 0.58
+          },
+          {
+            "word": " नवमऴर",
+            "start": 58.9,
+            "end": 59.3,
+            "confidence": 0.69
+          },
+          {
+            "word": " 1872",
+            "start": 59.3,
+            "end": 60.1,
+            "confidence": 0.47
+          },
+          {
+            "word": " को",
+            "start": 60.1,
+            "end": 60.48,
+            "confidence": 0.93
+          }
+        ],
+        "alignmentStatus": "spoken_addition"
+      },
+      {
+        "id": "seg_18",
+        "start": 60.48,
+        "end": 63.92,
+        "text": "7 नवंबर 1872 को मैरी सेलेस्टे न्यूयॉर्क से इटली के शहर जेनोआ के लिए रवाना हुई",
+        "words": [
+          {
+            "word": " मै़ी",
+            "start": 60.48,
+            "end": 60.86,
+            "confidence": 0.51
+          },
+          {
+            "word": " सेलेس्द",
+            "start": 60.86,
+            "end": 61.26,
+            "confidence": 0.55
+          },
+          {
+            "word": " नूयोंक",
+            "start": 61.26,
+            "end": 61.84,
+            "confidence": 0.52
+          },
+          {
+            "word": " से",
+            "start": 61.84,
+            "end": 61.98,
+            "confidence": 0.88
+          },
+          {
+            "word": " इतली",
+            "start": 61.98,
+            "end": 62.28,
+            "confidence": 0.74
+          },
+          {
+            "word": " के",
+            "start": 62.28,
+            "end": 62.4,
+            "confidence": 0.9
+          },
+          {
+            "word": " शहर",
+            "start": 62.4,
+            "end": 62.74,
+            "confidence": 0.82
+          },
+          {
+            "word": " जेनोधा",
+            "start": 62.74,
+            "end": 63.2,
+            "confidence": 0.6
+          },
+          {
+            "word": " किلिई",
+            "start": 63.2,
+            "end": 63.44,
+            "confidence": 0.57
+          },
+          {
+            "word": " रवना",
+            "start": 63.44,
+            "end": 63.78,
+            "confidence": 0.77
+          },
+          {
+            "word": " ہوई.",
+            "start": 63.78,
+            "end": 63.92,
+            "confidence": 0.47
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "7 नवंबर 1872 को मैरी सेलेस्टे न्यूयॉर्क से इटली के शहर जेनोआ के लिए रवाना हुई"
+      },
+      {
+        "id": "seg_19",
+        "start": 63.92,
+        "end": 69.64,
+        "text": "जिसका काम समंदर के रास्ते माल एक जगह से दूसरी जगह ले जाना था",
+        "words": [
+          {
+            "word": " यह",
+            "start": 63.92,
+            "end": 64.2,
+            "confidence": 0.74
+          },
+          {
+            "word": " एक",
+            "start": 64.2,
+            "end": 64.36,
+            "confidence": 0.67
+          },
+          {
+            "word": " मुर्चिन्शीब",
+            "start": 64.36,
+            "end": 65.04,
+            "confidence": 0.54
+          },
+          {
+            "word": " ती,",
+            "start": 65.04,
+            "end": 65.22,
+            "confidence": 0.75
+          },
+          {
+            "word": " जिस",
+            "start": 65.52,
+            "end": 65.82,
+            "confidence": 0.85
+          },
+          {
+            "word": " का",
+            "start": 65.82,
+            "end": 65.98,
+            "confidence": 0.53
+          },
+          {
+            "word": " काम",
+            "start": 65.98,
+            "end": 66.26,
+            "confidence": 0.86
+          },
+          {
+            "word": " समंदर",
+            "start": 66.26,
+            "end": 66.74,
+            "confidence": 0.79
+          },
+          {
+            "word": " के",
+            "start": 66.74,
+            "end": 66.86,
+            "confidence": 0.9
+          },
+          {
+            "word": " रासते",
+            "start": 66.86,
+            "end": 67.28,
+            "confidence": 0.8
+          },
+          {
+            "word": " माल",
+            "start": 67.28,
+            "end": 67.8,
+            "confidence": 0.87
+          },
+          {
+            "word": " एग",
+            "start": 67.8,
+            "end": 68.04,
+            "confidence": 0.6
+          },
+          {
+            "word": " जगय",
+            "start": 68.04,
+            "end": 68.32,
+            "confidence": 0.71
+          },
+          {
+            "word": " से",
+            "start": 68.32,
+            "end": 68.52,
+            "confidence": 0.78
+          },
+          {
+            "word": " धूस्री",
+            "start": 68.52,
+            "end": 68.88,
+            "confidence": 0.59
+          },
+          {
+            "word": " जگा",
+            "start": 68.88,
+            "end": 69.08,
+            "confidence": 0.55
+          },
+          {
+            "word": " लेजाना",
+            "start": 69.08,
+            "end": 69.48,
+            "confidence": 0.82
+          },
+          {
+            "word": " था.",
+            "start": 69.48,
+            "end": 69.64,
+            "confidence": 0.75
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "जिसका काम समंदर के रास्ते माल एक जगह से दूसरी जगह ले जाना था"
+      },
+      {
+        "id": "seg_20",
+        "start": 69.76,
+        "end": 74.3,
+        "text": "इस सफ़र में उसके कार्गो में 1701 बैरल्स industrial alcohol के थे",
+        "words": [
+          {
+            "word": " इस",
+            "start": 69.76,
+            "end": 69.88,
+            "confidence": 0.9
+          },
+          {
+            "word": " सफर",
+            "start": 69.88,
+            "end": 70.2,
+            "confidence": 0.62
+          },
+          {
+            "word": " में",
+            "start": 70.2,
+            "end": 70.4,
+            "confidence": 0.93
+          },
+          {
+            "word": " उसके",
+            "start": 70.4,
+            "end": 70.6,
+            "confidence": 0.92
+          },
+          {
+            "word": " कारगो",
+            "start": 70.6,
+            "end": 70.98,
+            "confidence": 0.86
+          },
+          {
+            "word": " मैं",
+            "start": 70.98,
+            "end": 71.3,
+            "confidence": 0.62
+          },
+          {
+            "word": " एק",
+            "start": 71.3,
+            "end": 71.52,
+            "confidence": 0.51
+          },
+          {
+            "word": " साथ",
+            "start": 71.52,
+            "end": 72.02,
+            "confidence": 0.73
+          },
+          {
+            "word": " स",
+            "start": 72.02,
+            "end": 72.12,
+            "confidence": 0.55
+          },
+          {
+            "word": " हुअड़ेड",
+            "start": 72.12,
+            "end": 72.44,
+            "confidence": 0.44
+          },
+          {
+            "word": " आप",
+            "start": 72.44,
+            "end": 72.7,
+            "confidence": 0.42
+          },
+          {
+            "word": " बैरल",
+            "start": 72.7,
+            "end": 73.02,
+            "confidence": 0.71
+          },
+          {
+            "word": " ट्याल्कोहल",
+            "start": 73.02,
+            "end": 74,
+            "confidence": 0.49
+          },
+          {
+            "word": " केते.",
+            "start": 74,
+            "end": 74.3,
+            "confidence": 0.58
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "इस सफ़र में उसके कार्गो में 1701 बैरल्स industrial alcohol के थे"
+      },
+      {
+        "id": "seg_21",
+        "start": 74.38,
+        "end": 76.4,
+        "text": "यह अल्कोहल industrial इस्तेमाल के लिए था",
+        "words": [
+          {
+            "word": " यہ",
+            "start": 74.38,
+            "end": 74.54,
+            "confidence": 0.62
+          },
+          {
+            "word": " आलकोठल",
+            "start": 74.54,
+            "end": 75.08,
+            "confidence": 0.53
+          },
+          {
+            "word": " अईट्छ्टर्यल",
+            "start": 75.08,
+            "end": 75.58,
+            "confidence": 0.51
+          },
+          {
+            "word": " औस्तिमाल",
+            "start": 75.58,
+            "end": 76,
+            "confidence": 0.67
+          },
+          {
+            "word": " की",
+            "start": 76,
+            "end": 76.14,
+            "confidence": 0.54
+          },
+          {
+            "word": " लिए",
+            "start": 76.14,
+            "end": 76.24,
+            "confidence": 0.82
+          },
+          {
+            "word": " ता.",
+            "start": 76.24,
+            "end": 76.4,
+            "confidence": 0.78
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "यह अल्कोहल industrial इस्तेमाल के लिए था"
+      },
+      {
+        "id": "seg_22",
+        "start": 76.4,
+        "end": 79.22,
+        "text": "न कि सिर्फ़ पीने के लिए रखा गया कोई आम सामान",
+        "words": [
+          {
+            "word": " नकि",
+            "start": 76.4,
+            "end": 77.04,
+            "confidence": 0.6
+          },
+          {
+            "word": " सर्फ",
+            "start": 77.04,
+            "end": 77.38,
+            "confidence": 0.6
+          },
+          {
+            "word": " पीने",
+            "start": 77.38,
+            "end": 77.7,
+            "confidence": 0.94
+          },
+          {
+            "word": " के",
+            "start": 77.7,
+            "end": 77.84,
+            "confidence": 0.85
+          },
+          {
+            "word": " लिया",
+            "start": 77.84,
+            "end": 77.96,
+            "confidence": 0.61
+          },
+          {
+            "word": " रहा",
+            "start": 77.96,
+            "end": 78.16,
+            "confidence": 0.65
+          },
+          {
+            "word": " गया",
+            "start": 78.16,
+            "end": 78.42,
+            "confidence": 0.72
+          },
+          {
+            "word": " कोई",
+            "start": 78.42,
+            "end": 78.6,
+            "confidence": 0.64
+          },
+          {
+            "word": " आम",
+            "start": 78.6,
+            "end": 78.84,
+            "confidence": 0.79
+          },
+          {
+            "word": " समां",
+            "start": 78.84,
+            "end": 79.22,
+            "confidence": 0.68
+          }
+        ],
+        "alignmentStatus": "suggested_correction",
+        "referenceMatch": "न कि सिर्फ़ पीने के लिए रखा गया कोई आम सामान"
+      }
+    ],
+    "originalScript": "अटलांटिक ओशन। दिसंबर 1872।\nसमंदर में एक जहाज़ अकेला तैर रहा है। उसके सेल्स हवा में हिल रहे हैं। कार्गो अभी भी अंदर है। खाने-पीने का सामान मौजूद है। जहाज़ डूब नहीं रहा। लेकिन उस पर एक भी इंसान नहीं।\nकैप्टन गायब। उसकी बीवी गायब। उनकी दो साल की बेटी गायब। और क्रू के सात मेंबर्स का भी कोई निशान नहीं।\nजहाज़ का नाम था मैरी सेलेस्टे।\nकुछ दिन पहले तक इस पर दस लोग ज़िंदा थे। फिर कुछ ऐसा हुआ कि उन्होंने जहाज़ छोड़ दिया। लेकिन क्यों?\nअगर जहाज़ डूब रहा था तो वो अभी भी तैर कैसे रहा था?\nअगर किसी ने हमला किया तो कार्गो और सामान वहीं क्यों छोड़ दिया गया?\nऔर अगर सब लोग लाइफ़बोट में निकल गए तो फिर उनका कोई निशान क्यों नहीं मिला?\nमैरी सेलेस्टे कोई fictional horror story नहीं। यह एक हक़ीक़ी जहाज़ था।\nऔर इसकी कहानी आज भी एक ऐसे सवाल पर ख़त्म होती है जिसका जवाब किसी के पास नहीं—\nआखिर उन दस लोगों के साथ हुआ क्या था?\nइस राज़ को समझने के लिए हमें उस वक़्त लौटना होगा जब मैरी सेलेस्टे अपने आख़िरी सफ़र पर निकली थी।\n7 नवंबर 1872 को मैरी सेलेस्टे न्यूयॉर्क से इटली के शहर जेनोआ के लिए रवाना हुई।\nयह एक merchant ship थी।\nजिसका काम समंदर के रास्ते माल एक जगह से दूसरी जगह ले जाना था।\nइस सफ़र में उसके कार्गो में 1701 बैरल्स industrial alcohol के थे।\nयह अल्कोहल industrial इस्तेमाल के लिए था।\nन कि सिर्फ़ पीने के लिए रखा गया कोई आम सामान.",
+    "originalScriptFormat": "hindi_devanagari",
+    "detectedScriptFormat": "hindi_devanagari",
+    "reviewItems": [
+      {
+        "id": "rev_seg_1_mvtlweij",
+        "segmentId": "seg_1",
+        "start": 0.54,
+        "end": 4.66,
+        "recognizedText": "अट्लान्तिकोऊष्यं, दीसेमबर आथारसु भहत्तरू, समन्दर मैं जहाज अकेला तैर रहा है.",
+        "suggestedText": "अट्लान्तिकोऊष्यं, दीसेमबर आथारसु भहत्तरू, समन्दर मैं जहाज अकेला तैर रहा है.",
+        "status": "spoken_addition",
+        "statusLabel": "Spoken Addition (Not in Script)",
+        "confidence": 0.4,
+        "resolvedState": "pending"
+      },
+      {
+        "id": "rev_seg_2_mvtlwej0",
+        "segmentId": "seg_2",
+        "start": 4.76,
+        "end": 7.98,
+        "recognizedText": "उसके सेल्ज हवा में हिल रہे है, कारगो अБही भी अंधर है!",
+        "referenceText": "उसके सेल्स हवा में हिल रहे हैं",
+        "suggestedText": "उसके सेल्स हवा में हिल रहे हैं",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.55,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_3_mvtlwejd",
+        "segmentId": "seg_3",
+        "start": 8.14,
+        "end": 9.64,
+        "recognizedText": "खाने पीने का समान मौझुद है?",
+        "referenceText": "खाने-पीने का सामान मौजूद है",
+        "suggestedText": "खाने-पीने का सामान मौजूद है",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.81,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_4_mvtlwejw",
+        "segmentId": "seg_4",
+        "start": 9.82,
+        "end": 12.74,
+        "recognizedText": "ज़ाघ दूब नहीं रखा, लिकिन उسपर एक भھی इन्सान न ही.",
+        "referenceText": "लेकिन उस पर एक भी इंसान नहीं",
+        "suggestedText": "लेकिन उस पर एक भी इंसान नहीं",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.43,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_5_mvtlwekl",
+        "segmentId": "seg_5",
+        "start": 12.74,
+        "end": 19.88,
+        "recognizedText": "केप्तिन गायब, उसकी भीवी गआयभ, अंकी सुल की बेटी ड़ीगईएज़, और क्रू के साथ मैमबरस का लिए कोई निशान नहीं।",
+        "suggestedText": "केप्तिन गायब, उसकी भीवी गआयभ, अंकी सुल की बेटी ड़ीगईएज़, और क्रू के साथ मैमबरस का लिए कोई निशान नहीं।",
+        "status": "spoken_addition",
+        "statusLabel": "Spoken Addition (Not in Script)",
+        "confidence": 0.38,
+        "resolvedState": "pending"
+      },
+      {
+        "id": "rev_seg_6_mvtlwelc",
+        "segmentId": "seg_6",
+        "start": 19.88,
+        "end": 24.58,
+        "recognizedText": "जहاز कानाम ठा मैरी सलेस्ट, कुछ दिन پहले तक इस पर दस लोग जिन्दा थे",
+        "referenceText": "कुछ दिन पहले तक इस पर दस लोग ज़िंदा थे",
+        "suggestedText": "कुछ दिन पहले तक इस पर दस लोग ज़िंदा थे",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.55,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_7_mvtlwelx",
+        "segmentId": "seg_7",
+        "start": 24.58,
+        "end": 28.32,
+        "recognizedText": "फिर कुछ आसा हूए की उनहोंने अपना जाहाज चोर दिया, मैंगर क्यों?",
+        "referenceText": "फिर कुछ ऐसा हुआ कि उन्होंने जहाज़ छोड़ दिया",
+        "suggestedText": "फिर कुछ ऐसा हुआ कि उन्होंने जहाज़ छोड़ दिया",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.56,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_8_mvtlwemh",
+        "segmentId": "seg_8",
+        "start": 28.54,
+        "end": 31.68,
+        "recognizedText": "अकर ज़ाध डौबनेवाला था, तो वो ईभीतक टैर कैसे रहाता.",
+        "referenceText": "अगर जहाज़ डूब रहा था तो वो अभी भी तैर कैसे रहा था",
+        "suggestedText": "अगर जहाज़ डूब रहा था तो वो अभी भी तैर कैसे रहा था",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.67,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_9_mvtlwen6",
+        "segmentId": "seg_9",
+        "start": 32.08,
+        "end": 35.68,
+        "recognizedText": "अگर किसी ने हम्ला कियا, उखारगो और सामान वही क्झों छोरडिय या गया.",
+        "referenceText": "अगर किसी ने हमला किया तो कार्गो और सामान वहीं क्यों छोड़ दिया गया",
+        "suggestedText": "अगर किसी ने हमला किया तो कार्गो और सामान वहीं क्यों छोड़ दिया गया",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.78,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_10_mvtlweo6",
+        "segmentId": "seg_10",
+        "start": 35.68,
+        "end": 39.96,
+        "recognizedText": "और अगर सब लोग life boat में निकल रहा है, तु फिर उनका कोई नीसान क्यो नहीं मिला.",
+        "referenceText": "और अगर सब लोग लाइफ़बोट में निकल गए तो फिर उनका कोई निशान क्यों नहीं मिला",
+        "suggestedText": "और अगर सब लोग लाइफ़बोट में निकल गए तो फिर उनका कोई निशान क्यों नहीं मिला",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.75,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_11_mvtlweop",
+        "segmentId": "seg_11",
+        "start": 40.36,
+        "end": 44.18,
+        "recognizedText": "मैरी सलेस्त को इप विक्षनल-होरर स्टोरी न ही, यह एक हकी की जहाज था.",
+        "referenceText": "मैरी सेलेस्टे कोई fictional horror story नहीं",
+        "suggestedText": "मैरी सेलेस्टे कोई fictional horror story नहीं",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.41,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_12_mvtlwepf",
+        "segmentId": "seg_12",
+        "start": 44.68,
+        "end": 49.46,
+        "recognizedText": "औ़ इसकी खाहनी आजघ भी एख ऐसे सवाल पर खतम होती है जिसका जबाब किसी के पास नہी.",
+        "referenceText": "और इसकी कहानी आज भी एक ऐसे सवाल पर ख़त्म होती है जिसका जवाब किसी के पास नहीं—",
+        "suggestedText": "और इसकी कहानी आज भी एक ऐसे सवाल पर ख़त्म होती है जिसका जवाब किसी के पास नहीं—",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.87,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_13_mvtlwept",
+        "segmentId": "seg_13",
+        "start": 49.46,
+        "end": 52.02,
+        "recognizedText": "आखिर उन 10 लोगं के सात हुवा क्या था?",
+        "referenceText": "आखिर उन दस लोगों के साथ हुआ क्या था",
+        "suggestedText": "आखिर उन दस लोगों के साथ हुआ क्या था",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.81,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_14_mvtlwepx",
+        "segmentId": "seg_14",
+        "start": 52.42,
+        "end": 53.84,
+        "recognizedText": "इस राज को समझने किलिए,",
+        "suggestedText": "इस राज को समझने किलिए,",
+        "status": "spoken_addition",
+        "statusLabel": "Spoken Addition (Not in Script)",
+        "confidence": 0.39,
+        "resolvedState": "pending"
+      },
+      {
+        "id": "rev_seg_15_mvtlweq4",
+        "segmentId": "seg_15",
+        "start": 53.98,
+        "end": 55.38,
+        "recognizedText": "हमें उस वक लड़ना होँगा",
+        "suggestedText": "हमें उस वक लड़ना होँगा",
+        "status": "spoken_addition",
+        "statusLabel": "Spoken Addition (Not in Script)",
+        "confidence": 0.35,
+        "resolvedState": "pending"
+      },
+      {
+        "id": "rev_seg_16_mvtlweqr",
+        "segmentId": "seg_16",
+        "start": 55.38,
+        "end": 58.12,
+        "recognizedText": "जब मैरी सलेस्ट अपने आह्फरी ऽच्छर पर निकली ती.",
+        "suggestedText": "जब मैरी सलेस्ट अपने आह्फरी ऽच्छर पर निकली ती.",
+        "status": "spoken_addition",
+        "statusLabel": "Spoken Addition (Not in Script)",
+        "confidence": 0.39,
+        "resolvedState": "pending"
+      },
+      {
+        "id": "rev_seg_17_mvtlweqv",
+        "segmentId": "seg_17",
+        "start": 58.54,
+        "end": 60.48,
+        "recognizedText": "साथ नवमऴर 1872 को",
+        "suggestedText": "साथ नवमऴर 1872 को",
+        "status": "spoken_addition",
+        "statusLabel": "Spoken Addition (Not in Script)",
+        "confidence": 0.36,
+        "resolvedState": "pending"
+      },
+      {
+        "id": "rev_seg_18_mvtlwerf",
+        "segmentId": "seg_18",
+        "start": 60.48,
+        "end": 63.92,
+        "recognizedText": "मै़ी सेलेس्द नूयोंक से इतली के शहर जेनोधा किلिई रवना ہوई.",
+        "referenceText": "7 नवंबर 1872 को मैरी सेलेस्टे न्यूयॉर्क से इटली के शहर जेनोआ के लिए रवाना हुई",
+        "suggestedText": "7 नवंबर 1872 को मैरी सेलेस्टे न्यूयॉर्क से इटली के शहर जेनोआ के लिए रवाना हुई",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.55,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_19_mvtlwes6",
+        "segmentId": "seg_19",
+        "start": 63.92,
+        "end": 69.64,
+        "recognizedText": "यह एक मुर्चिन्शीब ती, जिस का काम समंदर के रासते माल एग जगय से धूस्री जگा लेजाना था.",
+        "referenceText": "जिसका काम समंदर के रास्ते माल एक जगह से दूसरी जगह ले जाना था",
+        "suggestedText": "जिसका काम समंदर के रास्ते माल एक जगह से दूसरी जगह ले जाना था",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.63,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_20_mvtlwesn",
+        "segmentId": "seg_20",
+        "start": 69.76,
+        "end": 74.3,
+        "recognizedText": "इस सफर में उसके कारगो मैं एק साथ स हुअड़ेड आप बैरल ट्याल्कोहल केते.",
+        "referenceText": "इस सफ़र में उसके कार्गो में 1701 बैरल्स industrial alcohol के थे",
+        "suggestedText": "इस सफ़र में उसके कार्गो में 1701 बैरल्स industrial alcohol के थे",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.45,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_21_mvtlwesx",
+        "segmentId": "seg_21",
+        "start": 74.38,
+        "end": 76.4,
+        "recognizedText": "यہ आलकोठल अईट्छ्टर्यल औस्तिमाल की लिए ता.",
+        "referenceText": "यह अल्कोहल industrial इस्तेमाल के लिए था",
+        "suggestedText": "यह अल्कोहल industrial इस्तेमाल के लिए था",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.53,
+        "resolvedState": "accepted"
+      },
+      {
+        "id": "rev_seg_22_mvtlwetc",
+        "segmentId": "seg_22",
+        "start": 76.4,
+        "end": 79.22,
+        "recognizedText": "नकि सर्फ पीने के लिया रहा गया कोई आम समां",
+        "referenceText": "न कि सिर्फ़ पीने के लिए रखा गया कोई आम सामान",
+        "suggestedText": "न कि सिर्फ़ पीने के लिए रखा गया कोई आम सामान",
+        "status": "suggested_correction",
+        "statusLabel": "Suggested Correction from Script",
+        "confidence": 0.84,
+        "resolvedState": "accepted"
+      }
+    ],
+    "omittedReferencePassages": [
+      "अटलांटिक ओशन",
+      "दिसंबर 1872",
+      "समंदर में एक जहाज़ अकेला तैर रहा है",
+      "कार्गो अभी भी अंदर है",
+      "जहाज़ डूब नहीं रहा",
+      "कैप्टन गायब",
+      "उसकी बीवी गायब",
+      "उनकी दो साल की बेटी गायब",
+      "और क्रू के सात मेंबर्स का भी कोई निशान नहीं",
+      "जहाज़ का नाम था मैरी सेलेस्टे",
+      "लेकिन क्यों",
+      "यह एक हक़ीक़ी जहाज़ था",
+      "इस राज़ को समझने के लिए हमें उस वक़्त लौटना होगा जब मैरी सेलेस्टे अपने आख़िरी सफ़र पर निकली थी",
+      "यह एक merchant ship थी"
+    ],
+    "createdAt": "2026-10-29T13:56:05.761Z",
+    "updatedAt": "2026-10-29T13:56:35.234Z"
+  },
+  {
+    "id": "trans_1793279128167_i8c6v",
+    "filename": "input_1793279042096__-_-2026-10-29-16-34-_-_-_-1872_-_-_-_-_-_.mp3",
+    "originalName": "गहन-कथावाचक-2026-10-29-16-34-अटलांटिक-ओशन।-दिसंबर-1872।-समंदर-में-एक-जहाज़-अक.mp3",
+    "mediaUrl": "/api/audio/file/input_1793279042096__-_-2026-10-29-16-34-_-_-_-1872_-_-_-_-_-_.mp3",
+    "mediaType": "audio",
+    "duration": 79.43825,
+    "durationFormatted": "01:19",
+    "detectedLanguage": "Urdu",
+    "detectedLanguageCode": "ur",
+    "confidenceScore": 0.5408,
+    "isAmbiguousHindiUrdu": true,
+    "selectedScript": "hindi_devanagari",
+    "segments": [
+      {
+        "id": "seg_1",
+        "start": 0,
+        "end": 7.5,
+        "text": "atlantik aoshn، dismbr tharh sob htron، smndr main aik jhaz ake lataئr raha he، as ke silz hoa main hl rahe hin، kargo abhi bhi andr",
+        "words": [
+          {
+            "word": " atlantik",
+            "start": 0,
+            "end": 0.7,
+            "confidence": 0.65
+          },
+          {
+            "word": " aoshn،",
+            "start": 0.7,
+            "end": 1.18,
+            "confidence": 0.76
+          },
+          {
+            "word": " dismbr",
+            "start": 1.18,
+            "end": 1.56,
+            "confidence": 0.65
+          },
+          {
+            "word": " tharh",
+            "start": 1.56,
+            "end": 1.88,
+            "confidence": 0.57
+          },
+          {
+            "word": " sob",
+            "start": 1.88,
+            "end": 2.02,
+            "confidence": 0.45
+          },
+          {
+            "word": " htron،",
+            "start": 2.02,
+            "end": 2.6,
+            "confidence": 0.37
+          },
+          {
+            "word": " smndr",
+            "start": 2.6,
+            "end": 3.02,
+            "confidence": 0.85
+          },
+          {
+            "word": " main",
+            "start": 3.02,
+            "end": 3.14,
+            "confidence": 0.98
+          },
+          {
+            "word": " aik",
+            "start": 3.14,
+            "end": 3.28,
+            "confidence": 0.95
+          },
+          {
+            "word": " jhaz",
+            "start": 3.28,
+            "end": 3.64,
+            "confidence": 0.6
+          },
+          {
+            "word": " ake",
+            "start": 3.64,
+            "end": 4,
+            "confidence": 0.54
+          },
+          {
+            "word": " lataئr",
+            "start": 4,
+            "end": 4.28,
+            "confidence": 0.49
+          },
+          {
+            "word": " raha",
+            "start": 4.28,
+            "end": 4.5,
+            "confidence": 0.99
+          },
+          {
+            "word": " he،",
+            "start": 4.5,
+            "end": 4.74,
+            "confidence": 0.59
+          },
+          {
+            "word": " as",
+            "start": 4.74,
+            "end": 4.86,
+            "confidence": 0.81
+          },
+          {
+            "word": " ke",
+            "start": 4.86,
+            "end": 5,
+            "confidence": 0.91
+          },
+          {
+            "word": " silz",
+            "start": 5,
+            "end": 5.4,
+            "confidence": 0.95
+          },
+          {
+            "word": " hoa",
+            "start": 5.4,
+            "end": 5.64,
+            "confidence": 0.5
+          },
+          {
+            "word": " main",
+            "start": 5.64,
+            "end": 5.78,
+            "confidence": 0.89
+          },
+          {
+            "word": " hl",
+            "start": 5.78,
+            "end": 5.96,
+            "confidence": 0.67
+          },
+          {
+            "word": " rahe",
+            "start": 5.96,
+            "end": 6.18,
+            "confidence": 0.97
+          },
+          {
+            "word": " hin،",
+            "start": 6.18,
+            "end": 6.44,
+            "confidence": 0.9
+          },
+          {
+            "word": " kargo",
+            "start": 6.44,
+            "end": 6.78,
+            "confidence": 0.87
+          },
+          {
+            "word": " abhi",
+            "start": 6.78,
+            "end": 7.06,
+            "confidence": 0.92
+          },
+          {
+            "word": " bhi",
+            "start": 7.06,
+            "end": 7.18,
+            "confidence": 0.98
+          },
+          {
+            "word": " andr",
+            "start": 7.18,
+            "end": 7.5,
+            "confidence": 0.95
+          }
+        ]
+      },
+      {
+        "id": "seg_2",
+        "start": 7.5,
+        "end": 12.7,
+        "text": "he، kane pine ka saman mojod he، jhaz dob nahi rhha۔ likn as par aik bhi إnsan nahi",
+        "words": [
+          {
+            "word": " he،",
+            "start": 7.5,
+            "end": 8.18,
+            "confidence": 0.65
+          },
+          {
+            "word": " kane",
+            "start": 8.18,
+            "end": 8.48,
+            "confidence": 0.89
+          },
+          {
+            "word": " pine",
+            "start": 8.48,
+            "end": 8.68,
+            "confidence": 0.89
+          },
+          {
+            "word": " ka",
+            "start": 8.68,
+            "end": 8.78,
+            "confidence": 0.99
+          },
+          {
+            "word": " saman",
+            "start": 8.78,
+            "end": 9.12,
+            "confidence": 0.77
+          },
+          {
+            "word": " mojod",
+            "start": 9.12,
+            "end": 9.48,
+            "confidence": 0.98
+          },
+          {
+            "word": " he،",
+            "start": 9.48,
+            "end": 9.84,
+            "confidence": 0.82
+          },
+          {
+            "word": " jhaz",
+            "start": 9.84,
+            "end": 10.16,
+            "confidence": 0.74
+          },
+          {
+            "word": " dob",
+            "start": 10.16,
+            "end": 10.42,
+            "confidence": 0.67
+          },
+          {
+            "word": " nahi",
+            "start": 10.42,
+            "end": 10.6,
+            "confidence": 0.91
+          },
+          {
+            "word": " rhha۔",
+            "start": 10.6,
+            "end": 11.02,
+            "confidence": 0.62
+          },
+          {
+            "word": " likn",
+            "start": 11.02,
+            "end": 11.3,
+            "confidence": 0.99
+          },
+          {
+            "word": " as",
+            "start": 11.3,
+            "end": 11.46,
+            "confidence": 0.85
+          },
+          {
+            "word": " par",
+            "start": 11.46,
+            "end": 11.7,
+            "confidence": 0.98
+          },
+          {
+            "word": " aik",
+            "start": 11.7,
+            "end": 11.98,
+            "confidence": 0.98
+          },
+          {
+            "word": " bhi",
+            "start": 11.98,
+            "end": 12.16,
+            "confidence": 0.99
+          },
+          {
+            "word": " إnsan",
+            "start": 12.16,
+            "end": 12.48,
+            "confidence": 0.66
+          },
+          {
+            "word": " nahi",
+            "start": 12.48,
+            "end": 12.7,
+            "confidence": 0.97
+          }
+        ]
+      },
+      {
+        "id": "seg_3",
+        "start": 12.7,
+        "end": 19.36,
+        "text": "kiptn gaئb، as ki bi oi gaئab، an ki 2 sal ki be ti gئb aur qro ke sath mimbrz ka bhi koئi nshan nahi",
+        "words": [
+          {
+            "word": " kiptn",
+            "start": 12.7,
+            "end": 13.56,
+            "confidence": 0.39
+          },
+          {
+            "word": " gaئb،",
+            "start": 13.56,
+            "end": 14.06,
+            "confidence": 0.77
+          },
+          {
+            "word": " as",
+            "start": 14.06,
+            "end": 14.14,
+            "confidence": 0.94
+          },
+          {
+            "word": " ki",
+            "start": 14.14,
+            "end": 14.32,
+            "confidence": 0.98
+          },
+          {
+            "word": " bi",
+            "start": 14.32,
+            "end": 14.52,
+            "confidence": 0.95
+          },
+          {
+            "word": " oi",
+            "start": 14.52,
+            "end": 14.68,
+            "confidence": 0.51
+          },
+          {
+            "word": " gaئab،",
+            "start": 14.68,
+            "end": 15.16,
+            "confidence": 0.73
+          },
+          {
+            "word": " an",
+            "start": 15.16,
+            "end": 15.22,
+            "confidence": 0.83
+          },
+          {
+            "word": " ki",
+            "start": 15.22,
+            "end": 15.38,
+            "confidence": 0.97
+          },
+          {
+            "word": " 2",
+            "start": 15.38,
+            "end": 15.64,
+            "confidence": 0.04
+          },
+          {
+            "word": " sal",
+            "start": 15.64,
+            "end": 15.92,
+            "confidence": 0.97
+          },
+          {
+            "word": " ki",
+            "start": 15.92,
+            "end": 16.08,
+            "confidence": 0.98
+          },
+          {
+            "word": " be",
+            "start": 16.08,
+            "end": 16.32,
+            "confidence": 0.45
+          },
+          {
+            "word": " ti",
+            "start": 16.32,
+            "end": 16.44,
+            "confidence": 0.58
+          },
+          {
+            "word": " gئb",
+            "start": 16.44,
+            "end": 16.76,
+            "confidence": 0.54
+          },
+          {
+            "word": " aur",
+            "start": 16.76,
+            "end": 17.02,
+            "confidence": 0.84
+          },
+          {
+            "word": " qro",
+            "start": 17.02,
+            "end": 17.28,
+            "confidence": 0.11
+          },
+          {
+            "word": " ke",
+            "start": 17.28,
+            "end": 17.46,
+            "confidence": 0.95
+          },
+          {
+            "word": " sath",
+            "start": 17.46,
+            "end": 17.9,
+            "confidence": 0.85
+          },
+          {
+            "word": " mimbrz",
+            "start": 17.9,
+            "end": 18.26,
+            "confidence": 0.8
+          },
+          {
+            "word": " ka",
+            "start": 18.26,
+            "end": 18.36,
+            "confidence": 0.97
+          },
+          {
+            "word": " bhi",
+            "start": 18.36,
+            "end": 18.58,
+            "confidence": 0.9
+          },
+          {
+            "word": " koئi",
+            "start": 18.58,
+            "end": 18.88,
+            "confidence": 0.97
+          },
+          {
+            "word": " nshan",
+            "start": 18.88,
+            "end": 19.16,
+            "confidence": 0.96
+          },
+          {
+            "word": " nahi",
+            "start": 19.16,
+            "end": 19.36,
+            "confidence": 0.98
+          }
+        ]
+      },
+      {
+        "id": "seg_4",
+        "start": 19.36,
+        "end": 21.78,
+        "text": "jhaz ka nam tha miri slst",
+        "words": [
+          {
+            "word": " jhaz",
+            "start": 19.36,
+            "end": 20.3,
+            "confidence": 0.37
+          },
+          {
+            "word": " ka",
+            "start": 20.3,
+            "end": 20.42,
+            "confidence": 0.95
+          },
+          {
+            "word": " nam",
+            "start": 20.42,
+            "end": 20.64,
+            "confidence": 0.93
+          },
+          {
+            "word": " tha",
+            "start": 20.64,
+            "end": 20.9,
+            "confidence": 0.98
+          },
+          {
+            "word": " miri",
+            "start": 20.9,
+            "end": 21.38,
+            "confidence": 0.5
+          },
+          {
+            "word": " slst",
+            "start": 21.38,
+            "end": 21.78,
+            "confidence": 0.64
+          }
+        ]
+      },
+      {
+        "id": "seg_5",
+        "start": 21.78,
+        "end": 24.64,
+        "text": "kuch din phle tk as pra 10 log zndh the",
+        "words": [
+          {
+            "word": " kuch",
+            "start": 21.78,
+            "end": 22.42,
+            "confidence": 0.68
+          },
+          {
+            "word": " din",
+            "start": 22.42,
+            "end": 22.58,
+            "confidence": 0.96
+          },
+          {
+            "word": " phle",
+            "start": 22.58,
+            "end": 22.96,
+            "confidence": 0.99
+          },
+          {
+            "word": " tk",
+            "start": 22.96,
+            "end": 23.14,
+            "confidence": 0.97
+          },
+          {
+            "word": " as",
+            "start": 23.14,
+            "end": 23.32,
+            "confidence": 0.97
+          },
+          {
+            "word": " pra",
+            "start": 23.32,
+            "end": 23.5,
+            "confidence": 0.48
+          },
+          {
+            "word": " 10",
+            "start": 23.5,
+            "end": 23.82,
+            "confidence": 0.24
+          },
+          {
+            "word": " log",
+            "start": 23.82,
+            "end": 24.12,
+            "confidence": 0.97
+          },
+          {
+            "word": " zndh",
+            "start": 24.12,
+            "end": 24.42,
+            "confidence": 0.94
+          },
+          {
+            "word": " the",
+            "start": 24.42,
+            "end": 24.64,
+            "confidence": 0.98
+          }
+        ]
+      },
+      {
+        "id": "seg_6",
+        "start": 24.64,
+        "end": 28.54,
+        "text": "phr kuch aisa hoa kh anhon ne apna jhaz chhor dia، mgr kion؟",
+        "words": [
+          {
+            "word": " phr",
+            "start": 24.64,
+            "end": 24.92,
+            "confidence": 0.67
+          },
+          {
+            "word": " kuch",
+            "start": 24.92,
+            "end": 25.2,
+            "confidence": 0.93
+          },
+          {
+            "word": " aisa",
+            "start": 25.2,
+            "end": 25.54,
+            "confidence": 0.96
+          },
+          {
+            "word": " hoa",
+            "start": 25.54,
+            "end": 25.78,
+            "confidence": 0.96
+          },
+          {
+            "word": " kh",
+            "start": 25.78,
+            "end": 25.9,
+            "confidence": 0.43
+          },
+          {
+            "word": " anhon",
+            "start": 25.9,
+            "end": 26.14,
+            "confidence": 0.83
+          },
+          {
+            "word": " ne",
+            "start": 26.14,
+            "end": 26.26,
+            "confidence": 1
+          },
+          {
+            "word": " apna",
+            "start": 26.26,
+            "end": 26.46,
+            "confidence": 0.96
+          },
+          {
+            "word": " jhaz",
+            "start": 26.46,
+            "end": 26.86,
+            "confidence": 0.61
+          },
+          {
+            "word": " chhor",
+            "start": 26.86,
+            "end": 27.2,
+            "confidence": 0.9
+          },
+          {
+            "word": " dia،",
+            "start": 27.2,
+            "end": 27.56,
+            "confidence": 0.74
+          },
+          {
+            "word": " mgr",
+            "start": 27.56,
+            "end": 27.86,
+            "confidence": 0.91
+          },
+          {
+            "word": " kion؟",
+            "start": 27.86,
+            "end": 28.54,
+            "confidence": 0.97
+          }
+        ]
+      },
+      {
+        "id": "seg_7",
+        "start": 28.54,
+        "end": 32.08,
+        "text": "agr jhaz dobne wala tha tu woh abhi tk tir kaise rhata۔",
+        "words": [
+          {
+            "word": " agr",
+            "start": 28.54,
+            "end": 28.74,
+            "confidence": 0.96
+          },
+          {
+            "word": " jhaz",
+            "start": 28.74,
+            "end": 29.12,
+            "confidence": 0.73
+          },
+          {
+            "word": " dobne",
+            "start": 29.12,
+            "end": 29.52,
+            "confidence": 0.72
+          },
+          {
+            "word": " wala",
+            "start": 29.52,
+            "end": 29.74,
+            "confidence": 0.89
+          },
+          {
+            "word": " tha",
+            "start": 29.74,
+            "end": 30.04,
+            "confidence": 1
+          },
+          {
+            "word": " tu",
+            "start": 30.04,
+            "end": 30.2,
+            "confidence": 0.85
+          },
+          {
+            "word": " woh",
+            "start": 30.2,
+            "end": 30.34,
+            "confidence": 0.99
+          },
+          {
+            "word": " abhi",
+            "start": 30.34,
+            "end": 30.64,
+            "confidence": 0.93
+          },
+          {
+            "word": " tk",
+            "start": 30.64,
+            "end": 30.82,
+            "confidence": 0.94
+          },
+          {
+            "word": " tir",
+            "start": 30.82,
+            "end": 31.06,
+            "confidence": 0.74
+          },
+          {
+            "word": " kaise",
+            "start": 31.06,
+            "end": 31.34,
+            "confidence": 0.94
+          },
+          {
+            "word": " rhata۔",
+            "start": 31.34,
+            "end": 32.08,
+            "confidence": 0.59
+          }
+        ]
+      },
+      {
+        "id": "seg_8",
+        "start": 32.08,
+        "end": 35.66,
+        "text": "agar ksi ne hmlh kya tu karjo aur saman ohin kyun chhor dia gaya",
+        "words": [
+          {
+            "word": " agar",
+            "start": 32.08,
+            "end": 32.36,
+            "confidence": 0.66
+          },
+          {
+            "word": " ksi",
+            "start": 32.36,
+            "end": 32.62,
+            "confidence": 0.97
+          },
+          {
+            "word": " ne",
+            "start": 32.62,
+            "end": 32.72,
+            "confidence": 0.99
+          },
+          {
+            "word": " hmlh",
+            "start": 32.72,
+            "end": 33.06,
+            "confidence": 0.87
+          },
+          {
+            "word": " kya",
+            "start": 33.06,
+            "end": 33.36,
+            "confidence": 0.99
+          },
+          {
+            "word": " tu",
+            "start": 33.36,
+            "end": 33.56,
+            "confidence": 0.85
+          },
+          {
+            "word": " karjo",
+            "start": 33.56,
+            "end": 34,
+            "confidence": 0.7
+          },
+          {
+            "word": " aur",
+            "start": 34,
+            "end": 34.14,
+            "confidence": 0.96
+          },
+          {
+            "word": " saman",
+            "start": 34.14,
+            "end": 34.52,
+            "confidence": 0.87
+          },
+          {
+            "word": " ohin",
+            "start": 34.52,
+            "end": 34.86,
+            "confidence": 0.37
+          },
+          {
+            "word": " kyun",
+            "start": 34.86,
+            "end": 35.06,
+            "confidence": 0.96
+          },
+          {
+            "word": " chhor",
+            "start": 35.06,
+            "end": 35.24,
+            "confidence": 0.66
+          },
+          {
+            "word": " dia",
+            "start": 35.24,
+            "end": 35.44,
+            "confidence": 0.99
+          },
+          {
+            "word": " gaya",
+            "start": 35.44,
+            "end": 35.66,
+            "confidence": 0.99
+          }
+        ]
+      },
+      {
+        "id": "seg_9",
+        "start": 35.66,
+        "end": 39.92,
+        "text": "aur agه sab log laئf bort main nikl gaye tu phra an ka koئi nshan kyun nahi mla",
+        "words": [
+          {
+            "word": " aur",
+            "start": 35.66,
+            "end": 36.18,
+            "confidence": 0.22
+          },
+          {
+            "word": " agه",
+            "start": 36.18,
+            "end": 36.38,
+            "confidence": 0.66
+          },
+          {
+            "word": " sab",
+            "start": 36.38,
+            "end": 36.66,
+            "confidence": 0.89
+          },
+          {
+            "word": " log",
+            "start": 36.66,
+            "end": 36.94,
+            "confidence": 0.98
+          },
+          {
+            "word": " laئf",
+            "start": 36.94,
+            "end": 37.18,
+            "confidence": 0.66
+          },
+          {
+            "word": " bort",
+            "start": 37.18,
+            "end": 37.46,
+            "confidence": 0.68
+          },
+          {
+            "word": " main",
+            "start": 37.46,
+            "end": 37.52,
+            "confidence": 0.98
+          },
+          {
+            "word": " nikl",
+            "start": 37.52,
+            "end": 37.78,
+            "confidence": 0.64
+          },
+          {
+            "word": " gaye",
+            "start": 37.78,
+            "end": 37.98,
+            "confidence": 0.99
+          },
+          {
+            "word": " tu",
+            "start": 37.98,
+            "end": 38.18,
+            "confidence": 0.95
+          },
+          {
+            "word": " phra",
+            "start": 38.18,
+            "end": 38.34,
+            "confidence": 0.65
+          },
+          {
+            "word": " an",
+            "start": 38.34,
+            "end": 38.46,
+            "confidence": 0.55
+          },
+          {
+            "word": " ka",
+            "start": 38.46,
+            "end": 38.6,
+            "confidence": 0.95
+          },
+          {
+            "word": " koئi",
+            "start": 38.6,
+            "end": 38.96,
+            "confidence": 0.94
+          },
+          {
+            "word": " nshan",
+            "start": 38.96,
+            "end": 39.24,
+            "confidence": 0.95
+          },
+          {
+            "word": " kyun",
+            "start": 39.24,
+            "end": 39.56,
+            "confidence": 0.98
+          },
+          {
+            "word": " nahi",
+            "start": 39.56,
+            "end": 39.68,
+            "confidence": 0.93
+          },
+          {
+            "word": " mla",
+            "start": 39.68,
+            "end": 39.92,
+            "confidence": 0.67
+          }
+        ]
+      },
+      {
+        "id": "seg_10",
+        "start": 39.92,
+        "end": 44.22,
+        "text": "miri slst koئe fkshnal horztori nahi yeh aik hqi ki jhaz tha",
+        "words": [
+          {
+            "word": " miri",
+            "start": 39.92,
+            "end": 40.74,
+            "confidence": 0.47
+          },
+          {
+            "word": " slst",
+            "start": 40.74,
+            "end": 41.1,
+            "confidence": 0.6
+          },
+          {
+            "word": " koئe",
+            "start": 41.1,
+            "end": 41.4,
+            "confidence": 0.64
+          },
+          {
+            "word": " fkshnal",
+            "start": 41.4,
+            "end": 41.86,
+            "confidence": 0.62
+          },
+          {
+            "word": " horztori",
+            "start": 41.86,
+            "end": 42.46,
+            "confidence": 0.48
+          },
+          {
+            "word": " nahi",
+            "start": 42.46,
+            "end": 42.58,
+            "confidence": 0.96
+          },
+          {
+            "word": " yeh",
+            "start": 42.58,
+            "end": 42.96,
+            "confidence": 0.59
+          },
+          {
+            "word": " aik",
+            "start": 42.96,
+            "end": 43.16,
+            "confidence": 0.93
+          },
+          {
+            "word": " hqi",
+            "start": 43.16,
+            "end": 43.5,
+            "confidence": 0.97
+          },
+          {
+            "word": " ki",
+            "start": 43.5,
+            "end": 43.62,
+            "confidence": 0.76
+          },
+          {
+            "word": " jhaz",
+            "start": 43.62,
+            "end": 44,
+            "confidence": 0.65
+          },
+          {
+            "word": " tha",
+            "start": 44,
+            "end": 44.28,
+            "confidence": 0.97
+          }
+        ]
+      },
+      {
+        "id": "seg_11",
+        "start": 44.28,
+        "end": 52.42,
+        "text": "aur as ki khani aaj bhi aik aise soal par khtm hoti hai js ka joab ksi ke pas nhin، aakhr an ds logon ke sath hoa kya tha۔",
+        "words": [
+          {
+            "word": " aur",
+            "start": 44.28,
+            "end": 44.78,
+            "confidence": 0.54
+          },
+          {
+            "word": " as",
+            "start": 44.78,
+            "end": 44.94,
+            "confidence": 0.83
+          },
+          {
+            "word": " ki",
+            "start": 44.94,
+            "end": 45.06,
+            "confidence": 0.95
+          },
+          {
+            "word": " khani",
+            "start": 45.06,
+            "end": 45.52,
+            "confidence": 0.94
+          },
+          {
+            "word": " aaj",
+            "start": 45.52,
+            "end": 45.84,
+            "confidence": 0.86
+          },
+          {
+            "word": " bhi",
+            "start": 45.84,
+            "end": 46.02,
+            "confidence": 0.99
+          },
+          {
+            "word": " aik",
+            "start": 46.02,
+            "end": 46.2,
+            "confidence": 0.98
+          },
+          {
+            "word": " aise",
+            "start": 46.2,
+            "end": 46.52,
+            "confidence": 0.89
+          },
+          {
+            "word": " soal",
+            "start": 46.52,
+            "end": 46.82,
+            "confidence": 0.96
+          },
+          {
+            "word": " par",
+            "start": 46.82,
+            "end": 47,
+            "confidence": 0.99
+          },
+          {
+            "word": " khtm",
+            "start": 47,
+            "end": 47.26,
+            "confidence": 0.96
+          },
+          {
+            "word": " hoti",
+            "start": 47.26,
+            "end": 47.58,
+            "confidence": 0.98
+          },
+          {
+            "word": " hai",
+            "start": 47.58,
+            "end": 47.72,
+            "confidence": 0.98
+          },
+          {
+            "word": " js",
+            "start": 47.72,
+            "end": 48.02,
+            "confidence": 0.99
+          },
+          {
+            "word": " ka",
+            "start": 48.02,
+            "end": 48.18,
+            "confidence": 0.99
+          },
+          {
+            "word": " joab",
+            "start": 48.18,
+            "end": 48.62,
+            "confidence": 0.95
+          },
+          {
+            "word": " ksi",
+            "start": 48.62,
+            "end": 48.9,
+            "confidence": 0.97
+          },
+          {
+            "word": " ke",
+            "start": 48.9,
+            "end": 49,
+            "confidence": 0.85
+          },
+          {
+            "word": " pas",
+            "start": 49,
+            "end": 49.22,
+            "confidence": 0.99
+          },
+          {
+            "word": " nhin،",
+            "start": 49.22,
+            "end": 49.62,
+            "confidence": 0.54
+          },
+          {
+            "word": " aakhr",
+            "start": 49.62,
+            "end": 49.9,
+            "confidence": 0.92
+          },
+          {
+            "word": " an",
+            "start": 49.9,
+            "end": 50.12,
+            "confidence": 0.75
+          },
+          {
+            "word": " ds",
+            "start": 50.12,
+            "end": 50.44,
+            "confidence": 0.82
+          },
+          {
+            "word": " logon",
+            "start": 50.44,
+            "end": 50.78,
+            "confidence": 0.99
+          },
+          {
+            "word": " ke",
+            "start": 50.78,
+            "end": 50.92,
+            "confidence": 0.94
+          },
+          {
+            "word": " sath",
+            "start": 50.92,
+            "end": 51.32,
+            "confidence": 0.97
+          },
+          {
+            "word": " hoa",
+            "start": 51.32,
+            "end": 51.62,
+            "confidence": 0.93
+          },
+          {
+            "word": " kya",
+            "start": 51.62,
+            "end": 51.84,
+            "confidence": 0.96
+          },
+          {
+            "word": " tha۔",
+            "start": 51.84,
+            "end": 52.42,
+            "confidence": 0.77
+          }
+        ]
+      },
+      {
+        "id": "seg_12",
+        "start": 52.42,
+        "end": 58.52,
+        "text": "as raz ko smjhne ke liye hmin as waqt lotna ho ga jb mri slst apne aakhri sfr par nkli thi۔",
+        "words": [
+          {
+            "word": " as",
+            "start": 52.42,
+            "end": 52.52,
+            "confidence": 0.85
+          },
+          {
+            "word": " raz",
+            "start": 52.52,
+            "end": 52.9,
+            "confidence": 0.7
+          },
+          {
+            "word": " ko",
+            "start": 52.9,
+            "end": 53.04,
+            "confidence": 0.99
+          },
+          {
+            "word": " smjhne",
+            "start": 53.04,
+            "end": 53.5,
+            "confidence": 0.98
+          },
+          {
+            "word": " ke",
+            "start": 53.5,
+            "end": 53.56,
+            "confidence": 0.8
+          },
+          {
+            "word": " liye",
+            "start": 53.56,
+            "end": 53.9,
+            "confidence": 0.75
+          },
+          {
+            "word": " hmin",
+            "start": 53.9,
+            "end": 54.18,
+            "confidence": 0.9
+          },
+          {
+            "word": " as",
+            "start": 54.18,
+            "end": 54.38,
+            "confidence": 0.79
+          },
+          {
+            "word": " waqt",
+            "start": 54.38,
+            "end": 54.6,
+            "confidence": 0.96
+          },
+          {
+            "word": " lotna",
+            "start": 54.6,
+            "end": 55.02,
+            "confidence": 0.68
+          },
+          {
+            "word": " ho",
+            "start": 55.02,
+            "end": 55.18,
+            "confidence": 0.94
+          },
+          {
+            "word": " ga",
+            "start": 55.18,
+            "end": 55.4,
+            "confidence": 0.54
+          },
+          {
+            "word": " jb",
+            "start": 55.4,
+            "end": 55.68,
+            "confidence": 0.94
+          },
+          {
+            "word": " mri",
+            "start": 55.68,
+            "end": 55.96,
+            "confidence": 0.5
+          },
+          {
+            "word": " slst",
+            "start": 55.96,
+            "end": 56.42,
+            "confidence": 0.54
+          },
+          {
+            "word": " apne",
+            "start": 56.42,
+            "end": 56.84,
+            "confidence": 0.98
+          },
+          {
+            "word": " aakhri",
+            "start": 56.84,
+            "end": 57.24,
+            "confidence": 0.55
+          },
+          {
+            "word": " sfr",
+            "start": 57.24,
+            "end": 57.54,
+            "confidence": 0.72
+          },
+          {
+            "word": " par",
+            "start": 57.54,
+            "end": 57.68,
+            "confidence": 0.99
+          },
+          {
+            "word": " nkli",
+            "start": 57.68,
+            "end": 57.98,
+            "confidence": 0.9
+          },
+          {
+            "word": " thi۔",
+            "start": 57.98,
+            "end": 58.52,
+            "confidence": 0.77
+          }
+        ]
+      },
+      {
+        "id": "seg_13",
+        "start": 58.52,
+        "end": 65.22,
+        "text": "7 nombr 1872 ko miri slast dli ke shhr jinoh ke liye roana hoئi، yeh aik marchnshp thi",
+        "words": [
+          {
+            "word": " 7",
+            "start": 58.52,
+            "end": 58.86,
+            "confidence": 0.02
+          },
+          {
+            "word": " nombr",
+            "start": 58.86,
+            "end": 59.3,
+            "confidence": 0.65
+          },
+          {
+            "word": " 1872",
+            "start": 59.3,
+            "end": 60.08,
+            "confidence": 0.47
+          },
+          {
+            "word": " ko",
+            "start": 60.08,
+            "end": 60.44,
+            "confidence": 0.95
+          },
+          {
+            "word": " miri",
+            "start": 60.44,
+            "end": 60.84,
+            "confidence": 0.5
+          },
+          {
+            "word": " slast",
+            "start": 60.84,
+            "end": 61.28,
+            "confidence": 0.61
+          },
+          {
+            "word": " dli",
+            "start": 61.28,
+            "end": 62.28,
+            "confidence": 0.55
+          },
+          {
+            "word": " ke",
+            "start": 62.28,
+            "end": 62.38,
+            "confidence": 0.51
+          },
+          {
+            "word": " shhr",
+            "start": 62.38,
+            "end": 62.76,
+            "confidence": 0.95
+          },
+          {
+            "word": " jinoh",
+            "start": 62.76,
+            "end": 63.18,
+            "confidence": 0.76
+          },
+          {
+            "word": " ke",
+            "start": 63.18,
+            "end": 63.3,
+            "confidence": 0.55
+          },
+          {
+            "word": " liye",
+            "start": 63.3,
+            "end": 63.46,
+            "confidence": 0.69
+          },
+          {
+            "word": " roana",
+            "start": 63.46,
+            "end": 63.78,
+            "confidence": 0.87
+          },
+          {
+            "word": " hoئi،",
+            "start": 63.78,
+            "end": 64.08,
+            "confidence": 0.82
+          },
+          {
+            "word": " yeh",
+            "start": 64.08,
+            "end": 64.2,
+            "confidence": 0.98
+          },
+          {
+            "word": " aik",
+            "start": 64.2,
+            "end": 64.36,
+            "confidence": 0.93
+          },
+          {
+            "word": " marchnshp",
+            "start": 64.36,
+            "end": 65,
+            "confidence": 0.57
+          },
+          {
+            "word": " thi",
+            "start": 65,
+            "end": 65.22,
+            "confidence": 0.96
+          }
+        ]
+      },
+      {
+        "id": "seg_14",
+        "start": 65.22,
+        "end": 69.76,
+        "text": "js ka kaam smndr ke raste mal aik jgh se dosri jgة lijana tha۔",
+        "words": [
+          {
+            "word": " js",
+            "start": 65.22,
+            "end": 65.82,
+            "confidence": 0.97
+          },
+          {
+            "word": " ka",
+            "start": 65.82,
+            "end": 65.94,
+            "confidence": 0.99
+          },
+          {
+            "word": " kaam",
+            "start": 65.94,
+            "end": 66.24,
+            "confidence": 0.98
+          },
+          {
+            "word": " smndr",
+            "start": 66.24,
+            "end": 66.74,
+            "confidence": 0.84
+          },
+          {
+            "word": " ke",
+            "start": 66.74,
+            "end": 66.84,
+            "confidence": 0.96
+          },
+          {
+            "word": " raste",
+            "start": 66.84,
+            "end": 67.32,
+            "confidence": 0.9
+          },
+          {
+            "word": " mal",
+            "start": 67.32,
+            "end": 67.76,
+            "confidence": 0.81
+          },
+          {
+            "word": " aik",
+            "start": 67.76,
+            "end": 68.02,
+            "confidence": 0.97
+          },
+          {
+            "word": " jgh",
+            "start": 68.02,
+            "end": 68.3,
+            "confidence": 0.95
+          },
+          {
+            "word": " se",
+            "start": 68.3,
+            "end": 68.44,
+            "confidence": 1
+          },
+          {
+            "word": " dosri",
+            "start": 68.44,
+            "end": 68.86,
+            "confidence": 0.98
+          },
+          {
+            "word": " jgة",
+            "start": 68.86,
+            "end": 69.1,
+            "confidence": 0.66
+          },
+          {
+            "word": " lijana",
+            "start": 69.1,
+            "end": 69.48,
+            "confidence": 0.73
+          },
+          {
+            "word": " tha۔",
+            "start": 69.48,
+            "end": 69.76,
+            "confidence": 0.9
+          }
+        ]
+      },
+      {
+        "id": "seg_15",
+        "start": 69.76,
+        "end": 76.48,
+        "text": "as sfr main as ke kargho main 7101 birl andustrial alkhol ki thi، yeh alkhl andustrial astamal kilئe tha",
+        "words": [
+          {
+            "word": " as",
+            "start": 69.76,
+            "end": 69.82,
+            "confidence": 0.73
+          },
+          {
+            "word": " sfr",
+            "start": 69.82,
+            "end": 70.22,
+            "confidence": 0.73
+          },
+          {
+            "word": " main",
+            "start": 70.22,
+            "end": 70.34,
+            "confidence": 0.99
+          },
+          {
+            "word": " as",
+            "start": 70.34,
+            "end": 70.46,
+            "confidence": 0.74
+          },
+          {
+            "word": " ke",
+            "start": 70.46,
+            "end": 70.58,
+            "confidence": 0.96
+          },
+          {
+            "word": " kargho",
+            "start": 70.58,
+            "end": 71,
+            "confidence": 0.57
+          },
+          {
+            "word": " main",
+            "start": 71,
+            "end": 71.14,
+            "confidence": 0.99
+          },
+          {
+            "word": " 7101",
+            "start": 71.14,
+            "end": 72.58,
+            "confidence": 0.16
+          },
+          {
+            "word": " birl",
+            "start": 72.58,
+            "end": 73.04,
+            "confidence": 0.83
+          },
+          {
+            "word": " andustrial",
+            "start": 73.04,
+            "end": 73.54,
+            "confidence": 0.4
+          },
+          {
+            "word": " alkhol",
+            "start": 73.54,
+            "end": 74,
+            "confidence": 0.38
+          },
+          {
+            "word": " ki",
+            "start": 74,
+            "end": 74.1,
+            "confidence": 0.07
+          },
+          {
+            "word": " thi،",
+            "start": 74.1,
+            "end": 74.38,
+            "confidence": 0.43
+          },
+          {
+            "word": " yeh",
+            "start": 74.38,
+            "end": 74.52,
+            "confidence": 0.99
+          },
+          {
+            "word": " alkhl",
+            "start": 74.52,
+            "end": 75.04,
+            "confidence": 0.5
+          },
+          {
+            "word": " andustrial",
+            "start": 75.04,
+            "end": 75.54,
+            "confidence": 0.74
+          },
+          {
+            "word": " astamal",
+            "start": 75.54,
+            "end": 76,
+            "confidence": 0.91
+          },
+          {
+            "word": " kilئe",
+            "start": 76,
+            "end": 76.22,
+            "confidence": 0.66
+          },
+          {
+            "word": " tha",
+            "start": 76.22,
+            "end": 76.48,
+            "confidence": 1
+          }
+        ]
+      },
+      {
+        "id": "seg_16",
+        "start": 76.48,
+        "end": 79.2,
+        "text": "nqi srf pine ke liye rkhha gaya koئi aam sman",
+        "words": [
+          {
+            "word": " nqi",
+            "start": 76.48,
+            "end": 77.06,
+            "confidence": 0.31
+          },
+          {
+            "word": " srf",
+            "start": 77.06,
+            "end": 77.32,
+            "confidence": 0.88
+          },
+          {
+            "word": " pine",
+            "start": 77.32,
+            "end": 77.68,
+            "confidence": 0.9
+          },
+          {
+            "word": " ke",
+            "start": 77.68,
+            "end": 77.78,
+            "confidence": 0.65
+          },
+          {
+            "word": " liye",
+            "start": 77.78,
+            "end": 77.94,
+            "confidence": 0.83
+          },
+          {
+            "word": " rkhha",
+            "start": 77.94,
+            "end": 78.2,
+            "confidence": 0.52
+          },
+          {
+            "word": " gaya",
+            "start": 78.2,
+            "end": 78.38,
+            "confidence": 0.98
+          },
+          {
+            "word": " koئi",
+            "start": 78.38,
+            "end": 78.62,
+            "confidence": 0.93
+          },
+          {
+            "word": " aam",
+            "start": 78.62,
+            "end": 78.86,
+            "confidence": 0.78
+          },
+          {
+            "word": " sman",
+            "start": 78.86,
+            "end": 79.2,
+            "confidence": 0.91
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-10-29T13:05:28.167Z",
+    "updatedAt": "2026-10-29T13:06:20.110Z"
+  },
+  {
+    "id": "trans_1793276291211_xzayw",
+    "filename": "input_1793276189624__-_-2026-10-29-16-34-_-_-_-1872_-_-_-_-_-_.mp3",
+    "originalName": "गहन-कथावाचक-2026-10-29-16-34-अटलांटिक-ओशन।-दिसंबर-1872।-समंदर-में-एक-जहाज़-अक.mp3",
+    "mediaUrl": "/api/audio/file/input_1793276189624__-_-2026-10-29-16-34-_-_-_-1872_-_-_-_-_-_.mp3",
+    "mediaType": "audio",
+    "duration": 79.43825,
+    "durationFormatted": "01:19",
+    "detectedLanguage": "Hindi",
+    "detectedLanguageCode": "hi",
+    "confidenceScore": 0.985,
+    "isAmbiguousHindiUrdu": true,
+    "selectedScript": "hindi_devanagari",
+    "segments": [
+      {
+        "id": "seg_1",
+        "start": 0,
+        "end": 8,
+        "text": "अटलांटिक ओशन, दिसंबर 1872, समंदर में एक जहाज़ अकेला तैर रहा है, उसके सेल्स हवा में हिल रहे हैं, कार्गो अभी भी अंदर है.",
+        "words": []
+      },
+      {
+        "id": "seg_2",
+        "start": 8,
+        "end": 12.92,
+        "text": "खाने पीने का सामान मौजूद है, जहाज़ डूब नहीं रहा, लेकिन उस पर एक भी इंसान नहीं.",
+        "words": []
+      },
+      {
+        "id": "seg_3",
+        "start": 12.92,
+        "end": 19.52,
+        "text": "कैप्टन गायब, उसकी बीवी गायब, उनकी दो साल की बेटी गायब, और क्रू के सात मेंबर्स का भी कोई निशान नहीं.",
+        "words": []
+      },
+      {
+        "id": "seg_4",
+        "start": 19.52,
+        "end": 28.12,
+        "text": "जहाज़ का नाम था मैरी सेलेस्टे, कुछ दिन पहले तक इस पर दस लोग ज़िंदा थे, फिर कुछ ऐसा हुआ कि उन्होंने अपना जहाज़ छोड़ दिया, मगर क्यों?",
+        "words": []
+      },
+      {
+        "id": "seg_5",
+        "start": 28.12,
+        "end": 31.68,
+        "text": "अगर जहाज़ डूब रहा था तो वो अभी भी तैर कैसे रहा था?",
+        "words": []
+      },
+      {
+        "id": "seg_6",
+        "start": 31.68,
+        "end": 35.64,
+        "text": "अगर किसी ने हमला किया, तो कार्गो और सामान वहीं क्यों छोड़ दिया गया?",
+        "words": []
+      },
+      {
+        "id": "seg_7",
+        "start": 35.64,
+        "end": 39.92,
+        "text": "और अगर सब लोग लाइफ़बोट में निकल गए तो फिर उनका कोई निशान क्यों नहीं मिला?",
+        "words": []
+      },
+      {
+        "id": "seg_8",
+        "start": 39.92,
+        "end": 44.26,
+        "text": "मैरी सेलेस्टे कोई fictional horror story नहीं, यह एक हक़ीक़ी जहाज़ था.",
+        "words": []
+      },
+      {
+        "id": "seg_9",
+        "start": 44.26,
+        "end": 49.52,
+        "text": "और इसकी कहानी आज भी एक ऐसे सवाल पर ख़त्म होती है जिसका जवाब किसी के पास नहीं—",
+        "words": []
+      },
+      {
+        "id": "seg_10",
+        "start": 49.52,
+        "end": 52.02,
+        "text": "आखिर उन दस लोगों के साथ हुआ क्या था?",
+        "words": []
+      },
+      {
+        "id": "seg_11",
+        "start": 52.02,
+        "end": 58.02,
+        "text": "इस राज़ को समझने के लिए हमें उस वक़्त लौटना होगा जब मैरी सेलेस्टे अपने आख़िरी सफ़र पर निकली थी.",
+        "words": []
+      },
+      {
+        "id": "seg_12",
+        "start": 58.02,
+        "end": 64.02,
+        "text": "7 नवंबर 1872 को मैरी सेलेस्टे न्यूयॉर्क से इटली के शहर जेनोआ के लिए रवाना हुई.",
+        "words": []
+      },
+      {
+        "id": "seg_13",
+        "start": 64.02,
+        "end": 65.02,
+        "text": "यह एक merchant ship थी.",
+        "words": []
+      },
+      {
+        "id": "seg_14",
+        "start": 65.02,
+        "end": 69.02,
+        "text": "जिसका काम समंदर के रास्ते माल एक जगह से दूसरी जगह ले जाना था.",
+        "words": []
+      },
+      {
+        "id": "seg_15",
+        "start": 69.02,
+        "end": 74.02,
+        "text": "इस सफ़र में उसके कार्गो में 1701 बैरल्स industrial alcohol के थे.",
+        "words": []
+      },
+      {
+        "id": "seg_16",
+        "start": 74.02,
+        "end": 76.02,
+        "text": "यह अल्कोहल industrial इस्तेमाल के लिए था.",
+        "words": []
+      },
+      {
+        "id": "seg_17",
+        "start": 76.02,
+        "end": 79.22,
+        "text": "न कि सिर्फ़ पीने के लिए रखा गया कोई आम सामान.",
+        "words": []
+      }
+    ],
+    "createdAt": "2026-10-29T12:18:11.211Z",
+    "updatedAt": "2026-10-29T12:18:11.211Z"
+  },
+  {
+    "id": "trans_1793276058786_e5jal",
+    "filename": "input_1793276037417_wise-elder-narrator-2026-10-26-03-21-i-went-for-a-long-walk-.mp3",
+    "originalName": "Wise-Elder-Narrator-2026-10-26-03-21-I-went-for-a-long-walk-this-morning-and-noticed.mp3",
+    "mediaUrl": "/api/audio/file/input_1793276037417_wise-elder-narrator-2026-10-26-03-21-i-went-for-a-long-walk-.mp3",
+    "mediaType": "audio",
+    "duration": 20.166438,
+    "durationFormatted": "00:20",
+    "detectedLanguage": "English",
+    "detectedLanguageCode": "en",
+    "confidenceScore": 0.9969,
+    "isAmbiguousHindiUrdu": false,
+    "selectedScript": "original",
+    "segments": [
+      {
+        "id": "seg_1",
+        "start": 0,
+        "end": 7.44,
+        "text": "I went for a long walk this morning and noticed how much the neighborhood changes when the season's shift.",
+        "words": [
+          {
+            "word": " I",
+            "start": 0,
+            "end": 0.32,
+            "confidence": 0.96
+          },
+          {
+            "word": " went",
+            "start": 0.32,
+            "end": 0.5,
+            "confidence": 1
+          },
+          {
+            "word": " for",
+            "start": 0.5,
+            "end": 0.78,
+            "confidence": 1
+          },
+          {
+            "word": " a",
+            "start": 0.78,
+            "end": 0.92,
+            "confidence": 0.98
+          },
+          {
+            "word": " long",
+            "start": 0.92,
+            "end": 1.24,
+            "confidence": 1
+          },
+          {
+            "word": " walk",
+            "start": 1.24,
+            "end": 1.58,
+            "confidence": 1
+          },
+          {
+            "word": " this",
+            "start": 1.58,
+            "end": 1.88,
+            "confidence": 1
+          },
+          {
+            "word": " morning",
+            "start": 1.88,
+            "end": 2.36,
+            "confidence": 1
+          },
+          {
+            "word": " and",
+            "start": 2.36,
+            "end": 3.18,
+            "confidence": 0.83
+          },
+          {
+            "word": " noticed",
+            "start": 3.18,
+            "end": 3.48,
+            "confidence": 1
+          },
+          {
+            "word": " how",
+            "start": 3.48,
+            "end": 3.88,
+            "confidence": 1
+          },
+          {
+            "word": " much",
+            "start": 3.88,
+            "end": 4.18,
+            "confidence": 1
+          },
+          {
+            "word": " the",
+            "start": 4.18,
+            "end": 4.42,
+            "confidence": 1
+          },
+          {
+            "word": " neighborhood",
+            "start": 4.42,
+            "end": 4.84,
+            "confidence": 0.88
+          },
+          {
+            "word": " changes",
+            "start": 4.84,
+            "end": 5.62,
+            "confidence": 0.97
+          },
+          {
+            "word": " when",
+            "start": 5.62,
+            "end": 6.04,
+            "confidence": 0.99
+          },
+          {
+            "word": " the",
+            "start": 6.04,
+            "end": 6.3,
+            "confidence": 1
+          },
+          {
+            "word": " season's",
+            "start": 6.3,
+            "end": 6.96,
+            "confidence": 0.58
+          },
+          {
+            "word": " shift.",
+            "start": 6.96,
+            "end": 7.44,
+            "confidence": 0.95
+          }
+        ]
+      },
+      {
+        "id": "seg_2",
+        "start": 8.33,
+        "end": 19.99,
+        "text": "The air felt a bit crisper than yesterday, and it reminded me that sometimes we just need a change of pace to appreciate the world around us.",
+        "words": [
+          {
+            "word": " The",
+            "start": 8.33,
+            "end": 8.51,
+            "confidence": 0.99
+          },
+          {
+            "word": " air",
+            "start": 8.51,
+            "end": 8.91,
+            "confidence": 0.97
+          },
+          {
+            "word": " felt",
+            "start": 8.91,
+            "end": 9.19,
+            "confidence": 0.97
+          },
+          {
+            "word": " a",
+            "start": 9.19,
+            "end": 9.35,
+            "confidence": 1
+          },
+          {
+            "word": " bit",
+            "start": 9.35,
+            "end": 9.67,
+            "confidence": 1
+          },
+          {
+            "word": " crisper",
+            "start": 9.67,
+            "end": 10.23,
+            "confidence": 0.83
+          },
+          {
+            "word": " than",
+            "start": 10.23,
+            "end": 10.49,
+            "confidence": 1
+          },
+          {
+            "word": " yesterday,",
+            "start": 10.49,
+            "end": 11.21,
+            "confidence": 1
+          },
+          {
+            "word": " and",
+            "start": 11.93,
+            "end": 12.05,
+            "confidence": 0.99
+          },
+          {
+            "word": " it",
+            "start": 12.05,
+            "end": 12.19,
+            "confidence": 1
+          },
+          {
+            "word": " reminded",
+            "start": 12.19,
+            "end": 12.67,
+            "confidence": 1
+          },
+          {
+            "word": " me",
+            "start": 12.67,
+            "end": 13.05,
+            "confidence": 1
+          },
+          {
+            "word": " that",
+            "start": 13.05,
+            "end": 13.37,
+            "confidence": 0.99
+          },
+          {
+            "word": " sometimes",
+            "start": 13.37,
+            "end": 14.13,
+            "confidence": 0.96
+          },
+          {
+            "word": " we",
+            "start": 14.13,
+            "end": 14.83,
+            "confidence": 0.87
+          },
+          {
+            "word": " just",
+            "start": 14.83,
+            "end": 15.17,
+            "confidence": 0.99
+          },
+          {
+            "word": " need",
+            "start": 15.17,
+            "end": 15.53,
+            "confidence": 0.98
+          },
+          {
+            "word": " a",
+            "start": 15.53,
+            "end": 15.79,
+            "confidence": 0.98
+          },
+          {
+            "word": " change",
+            "start": 15.79,
+            "end": 16.07,
+            "confidence": 0.99
+          },
+          {
+            "word": " of",
+            "start": 16.07,
+            "end": 16.41,
+            "confidence": 1
+          },
+          {
+            "word": " pace",
+            "start": 16.41,
+            "end": 16.97,
+            "confidence": 0.99
+          },
+          {
+            "word": " to",
+            "start": 16.97,
+            "end": 17.61,
+            "confidence": 0.99
+          },
+          {
+            "word": " appreciate",
+            "start": 17.61,
+            "end": 18.27,
+            "confidence": 0.99
+          },
+          {
+            "word": " the",
+            "start": 18.27,
+            "end": 18.77,
+            "confidence": 1
+          },
+          {
+            "word": " world",
+            "start": 18.77,
+            "end": 18.97,
+            "confidence": 1
+          },
+          {
+            "word": " around",
+            "start": 18.97,
+            "end": 19.43,
+            "confidence": 1
+          },
+          {
+            "word": " us.",
+            "start": 19.43,
+            "end": 19.99,
+            "confidence": 1
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-10-29T12:14:18.786Z",
+    "updatedAt": "2026-10-29T12:14:18.786Z"
+  },
+  {
+    "id": "trans_1793274121703_cwvzh",
+    "filename": "input_1793274050424__-_-2026-10-29-16-34-_-_-_-1872_-_-_-_-_-_.mp3",
+    "originalName": "गहन-कथावाचक-2026-10-29-16-34-अटलांटिक-ओशन।-दिसंबर-1872।-समंदर-में-एक-जहाज़-अक.mp3",
+    "mediaUrl": "/api/audio/file/input_1793274050424__-_-2026-10-29-16-34-_-_-_-1872_-_-_-_-_-_.mp3",
+    "mediaType": "audio",
+    "duration": 79.43825,
+    "durationFormatted": "01:19",
+    "detectedLanguage": "Hindi",
+    "detectedLanguageCode": "hi",
+    "confidenceScore": 0.985,
+    "isAmbiguousHindiUrdu": true,
+    "selectedScript": "hindi_devanagari",
+    "segments": [
+      {
+        "id": "seg_1",
+        "start": 0,
+        "end": 8,
+        "text": "अटलांटिक ओशन, दिसंबर 1872, समंदर में एक जहाज़ अकेला तैर रहा है, उसके सेल्स हवा में हिल रहे हैं, कार्गो अभी भी अंदर है.",
+        "words": []
+      },
+      {
+        "id": "seg_2",
+        "start": 8,
+        "end": 12.92,
+        "text": "खाने पीने का सामान मौजूद है, जहाज़ डूब नहीं रहा, लेकिन उस पर एक भी इंसान नहीं.",
+        "words": []
+      },
+      {
+        "id": "seg_3",
+        "start": 12.92,
+        "end": 19.52,
+        "text": "कैप्टन गायब, उसकी बीवी गायब, उनकी दो साल की बेटी गायब, और क्रू के सात मेंबर्स का भी कोई निशान नहीं.",
+        "words": []
+      },
+      {
+        "id": "seg_4",
+        "start": 19.52,
+        "end": 28.12,
+        "text": "जहाज़ का नाम था मैरी सेलेस्टे, कुछ दिन पहले तक इस पर दस लोग ज़िंदा थे, फिर कुछ ऐसा हुआ कि उन्होंने अपना जहाज़ छोड़ दिया, मगर क्यों?",
+        "words": []
+      },
+      {
+        "id": "seg_5",
+        "start": 28.12,
+        "end": 31.68,
+        "text": "अगर जहाज़ डूब रहा था तो वो अभी भी तैर कैसे रहा था?",
+        "words": []
+      },
+      {
+        "id": "seg_6",
+        "start": 31.68,
+        "end": 35.64,
+        "text": "अगर किसी ने हमला किया, तो कार्गो और सामान वहीं क्यों छोड़ दिया गया?",
+        "words": []
+      },
+      {
+        "id": "seg_7",
+        "start": 35.64,
+        "end": 39.92,
+        "text": "और अगर सब लोग लाइफ़बोट में निकल गए तो फिर उनका कोई निशान क्यों नहीं मिला?",
+        "words": []
+      },
+      {
+        "id": "seg_8",
+        "start": 39.92,
+        "end": 44.26,
+        "text": "मैरी सेलेस्टे कोई fictional horror story नहीं, यह एक हक़ीक़ी जहाज़ था.",
+        "words": []
+      },
+      {
+        "id": "seg_9",
+        "start": 44.26,
+        "end": 49.52,
+        "text": "और इसकी कहानी आज भी एक ऐसे सवाल पर ख़त्म होती है जिसका जवाब किसी के पास नहीं—",
+        "words": []
+      },
+      {
+        "id": "seg_10",
+        "start": 49.52,
+        "end": 52.02,
+        "text": "आखिर उन दस लोगों के साथ हुआ क्या था?",
+        "words": []
+      },
+      {
+        "id": "seg_11",
+        "start": 52.02,
+        "end": 58.02,
+        "text": "इस राज़ को समझने के लिए हमें उस वक़्त लौटना होगा जब मैरी सेलेस्टे अपने आख़िरी सफ़र पर निकली थी.",
+        "words": []
+      },
+      {
+        "id": "seg_12",
+        "start": 58.02,
+        "end": 64.02,
+        "text": "7 नवंबर 1872 को मैरी सेलेस्टे न्यूयॉर्क से इटली के शहर जेनोआ के लिए रवाना हुई.",
+        "words": []
+      },
+      {
+        "id": "seg_13",
+        "start": 64.02,
+        "end": 65.02,
+        "text": "यह एक merchant ship थी.",
+        "words": []
+      },
+      {
+        "id": "seg_14",
+        "start": 65.02,
+        "end": 69.02,
+        "text": "जिसका काम समंदर के रास्ते माल एक जगह से दूसरी जगह ले जाना था.",
+        "words": []
+      },
+      {
+        "id": "seg_15",
+        "start": 69.02,
+        "end": 74.02,
+        "text": "इस सफ़र में उसके कार्गो में 1701 बैरल्स industrial alcohol के थे.",
+        "words": []
+      },
+      {
+        "id": "seg_16",
+        "start": 74.02,
+        "end": 76.02,
+        "text": "यह अल्कोहल industrial इस्तेमाल के लिए था.",
+        "words": []
+      },
+      {
+        "id": "seg_17",
+        "start": 76.02,
+        "end": 79.22,
+        "text": "न कि सिर्फ़ पीने के लिए रखा गया कोई आम सामान.",
+        "words": []
+      }
+    ],
+    "createdAt": "2026-10-29T11:42:01.703Z",
+    "updatedAt": "2026-10-29T11:42:01.703Z"
+  },
+  {
+    "id": "trans_1793273816242_vevbz",
+    "filename": "test_hindi.mp3",
+    "originalName": "test_hindi.mp3",
+    "mediaUrl": "/api/audio/file/test_hindi.mp3",
+    "mediaType": "audio",
+    "duration": 4.704,
+    "durationFormatted": "00:04",
+    "detectedLanguage": "Hindi",
+    "detectedLanguageCode": "hi",
+    "confidenceScore": 0.8791,
+    "isAmbiguousHindiUrdu": true,
+    "selectedScript": "original",
+    "segments": [
+      {
+        "id": "seg_1",
+        "start": 0,
+        "end": 3.48,
+        "text": "Namaste, yaa voice forge ka Hindi clone test hai.",
+        "words": [
+          {
+            "word": " Namaste,",
+            "start": 0,
+            "end": 0.76,
+            "confidence": 0.92
+          },
+          {
+            "word": " yaa",
+            "start": 1.02,
+            "end": 1.26,
+            "confidence": 0.25
+          },
+          {
+            "word": " voice",
+            "start": 1.26,
+            "end": 1.58,
+            "confidence": 0.85
+          },
+          {
+            "word": " forge",
+            "start": 1.58,
+            "end": 1.84,
+            "confidence": 0.23
+          },
+          {
+            "word": " ka",
+            "start": 1.84,
+            "end": 2.14,
+            "confidence": 0.38
+          },
+          {
+            "word": " Hindi",
+            "start": 2.14,
+            "end": 2.46,
+            "confidence": 0.61
+          },
+          {
+            "word": " clone",
+            "start": 2.46,
+            "end": 2.8,
+            "confidence": 0.78
+          },
+          {
+            "word": " test",
+            "start": 2.8,
+            "end": 3.06,
+            "confidence": 0.95
+          },
+          {
+            "word": " hai.",
+            "start": 3.06,
+            "end": 3.48,
+            "confidence": 0.67
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-10-29T11:36:56.242Z",
+    "updatedAt": "2026-10-29T11:36:56.242Z"
+  },
+  {
+    "id": "trans_1793273789160_o0wh0",
+    "filename": "test_hindi.mp3",
+    "originalName": "test_hindi.mp3",
+    "mediaUrl": "/api/audio/file/test_hindi.mp3",
+    "mediaType": "audio",
+    "duration": 4.704,
+    "durationFormatted": "00:04",
+    "detectedLanguage": "Hindi",
+    "detectedLanguageCode": "hi",
+    "confidenceScore": 0.8791,
+    "isAmbiguousHindiUrdu": true,
+    "selectedScript": "original",
+    "segments": [
+      {
+        "id": "seg_1",
+        "start": 0,
+        "end": 3.48,
+        "text": "Namaste, yaa voice forge ka Hindi clone test hai.",
+        "words": [
+          {
+            "word": " Namaste,",
+            "start": 0,
+            "end": 0.76,
+            "confidence": 0.92
+          },
+          {
+            "word": " yaa",
+            "start": 1.02,
+            "end": 1.26,
+            "confidence": 0.25
+          },
+          {
+            "word": " voice",
+            "start": 1.26,
+            "end": 1.58,
+            "confidence": 0.85
+          },
+          {
+            "word": " forge",
+            "start": 1.58,
+            "end": 1.84,
+            "confidence": 0.23
+          },
+          {
+            "word": " ka",
+            "start": 1.84,
+            "end": 2.14,
+            "confidence": 0.38
+          },
+          {
+            "word": " Hindi",
+            "start": 2.14,
+            "end": 2.46,
+            "confidence": 0.61
+          },
+          {
+            "word": " clone",
+            "start": 2.46,
+            "end": 2.8,
+            "confidence": 0.78
+          },
+          {
+            "word": " test",
+            "start": 2.8,
+            "end": 3.06,
+            "confidence": 0.95
+          },
+          {
+            "word": " hai.",
+            "start": 3.06,
+            "end": 3.48,
+            "confidence": 0.67
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-10-29T11:36:29.160Z",
+    "updatedAt": "2026-10-29T11:36:29.160Z"
+  }
+]

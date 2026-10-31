@@ -13,9 +13,14 @@ import ttsRoutes from './routes/ttsRoutes';
 import openSourceTtsRoutes from './routes/openSourceTtsRoutes';
 import audioRoutes from './routes/audioRoutes';
 import asrRoutes from './routes/asrRoutes';
+import captionRoutes from './routes/captionRoutes';
 import translationRoutes from './routes/translationRoutes';
+import flowRoutes from './routes/flowRoutes';
 import { ProjectService } from './services/projectService';
 import { VoiceTranslationStorageService } from './services/voiceTranslationStorageService';
+import { FlowStorageService } from './services/flowStorageService';
+import { FlowSchedulerService } from './services/flowSchedulerService';
+import { FlowAccountService } from './services/flowAccountService';
 
 const app = express();
 
@@ -25,6 +30,9 @@ app.set('trust proxy', 1);
 // Storage Initialization
 ProjectService.initStorage();
 VoiceTranslationStorageService.initStorage();
+FlowStorageService.initStorage();
+FlowAccountService.initAccounts().catch((err) => logger.warn('Flow accounts init:', err));
+FlowSchedulerService.init().catch((err) => logger.warn('Flow scheduler init:', err));
 
 // Periodic temporary storage cleanup (every 6 hours)
 setInterval(() => {
@@ -65,7 +73,9 @@ app.use('/api', ttsRoutes);
 app.use('/api/open-source-tts', openSourceTtsRoutes);
 app.use('/api', audioRoutes);
 app.use('/api', asrRoutes);
+app.use('/api/captions', captionRoutes);
 app.use('/api/translation', translationRoutes);
+app.use('/api/flow', flowRoutes);
 
 // Static frontend serving (for production or unified single-port hosting)
 const clientDistPath = [

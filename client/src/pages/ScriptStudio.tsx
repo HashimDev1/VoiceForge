@@ -48,7 +48,7 @@ interface ScriptStudioProps {
   isGenerating: boolean;
   currentAudioUrl: string | null;
   isPlaying: boolean;
-  onAudioPlay: (url: string) => void;
+  onAudioPlay: (url: string, showBottomBar?: boolean) => void;
   onAudioPause: () => void;
 }
 
@@ -583,6 +583,9 @@ export const ScriptStudio: React.FC<ScriptStudioProps> = ({
             selectedVoice={project.selectedVoice}
             onSelectVoice={onSelectVoice}
             onAudioPlay={onAudioPlay}
+            onAudioPause={onAudioPause}
+            currentAudioUrl={currentAudioUrl}
+            isPlaying={isPlaying}
             onSaveCustomVoice={onSaveCustomVoice}
             onDeleteCustomVoice={onDeleteCustomVoice}
             compact={true}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, Volume2, VolumeX, Download } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Download, X } from 'lucide-react';
 import { formatDuration } from '../../../shared/src/textAnalysis';
 
 interface AudioPlayerProps {
@@ -14,6 +14,7 @@ interface AudioPlayerProps {
   onSeek: (timeSec: number) => void;
   onVolumeChange: (vol: number) => void;
   onPlaybackRateChange?: (rate: number) => void;
+  onClose?: () => void;
   title?: string;
   compact?: boolean;
 }
@@ -30,6 +31,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   onSeek,
   onVolumeChange,
   onPlaybackRateChange,
+  onClose,
   title,
   compact = false
 }) => {
@@ -98,20 +100,39 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         >
           <Download className="w-3.5 h-3.5" />
         </a>
+
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1 text-slate-400 hover:text-black dark:hover:text-white transition cursor-pointer"
+            title="Close"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     );
   }
 
   return (
     <div className="glass-panel rounded-2xl p-4 border border-studio-border shadow-md bg-white dark:bg-studio-900">
-      {title && (
-        <div className="mb-2 flex items-center justify-between font-mono">
-          <h4 className="text-xs font-serif font-bold text-slate-900 dark:text-slate-100 truncate">{title}</h4>
+      <div className="mb-2 flex items-center justify-between font-mono">
+        <h4 className="text-xs font-serif font-bold text-slate-900 dark:text-slate-100 truncate">{title || 'Studio Audio Playback'}</h4>
+        <div className="flex items-center gap-3">
           <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400">
             {formatDuration(currentTime)} / {formatDuration(duration)}
           </span>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-studio-800 transition cursor-pointer"
+              title="Close player"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="flex items-center gap-4">
         <button
