@@ -81,15 +81,15 @@ export const CaptionPresetBrowser: React.FC<CaptionPresetBrowserProps> = ({
   };
 
   return (
-    <aside className="glass-panel flex flex-col h-full rounded-2xl border border-studio-border bg-white dark:bg-studio-900 p-4 text-slate-900 dark:text-white shadow-sm transition-colors">
+    <aside className="glass-panel flex flex-col h-full rounded-2xl border border-white/10 dark:border-studio-border bg-slate-950/80 dark:bg-studio-900 p-4 text-slate-100 dark:text-white shadow-xl transition-colors">
       {/* Header & AI Banner */}
       <div className="mb-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+            <span className="font-mono text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">
               STYLE VAULT
             </span>
-            <span className="rounded-full border border-studio-border bg-slate-100 dark:bg-studio-800 px-2 py-0.5 text-[9px] font-mono font-bold text-slate-600 dark:text-slate-300">
+            <span className="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-[9px] font-mono font-bold text-slate-300">
               {CAPTION_PRESETS.length} Looks
             </span>
           </div>
@@ -98,7 +98,7 @@ export const CaptionPresetBrowser: React.FC<CaptionPresetBrowserProps> = ({
             <button
               type="button"
               onClick={onOpenAiRecommender}
-              className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 cursor-pointer"
+              className="flex items-center gap-1 text-[11px] font-bold text-indigo-400 hover:text-indigo-300 cursor-pointer"
             >
               <Sparkles className="h-3.5 w-3.5" />
               <span>AI Match</span>
@@ -114,13 +114,13 @@ export const CaptionPresetBrowser: React.FC<CaptionPresetBrowserProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search looks, fonts, styles..."
-            className="w-full rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 py-2 pl-9 pr-8 text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none transition focus:border-indigo-500/50 shadow-sm"
+            className="w-full rounded-xl border border-white/10 dark:border-studio-border bg-slate-900/80 dark:bg-studio-950 py-2 pl-9 pr-8 text-xs text-white placeholder-slate-400 outline-none transition focus:border-indigo-500/50 shadow-sm"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-2 text-xs text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              className="absolute right-3 top-2 text-xs text-slate-400 hover:text-white"
             >
               ×
             </button>
@@ -140,8 +140,8 @@ export const CaptionPresetBrowser: React.FC<CaptionPresetBrowserProps> = ({
               onClick={() => setSelectedCategory(cat.id)}
               className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-black text-white dark:bg-white dark:text-black font-extrabold shadow-sm'
-                  : 'border border-studio-border bg-slate-100 dark:bg-studio-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-studio-700 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-indigo-600 text-white font-extrabold shadow-md'
+                  : 'border border-white/10 dark:border-studio-border bg-slate-800/80 dark:bg-studio-800 text-slate-300 dark:text-slate-400 hover:bg-slate-700/80 hover:text-white'
               }`}
             >
               <Icon className="h-3 w-3" />
@@ -172,8 +172,8 @@ export const CaptionPresetBrowser: React.FC<CaptionPresetBrowserProps> = ({
               onClick={() => onSelectPreset(preset)}
               className={`group relative flex w-full flex-col rounded-2xl p-2.5 text-left transition-all duration-200 cursor-pointer shadow-sm ${
                 isSelected
-                  ? 'border-2 border-indigo-600 dark:border-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20 shadow-md scale-[1.01]'
-                  : 'border border-studio-border bg-white dark:bg-studio-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md hover:scale-[1.01]'
+                  ? 'border-2 border-indigo-500 dark:border-indigo-400 bg-indigo-950/60 dark:bg-indigo-950/60 ring-2 ring-indigo-500/30 shadow-lg scale-[1.01]'
+                  : 'border border-white/10 dark:border-studio-border bg-slate-900/90 dark:bg-studio-900 hover:border-slate-600 dark:hover:border-slate-700 hover:shadow-md hover:scale-[1.01]'
               }`}
             >
               {/* Card Thumbnail / Live Animation Preview Stage */}
@@ -258,24 +258,24 @@ export const CaptionPresetBrowser: React.FC<CaptionPresetBrowserProps> = ({
               {/* Card Meta Footer */}
               <div className="pt-2 px-1 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="truncate font-serif font-extrabold text-[13px] text-slate-900 dark:text-white tracking-tight">
+                  <span className="truncate font-sans font-extrabold text-[13px] text-white tracking-tight">
                     {preset.name}
                   </span>
                   {isSelected ? (
-                    <span className="grid h-4 w-4 place-items-center rounded-full bg-indigo-600 dark:bg-indigo-400 text-white dark:text-slate-950 shadow-sm shrink-0">
+                    <span className="grid h-4 w-4 place-items-center rounded-full bg-indigo-500 text-white shadow-sm shrink-0">
                       <Check className="h-2.5 w-2.5 stroke-[3]" />
                     </span>
                   ) : (
-                    <span className="text-[10px] font-mono font-semibold text-slate-400 dark:text-slate-500 uppercase">
+                    <span className="text-[10px] font-mono font-semibold text-slate-400 uppercase">
                       {preset.animation.replace('_', ' ')}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="rounded bg-slate-100 dark:bg-studio-800 px-1.5 py-0.5 text-[9px] font-mono font-bold text-slate-700 dark:text-slate-300 border border-studio-border shrink-0">
+                  <span className="rounded bg-slate-800/90 px-1.5 py-0.5 text-[9px] font-mono font-bold text-slate-300 border border-white/10 shrink-0">
                     {preset.font}
                   </span>
-                  <span className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="truncate text-[11px] text-slate-400">
                     {preset.description}
                   </span>
                 </div>

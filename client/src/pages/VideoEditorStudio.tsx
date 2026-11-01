@@ -6,6 +6,7 @@ import { EditorPreviewCanvas } from './videoEditor/EditorPreviewCanvas';
 import { EditorTimeline } from './videoEditor/EditorTimeline';
 import { EditorInspector } from './videoEditor/EditorInspector';
 import { EditorExportModal } from './videoEditor/EditorExportModal';
+import { MotionGraphicsStudio } from './videoEditor/MotionGraphicsStudio';
 import { videoEditorApi } from '../services/videoEditorApi';
 import { MediaAsset } from '../../../shared/src/videoEditorTypes';
 import { AlertCircle, RotateCcw, X } from 'lucide-react';
@@ -76,10 +77,15 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
     toggleTrackMute,
     toggleTrackSolo,
     toggleTrackLock,
-    toggleTrackHidden
+    toggleTrackHidden,
+    addMotionGraphicClip,
+    updateTitleDesign,
+    copyAnimationSettings,
+    pasteAnimationSettings
   } = useVideoEditor();
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isMotionStudioOpen, setIsMotionStudioOpen] = useState(false);
 
   // Handle uploading media files to project
   const handleUploadAsset = async (file: File) => {
@@ -270,13 +276,27 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
             assets={project.assets}
             onUploadAsset={handleUploadAsset}
             onAddClip={(asset) => {
-              const targetTrack =
-                project.tracks.find((t) => t.type === asset.type) ||
-                project.tracks.find((t) => t.type === 'video') ||
-                project.tracks[0];
+              let targetTrack;
+              if (asset.type === 'image') {
+                targetTrack =
+                  project.tracks.find((t) => t.type === 'overlay') ||
+                  project.tracks.find((t) => t.type === 'video');
+              } else if (asset.type === 'audio') {
+                const a1HasClips = project.clips.some((c) => c.trackId === 'track-a1');
+                targetTrack = a1HasClips
+                  ? project.tracks.find((t) => t.id === 'track-a2') || project.tracks.find((t) => t.type === 'audio')
+                  : project.tracks.find((t) => t.id === 'track-a1') || project.tracks.find((t) => t.type === 'audio');
+              } else {
+                targetTrack =
+                  project.tracks.find((t) => t.type === asset.type) ||
+                  project.tracks.find((t) => t.type === 'video') ||
+                  project.tracks[0];
+              }
               if (targetTrack) addClipToTrack(targetTrack.id, asset);
             }}
             onAddText={addTextClip}
+            onAddMotionClip={(template, customText) => addMotionGraphicClip(template, customText)}
+            onOpenMotionStudio={() => setIsMotionStudioOpen(true)}
             selectedClip={selectedClip}
             onUpdateClip={updateClip}
             onOpenCaptionStudio={onOpenCaptionStudio}
@@ -344,6 +364,25 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         onClose={() => setIsExportModalOpen(false)}
         project={project}
       />
+
+      {/* 5. MOTION GRAPHICS STUDIO MODAL */}
+      {isMotionStudioOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl h-[90vh] overflow-hidden rounded-2xl shadow-2xl border border-studio-border bg-white dark:bg-studio-900">
+            <MotionGraphicsStudio
+              onAddMotionClip={(template, customText) => {
+                addMotionGraphicClip(template, customText);
+                setIsMotionStudioOpen(false);
+              }}
+              selectedClipTitleDesign={selectedClip?.titleDesign}
+              onUpdateSelectedTitleDesign={(patch) => {
+                if (selectedClip) updateTitleDesign(selectedClip.id, patch);
+              }}
+              onClose={() => setIsMotionStudioOpen(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

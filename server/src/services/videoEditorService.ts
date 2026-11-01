@@ -14,10 +14,13 @@ import {
   EditorExportJob,
   TimelineClip,
   TimelineTrack,
-  ColorGrading
+  ColorGrading,
+  CustomFontAsset,
+  MotionTitleTemplate
 } from '../../../shared/src/videoEditorTypes';
 import { createNewProject, ASPECT_RATIOS } from '../../../shared/src/videoEditorDefaults';
 import { evaluateClipKeyframes } from '../../../shared/src/videoEditorKeyframes';
+import { STARTER_MOTION_TEMPLATES, motionGraphicToAssEvents } from '../../../shared/src/motionGraphicsEngine';
 
 const execFileAsync = util.promisify(execFile);
 
@@ -26,6 +29,8 @@ export class VideoEditorService {
   private static versionsDir = path.join(process.cwd(), 'data', 'editor_projects', 'versions');
   private static assetsDir = path.join(process.cwd(), 'uploads', 'editor_assets');
   private static exportsDir = path.join(process.cwd(), 'uploads', 'editor_exports');
+  private static fontsDir = path.join(process.cwd(), 'data', 'editor_fonts');
+  private static templatesDir = path.join(process.cwd(), 'data', 'editor_templates');
   private static exportJobs: Map<string, EditorExportJob> = new Map();
   private static activeExportProcesses: Map<string, ChildProcess> = new Map();
 
@@ -46,6 +51,12 @@ export class VideoEditorService {
       if (!fs.existsSync(this.exportsDir)) {
         fs.mkdirSync(this.exportsDir, { recursive: true });
       }
+      if (!fs.existsSync(this.fontsDir)) {
+        fs.mkdirSync(this.fontsDir, { recursive: true });
+      }
+      if (!fs.existsSync(this.templatesDir)) {
+        fs.mkdirSync(this.templatesDir, { recursive: true });
+      }
       logger.info('VideoEditorService storage initialized successfully.');
     } catch (err) {
       logger.error('Failed to initialize VideoEditorService storage:', err);
@@ -58,6 +69,98 @@ export class VideoEditorService {
 
   public static getExportsDir(): string {
     return this.exportsDir;
+  }
+
+  public static getFontsDir(): string {
+    return this.fontsDir;
+  }
+
+  // ==========================================
+  // CUSTOM FONTS & MOTION GRAPHIC TEMPLATES
+  // ==========================================
+
+  public static async listFonts(): Promise<CustomFontAsset[]> {
+    this.initStorage();
+    const files = await fs.promises.readdir(this.fontsDir);
+    const fonts: CustomFontAsset[] = [];
+    for (const f of files) {
+      if (f.endsWith('.ttf') || f.endsWith('.otf') || f.endsWith('.woff') || f.endsWith('.woff2')) {
+        const ext = path.extname(f).toLowerCase().replace('.', '');
+        const format = ext === 'ttf' ? 'truetype' : ext === 'otf' ? 'opentype' : (ext as any);
+        const name = path.basename(f, path.extname(f)).replace(/[-_]/g, ' ');
+        fonts.push({
+          id: `font_${f.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          name,
+          fontFamily: name,
+          filename: f,
+          url: `/api/editor/fonts/${f}`,
+          format,
+          uploadedAt: fs.statSync(path.join(this.fontsDir, f)).mtime.toISOString()
+        });
+      }
+    }
+    return fonts;
+  }
+
+  public static async uploadFont(file: { originalname: string; path: string; filename?: string }): Promise<CustomFontAsset> {
+    this.initStorage();
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const targetPath = path.join(this.fontsDir, safeName);
+    await fs.promises.copyFile(file.path, targetPath);
+    await fs.promises.unlink(file.path).catch(() => {});
+
+    const ext = path.extname(safeName).toLowerCase().replace('.', '');
+    const format = ext === 'ttf' ? 'truetype' : ext === 'otf' ? 'opentype' : (ext as any);
+    const fontName = path.basename(safeName, path.extname(safeName)).replace(/[-_]/g, ' ');
+
+    return {
+      id: `font_${Date.now()}`,
+      name: fontName,
+      fontFamily: fontName,
+      filename: safeName,
+      url: `/api/editor/fonts/${safeName}`,
+      format,
+      uploadedAt: new Date().toISOString()
+    };
+  }
+
+  public static async listMotionTemplates(): Promise<MotionTitleTemplate[]> {
+    this.initStorage();
+    const customTemplates: MotionTitleTemplate[] = [];
+    const files = await fs.promises.readdir(this.templatesDir);
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        try {
+          const content = await fs.promises.readFile(path.join(this.templatesDir, file), 'utf8');
+          const t = JSON.parse(content) as MotionTitleTemplate;
+          customTemplates.push(t);
+        } catch {}
+      }
+    }
+    return [...STARTER_MOTION_TEMPLATES, ...customTemplates];
+  }
+
+  public static async saveMotionTemplate(template: MotionTitleTemplate): Promise<MotionTitleTemplate> {
+    this.initStorage();
+    const id = template.id || `custom_template_${Date.now()}`;
+    const safeTemplate: MotionTitleTemplate = {
+      ...template,
+      id,
+      isCustom: true
+    };
+    const filePath = path.join(this.templatesDir, `${id}.json`);
+    await fs.promises.writeFile(filePath, JSON.stringify(safeTemplate, null, 2), 'utf8');
+    return safeTemplate;
+  }
+
+  public static async deleteMotionTemplate(id: string): Promise<boolean> {
+    this.initStorage();
+    const filePath = path.join(this.templatesDir, `${id}.json`);
+    if (fs.existsSync(filePath)) {
+      await fs.promises.unlink(filePath);
+      return true;
+    }
+    return false;
   }
 
   // ==========================================
@@ -373,6 +476,29 @@ export class VideoEditorService {
           targetWidth = 720;
           targetHeight = 720;
         }
+      } else if (options.resolution === '4k' || options.resolution === '2160x3840' || options.resolution === '3840x2160') {
+        if (project.aspectRatio === '9:16') {
+          targetWidth = 2160;
+          targetHeight = 3840;
+        } else if (project.aspectRatio === '16:9') {
+          targetWidth = 3840;
+          targetHeight = 2160;
+        } else if (project.aspectRatio === '1:1') {
+          targetWidth = 2160;
+          targetHeight = 2160;
+        } else {
+          targetWidth = 3840;
+          targetHeight = 2160;
+        }
+      } else if (options.resolution === '1920x1080') {
+        targetWidth = 1920;
+        targetHeight = 1080;
+      } else if (options.resolution === '1080x1920') {
+        targetWidth = 1080;
+        targetHeight = 1920;
+      } else if (options.resolution === '1080x1080') {
+        targetWidth = 1080;
+        targetHeight = 1080;
       }
 
       job.progress = 15;
@@ -444,10 +570,22 @@ export class VideoEditorService {
 
           const clip = videoClips[i];
 
-          // Text / Caption clip handling (using drawtext or ASS)
+          // Text / Motion Graphics Title clip handling (using ASS or drawtext)
           if (clip.type === 'text' || clip.type === 'caption') {
-            const rawText = (clip.text || 'Subtitle').replace(/['":\\]/g, ' ');
             const nextCanvas = `canvas_v${i}`;
+            if (clip.titleDesign) {
+              const assContent = motionGraphicToAssEvents([clip], totalDuration, targetWidth, targetHeight, this.fontsDir);
+              const assPath = path.join(tempDir, `motion_graphic_${i}.ass`);
+              await fs.promises.writeFile(assPath, assContent, 'utf8');
+              const escapedAssPath = assPath.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'");
+              const fontsDirArg = fs.existsSync(this.fontsDir) ? `:fontsdir='${this.fontsDir.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'")}'` : '';
+              const textFilter = `[${currentVideoOut}]subtitles='${escapedAssPath}'${fontsDirArg}[${nextCanvas}];`;
+              filterComplex.push(textFilter);
+              currentVideoOut = nextCanvas;
+              continue;
+            }
+
+            const rawText = (clip.text || 'Subtitle').replace(/['":\\]/g, ' ');
             const textY = clip.transform?.y ? Math.round(targetHeight / 2 + clip.transform.y) : Math.round(targetHeight * 0.8);
             const textFilter = `[${currentVideoOut}]drawtext=text='${rawText}':fontsize=44:fontcolor=white:borderw=3:bordercolor=black:x=(w-text_w)/2:y=${textY}:enable='between(t,${clip.start},${clip.start + clip.duration})'[${nextCanvas}];`;
             filterComplex.push(textFilter);

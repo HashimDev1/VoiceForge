@@ -9,7 +9,10 @@ import {
   Keyframe,
   ClipTransform,
   ProjectBackground,
-  ProjectVersionSnapshot
+  ProjectVersionSnapshot,
+  MotionTitleDesign,
+  MotionTitleTemplate,
+  MotionAnimationConfig
 } from '../../../../shared/src/videoEditorTypes';
 import {
   createNewProject,
@@ -42,6 +45,7 @@ export function useVideoEditor(initialProject?: EditorProject) {
 
   // Clipboard for Copy / Paste
   const clipboardClipsRef = useRef<TimelineClip[]>([]);
+  const copiedAnimationSettingsRef = useRef<MotionAnimationConfig | null>(null);
 
   const playheadRef = useRef<number>(playhead);
   playheadRef.current = playhead;
@@ -325,6 +329,108 @@ export function useVideoEditor(initialProject?: EditorProject) {
     });
 
     setSelectedClipIds([newClip.id]);
+  }, [pushHistory]);
+
+  const addMotionGraphicClip = useCallback((template: MotionTitleTemplate, customText?: string) => {
+    pushHistory(projectRef.current);
+    let textTrack = projectRef.current.tracks.find((t) => t.type === 'text');
+    if (!textTrack) {
+      textTrack = {
+        id: `track_text_${Date.now()}`,
+        name: 'Titles & Captions',
+        type: 'text',
+        locked: false,
+        muted: false,
+        hidden: false,
+        order: 2
+      };
+      setProject((prev) => ({ ...prev, tracks: [...prev.tracks, textTrack!] }));
+    }
+
+    const duration = template.duration || 4.5;
+    const start = playheadRef.current;
+    const titleDesign: MotionTitleDesign = {
+      ...template.design,
+      mainText: customText || template.design.mainText
+    };
+
+    const newClip: TimelineClip = {
+      id: `motion_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      trackId: textTrack.id,
+      name: template.name,
+      type: 'text',
+      start,
+      duration,
+      sourceStart: 0,
+      sourceDuration: duration,
+      text: titleDesign.mainText,
+      titleDesign,
+      transform: { ...DEFAULT_TRANSFORM },
+      speed: { ...DEFAULT_SPEED },
+      colorGrading: { ...DEFAULT_COLOR_GRADING },
+      audio: { ...DEFAULT_AUDIO_SETTINGS },
+      effects: [],
+      keyframes: []
+    };
+
+    setProject((prev) => {
+      const nextDuration = Math.max(prev.duration, start + duration + 1);
+      return {
+        ...prev,
+        duration: nextDuration,
+        clips: [...prev.clips, newClip]
+      };
+    });
+
+    setSelectedClipIds([newClip.id]);
+    setLastSavedText(`Added '${template.name}' to timeline`);
+  }, [pushHistory]);
+
+  const updateTitleDesign = useCallback((clipId: string, patch: Partial<MotionTitleDesign>) => {
+    setProject((prev) => ({
+      ...prev,
+      clips: prev.clips.map((c) => {
+        if (c.id === clipId && c.titleDesign) {
+          const updatedDesign: MotionTitleDesign = { ...c.titleDesign, ...patch };
+          return {
+            ...c,
+            name: patch.mainText ? (patch.mainText.length > 22 ? `${patch.mainText.slice(0, 20)}...` : patch.mainText) : c.name,
+            text: updatedDesign.mainText,
+            titleDesign: updatedDesign
+          };
+        }
+        return c;
+      })
+    }));
+  }, []);
+
+  const copyAnimationSettings = useCallback((clipId: string) => {
+    const clip = projectRef.current.clips.find((c) => c.id === clipId);
+    if (clip?.titleDesign?.animation) {
+      copiedAnimationSettingsRef.current = JSON.parse(JSON.stringify(clip.titleDesign.animation));
+      setLastSavedText(`Animation settings copied`);
+    }
+  }, []);
+
+  const pasteAnimationSettings = useCallback((targetClipId: string) => {
+    if (!copiedAnimationSettingsRef.current) return;
+    pushHistory(projectRef.current);
+    setProject((prev) => ({
+      ...prev,
+      clips: prev.clips.map((c) => {
+        if (c.id === targetClipId && c.titleDesign) {
+          return {
+            ...c,
+            titleDesign: {
+              ...c.titleDesign,
+              animation: JSON.parse(JSON.stringify(copiedAnimationSettingsRef.current))
+            }
+          };
+        }
+        return c;
+      })
+    }));
+    setLastSavedText(`Animation settings applied`);
   }, [pushHistory]);
 
   const addTextClip = useCallback((text: string, presetName?: string) => {
@@ -812,6 +918,10 @@ export function useVideoEditor(initialProject?: EditorProject) {
     addAsset,
     addClipToTrack,
     addTextClip,
+    addMotionGraphicClip,
+    updateTitleDesign,
+    copyAnimationSettings,
+    pasteAnimationSettings,
     updateClip,
     deleteClip,
     deleteSelectedClips,

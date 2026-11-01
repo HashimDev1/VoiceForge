@@ -26,13 +26,21 @@ export function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
 
-  // Theme state: default to light (matching user screenshot)
-  const [theme, setTheme] = useState<'dark' | 'light'>('light');
+  // Theme state: default to dark (VoiceForge professional dark studio theme)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('voiceforge_theme_v3');
+    return saved === 'light' || saved === 'dark' ? saved : 'dark';
+  });
 
   useEffect(() => {
     localStorage.setItem('voiceforge_theme_v3', theme);
-    document.documentElement.classList.remove('dark');
-    document.documentElement.classList.add('light');
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+    }
   }, [theme]);
 
   const toggleTheme = () => {

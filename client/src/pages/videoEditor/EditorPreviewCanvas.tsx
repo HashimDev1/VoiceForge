@@ -24,6 +24,10 @@ import {
   evaluateClipKeyframes,
   EvaluatedTransformAndAudio
 } from '../../../../shared/src/videoEditorKeyframes';
+import {
+  evaluateMotionGraphicAtTime,
+  EvaluatedMotionGraphic
+} from '../../../../shared/src/motionGraphicsEngine';
 
 interface EditorPreviewCanvasProps {
   project: EditorProject;
@@ -414,16 +418,153 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
                     className={`h-full w-full ${tf.fitMode === 'fill' ? 'object-cover' : 'object-contain'}`}
                   />
                 ) : clip.type === 'text' || clip.type === 'caption' ? (
-                  <div
-                    className="px-6 py-3 font-sans font-black text-2xl text-white text-center rounded-xl select-none"
-                    style={{
-                      textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.7)',
-                      letterSpacing: '0.05em',
-                      backgroundColor: clip.captionPresetId?.includes('pill') ? 'rgba(0,0,0,0.6)' : undefined
-                    }}
-                  >
-                    {clip.text}
-                  </div>
+                  clip.titleDesign ? (
+                    (() => {
+                      const localTime = Math.max(0, Math.min(clip.duration, playhead - clip.start));
+                      const canvasW = project.aspectRatio === '16:9' ? 1920 : 1080;
+                      const canvasH = project.aspectRatio === '16:9' ? 1080 : 1920;
+                      const mg = evaluateMotionGraphicAtTime(
+                        clip.titleDesign,
+                        localTime,
+                        clip.duration,
+                        canvasW,
+                        canvasH
+                      );
+                      const td = clip.titleDesign;
+                      const hasGradient = td.gradient?.enabled && td.gradient.colors.length >= 2;
+                      const gradientStyle: React.CSSProperties = hasGradient
+                        ? {
+                            backgroundImage: `linear-gradient(${td.gradient!.angle || 90}deg, ${td.gradient!.colors.join(', ')})`,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent'
+                          }
+                        : { color: td.textColor || '#FFFFFF' };
+
+                      const textShadowStyle = td.shadow?.enabled
+                        ? `${td.shadow.x || 0}px ${td.shadow.y || 4}px ${td.shadow.blur || 12}px ${td.shadow.color || '#000000'}`
+                        : undefined;
+
+                      const textStrokeStyle = td.stroke?.enabled
+                        ? `${td.stroke.width || 1}px ${td.stroke.color || '#000000'}`
+                        : undefined;
+
+                      return (
+                        <div
+                          className="relative flex flex-col items-center justify-center select-none"
+                          style={{
+                            transform: `translate(${mg.translateX + mg.glitchOffsetX}px, ${mg.translateY + mg.glitchOffsetY}px) scale(${mg.scale}) rotate(${mg.rotation}deg)`,
+                            opacity: mg.opacity,
+                            filter: mg.blur > 0 ? `blur(${mg.blur}px)` : undefined,
+                            clipPath: mg.maskClipPath !== 'none' ? mg.maskClipPath : undefined,
+                            width: td.backgroundBox?.fullWidth ? '100%' : undefined
+                          }}
+                        >
+                          {/* Optional Background Box / Pill / Banner */}
+                          {mg.background.enabled && (
+                            <div
+                              className="absolute inset-0 pointer-events-none"
+                              style={{
+                                backgroundColor: mg.background.color || '#000000',
+                                opacity: mg.background.opacity,
+                                borderRadius: `${mg.background.borderRadius || 8}px`,
+                                backdropFilter: mg.background.blurBackdrop ? 'blur(12px)' : undefined
+                              }}
+                            />
+                          )}
+
+                          {/* Content Container */}
+                          <div
+                            className="relative z-10 flex flex-col"
+                            style={{
+                              padding: mg.background.enabled
+                                ? `${td.backgroundBox?.paddingY || 12}px ${td.backgroundBox?.paddingX || 24}px`
+                                : undefined,
+                              textAlign: td.textAlign || 'center',
+                              alignItems: td.textAlign === 'left' ? 'flex-start' : td.textAlign === 'right' ? 'flex-end' : 'center'
+                            }}
+                          >
+                            {/* Accent line/bar (left) */}
+                            {mg.accent.enabled && mg.accent.position === 'left' && (
+                              <div
+                                className="absolute left-0 top-2 bottom-2 rounded-full"
+                                style={{
+                                  width: `${mg.accent.width || 4}px`,
+                                  backgroundColor: mg.accent.color || '#6366f1',
+                                  opacity: mg.accent.opacity
+                                }}
+                              />
+                            )}
+
+                            {/* Tagline / Category Tag (if present) */}
+                            {td.taglineText && (
+                              <span
+                                className="inline-block px-2 py-0.5 mb-1 text-[11px] font-mono font-extrabold uppercase tracking-widest rounded bg-red-600 text-white"
+                              >
+                                {td.taglineText}
+                              </span>
+                            )}
+
+                            {/* Main Title Typography */}
+                            <div
+                              style={{
+                                fontFamily: td.fontFamily || 'sans-serif',
+                                fontSize: `${Math.round(td.fontSize * 0.75)}px`,
+                                fontWeight: td.fontWeight || 800,
+                                letterSpacing: `${mg.letterSpacing}px`,
+                                lineHeight: td.lineHeight || 1.15,
+                                textShadow: textShadowStyle,
+                                WebkitTextStroke: textStrokeStyle,
+                                ...gradientStyle
+                              }}
+                            >
+                              {mg.mainText}
+                              {mg.typewriterCursor && <span className="animate-pulse">|</span>}
+                            </div>
+
+                            {/* Accent line (bottom) */}
+                            {mg.accent.enabled && mg.accent.position === 'bottom' && (
+                              <div
+                                className="my-1.5 rounded-full"
+                                style={{
+                                  width: '60%',
+                                  height: `${mg.accent.width || 3}px`,
+                                  backgroundColor: mg.accent.color || '#D4AF37',
+                                  opacity: mg.accent.opacity
+                                }}
+                              />
+                            )}
+
+                            {/* Subtitle Typography */}
+                            {mg.subtitleText && (
+                              <div
+                                className="mt-1"
+                                style={{
+                                  fontFamily: td.subtitleFontFamily || 'sans-serif',
+                                  fontSize: `${Math.round((td.subtitleFontSize || 16) * 0.75)}px`,
+                                  fontWeight: td.subtitleFontWeight || 600,
+                                  color: td.subtitleColor || '#D4AF37',
+                                  letterSpacing: `${td.subtitleTracking || 3}px`
+                                }}
+                              >
+                                {mg.subtitleText}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div
+                      className="px-6 py-3 font-sans font-black text-2xl text-white text-center rounded-xl select-none"
+                      style={{
+                        textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.7)',
+                        letterSpacing: '0.05em',
+                        backgroundColor: clip.captionPresetId?.includes('pill') ? 'rgba(0,0,0,0.6)' : undefined
+                      }}
+                    >
+                      {clip.text}
+                    </div>
+                  )
                 ) : null}
 
                 {/* Vignette Overlay if enabled on clip */}

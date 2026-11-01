@@ -118,7 +118,149 @@ export type KeyframeProperty =
   | 'scale'
   | 'rotation'
   | 'opacity'
-  | 'volume';
+  | 'volume'
+  | 'blur'
+  | 'letterSpacing'
+  | 'tracking'
+  | 'shadowIntensity';
+
+export type MotionTitleCategory =
+  | 'cinematic'
+  | 'documentary'
+  | 'minimal'
+  | 'modern'
+  | 'news'
+  | 'corporate'
+  | 'social_media'
+  | 'dramatic';
+
+export type MotionAnimationType =
+  | 'none'
+  | 'fade'
+  | 'slide'
+  | 'scale'
+  | 'typewriter'
+  | 'tracking_reveal'
+  | 'blur_reveal'
+  | 'mask_reveal'
+  | 'word_by_word'
+  | 'letter_by_letter'
+  | 'glitch'
+  | 'cinematic_zoom'
+  | 'motion_blur';
+
+export interface MotionAnimationConfig {
+  type: MotionAnimationType;
+  inDuration: number; // e.g. 0.6s
+  outDuration: number; // e.g. 0.4s
+  delay: number; // e.g. 0s
+  easing: 'linear' | 'ease_in' | 'ease_out' | 'ease_in_out' | 'bezier';
+  bezier?: [number, number, number, number];
+  direction?: 'left' | 'right' | 'up' | 'down' | 'center';
+  intensity?: number; // 0 to 100
+}
+
+export interface MotionTitleDesign {
+  id?: string;
+  name?: string;
+  category?: MotionTitleCategory;
+  mainText: string;
+  subtitleText?: string;
+  taglineText?: string;
+
+  // Typography
+  fontFamily: string;
+  fontSize: number; // in px
+  fontWeight: number; // 300 to 900
+  letterSpacing: number; // in px (-5 to 40)
+  lineHeight: number; // relative
+  textAlign: 'left' | 'center' | 'right';
+  textColor: string; // hex or rgba
+
+  // Subtitle Typography
+  subtitleFontFamily?: string;
+  subtitleFontSize?: number;
+  subtitleFontWeight?: number;
+  subtitleColor?: string;
+  subtitleTracking?: number;
+
+  // Gradient Text
+  gradient?: {
+    enabled: boolean;
+    colors: string[];
+    angle: number; // degrees
+  };
+
+  // Stroke / Outline
+  stroke?: {
+    enabled: boolean;
+    color: string;
+    width: number;
+  };
+
+  // Shadow
+  shadow?: {
+    enabled: boolean;
+    color: string;
+    blur: number;
+    x: number;
+    y: number;
+    opacity: number;
+  };
+
+  // Background Box / Banner / Pill
+  backgroundBox?: {
+    enabled: boolean;
+    color: string;
+    opacity: number;
+    paddingX: number;
+    paddingY: number;
+    borderRadius: number;
+    blurBackdrop?: boolean;
+    fullWidth?: boolean;
+  };
+
+  // Decorative Accent
+  accentElement?: {
+    enabled: boolean;
+    type: 'line' | 'bar' | 'badge' | 'bracket' | 'pill';
+    color: string;
+    position: 'left' | 'top' | 'bottom' | 'right';
+    width: number;
+    height?: number;
+    opacity?: number;
+  };
+
+  // Animation
+  animation: MotionAnimationConfig;
+
+  // Additional transform adjustments
+  positionX?: number; // offset in px or %
+  positionY?: number;
+  scale?: number;
+  rotation?: number;
+}
+
+export interface MotionTitleTemplate {
+  id: string;
+  name: string;
+  category: MotionTitleCategory;
+  description: string;
+  design: MotionTitleDesign;
+  duration: number; // default duration in seconds
+  isCustom?: boolean;
+  thumbnailUrl?: string;
+}
+
+export interface CustomFontAsset {
+  id: string;
+  name: string;
+  fontFamily: string;
+  filename: string;
+  url: string;
+  format: 'truetype' | 'opentype' | 'woff' | 'woff2';
+  uploadedAt: string;
+}
 
 export interface Keyframe {
   id: string;
@@ -141,6 +283,7 @@ export interface TimelineClip {
   sourceDuration: number; // source duration
   url?: string;
   text?: string;
+  titleDesign?: MotionTitleDesign;
   captionPresetId?: string;
   captionStyle?: any;
   transform: ClipTransform;
@@ -198,7 +341,7 @@ export interface EditorProject {
 
 export interface EditorExportOptions {
   projectId?: string;
-  resolution: '1080x1920' | '1920x1080' | '1080x1080' | '1080x1350' | '720p' | '1080p';
+  resolution: '1080x1920' | '1920x1080' | '1080x1080' | '1080x1350' | '720p' | '1080p' | '4k' | '2160x3840' | '3840x2160';
   fps: 24 | 30 | 60;
   videoBitrate?: string;
   audioBitrate?: string;

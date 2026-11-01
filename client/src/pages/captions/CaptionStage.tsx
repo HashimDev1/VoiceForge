@@ -653,6 +653,13 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
                   whiteSpace: 'normal',
                   wordBreak: 'break-word',
                   overflowWrap: 'break-word',
+                  rowGap: '0.28em',
+                  columnGap: `${Math.max(
+                    0.46,
+                    0.36 +
+                      (displayOutlineWidth / Math.max(1, previewFontSize)) * 1.6 +
+                      (settings.highlightScale > 1 ? (settings.highlightScale - 1) * 0.35 : 0)
+                  ).toFixed(2)}em`,
                   opacity: settings.textOpacity ?? 1,
                   background: settings.boxBackground
                     ? toCssRgba(settings.boxColor, settings.boxOpacity ?? 0.88)
@@ -808,7 +815,7 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
                         style={{
                           display: 'inline-block',
                           verticalAlign: 'middle',
-                          margin: '0 0.16em',
+                          margin: '0',
                           color: wordColor,
                           WebkitTextStroke: webkitTextStroke,
                           textShadow,
@@ -819,6 +826,7 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
                                   : settings.highlightScale
                               })`
                             : 'scale(1)',
+                          transformOrigin: 'center center',
                           zIndex: wordHighlight ? 10 : 1,
                           position: 'relative',
                           borderBottom:
@@ -832,7 +840,7 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
                               ? 'rgba(255,255,255,0.18)'
                               : undefined,
                           borderRadius: settings.wordSpotlight ? '4px' : undefined,
-                          padding: settings.wordSpotlight ? '0 0.15em' : undefined,
+                          padding: settings.wordSpotlight ? '0 0.18em' : '0 0.04em',
                           transition: 'transform 120ms ease, color 120ms ease'
                         }}
                       >

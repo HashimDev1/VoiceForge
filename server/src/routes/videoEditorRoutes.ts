@@ -118,6 +118,82 @@ router.get('/assets/:filename', (req: Request, res: Response) => {
 });
 
 // ==========================================
+// CUSTOM FONTS & MOTION TEMPLATES
+// ==========================================
+
+const fontStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, VideoEditorService.getFontsDir());
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32);
+    cb(null, `font_${Date.now()}_${safeName}${ext}`);
+  }
+});
+const uploadFont = multer({ storage: fontStorage, limits: { fileSize: 50 * 1024 * 1024 } });
+
+router.get('/fonts', async (_req: Request, res: Response) => {
+  try {
+    const fonts = await VideoEditorService.listFonts();
+    res.json({ success: true, fonts });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/fonts/upload', uploadFont.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Font file is required.' });
+    }
+    const font = await VideoEditorService.uploadFont(req.file);
+    res.json({ success: true, font });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/fonts/:filename', (req: Request, res: Response) => {
+  const filePath = path.join(VideoEditorService.getFontsDir(), req.params.filename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('Font file not found.');
+  }
+  res.sendFile(filePath);
+});
+
+router.get('/motion-templates', async (_req: Request, res: Response) => {
+  try {
+    const templates = await VideoEditorService.listMotionTemplates();
+    res.json({ success: true, templates });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/motion-templates', async (req: Request, res: Response) => {
+  try {
+    const template = req.body;
+    if (!template || !template.name || !template.design) {
+      return res.status(400).json({ success: false, error: 'Valid template with design is required.' });
+    }
+    const saved = await VideoEditorService.saveMotionTemplate(template);
+    res.json({ success: true, template: saved });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.delete('/motion-templates/:id', async (req: Request, res: Response) => {
+  try {
+    const deleted = await VideoEditorService.deleteMotionTemplate(req.params.id);
+    res.json({ success: deleted });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
 // EXPORT PIPELINE
 // ==========================================
 

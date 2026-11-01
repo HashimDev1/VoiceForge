@@ -17,7 +17,8 @@ import {
   Crop,
   Radio,
   Pipette,
-  Layout
+  Layout,
+  Type
 } from 'lucide-react';
 import {
   TimelineClip,
@@ -26,7 +27,8 @@ import {
   ColorGrading,
   ClipAudioSettings,
   Keyframe,
-  KeyframeProperty
+  KeyframeProperty,
+  MotionTitleDesign
 } from '../../../../shared/src/videoEditorTypes';
 import {
   DEFAULT_TRANSFORM,
@@ -48,7 +50,8 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
   onUpdateClip,
   playhead
 }) => {
-  const [activeTab, setActiveTab] = useState<'transform' | 'speed' | 'color' | 'audio' | 'effects' | 'keyframes'>('transform');
+  const isTitleClip = selectedClip?.type === 'text' || Boolean(selectedClip?.titleDesign);
+  const [activeTab, setActiveTab] = useState<'title' | 'transform' | 'speed' | 'color' | 'audio' | 'effects' | 'keyframes'>('transform');
 
   if (!selectedClip) {
     return (
@@ -103,8 +106,9 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
       </div>
 
       {/* Inspector Tab Bar */}
-      <div className="grid grid-cols-6 gap-1 p-1 rounded-xl bg-slate-100 dark:bg-studio-800 border border-studio-border mb-3">
+      <div className={`grid ${isTitleClip ? 'grid-cols-7' : 'grid-cols-6'} gap-1 p-1 rounded-xl bg-slate-100 dark:bg-studio-800 border border-studio-border mb-3`}>
         {[
+          ...(isTitleClip ? [['title', 'Title', Type]] : []),
           ['transform', 'Transform', Move],
           ['speed', 'Speed', Gauge],
           ['color', 'Color', Palette],
@@ -133,6 +137,167 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
 
       {/* Tab Panels */}
       <div className="flex-1 overflow-y-auto pr-1 space-y-3.5 max-h-[580px] scrollbar-thin text-xs">
+        {/* ==========================================
+            TAB: MOTION GRAPHICS TITLE DESIGNER
+            ========================================== */}
+        {activeTab === 'title' && (
+          <div className="space-y-3">
+            {/* Title text */}
+            <div className="space-y-1">
+              <label className="font-semibold text-[11px] text-slate-700 dark:text-slate-300">
+                Main Title Text
+              </label>
+              <input
+                type="text"
+                value={selectedClip.titleDesign?.mainText ?? (selectedClip.text || '')}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const currentTd: MotionTitleDesign = selectedClip.titleDesign || {
+                    mainText: val,
+                    fontFamily: 'Montserrat',
+                    fontSize: 48,
+                    fontWeight: 800,
+                    letterSpacing: 2,
+                    lineHeight: 1.2,
+                    textAlign: 'center',
+                    textColor: '#FFFFFF',
+                    animation: { type: 'fade', inDuration: 0.6, outDuration: 0.4, delay: 0, easing: 'ease_out' }
+                  };
+                  onUpdateClip(selectedClip.id, {
+                    text: val,
+                    titleDesign: { ...currentTd, mainText: val }
+                  });
+                }}
+                className="w-full rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 p-2 text-xs font-bold outline-none"
+              />
+            </div>
+
+            {/* Subtitle text */}
+            <div className="space-y-1">
+              <label className="font-semibold text-[11px] text-slate-700 dark:text-slate-300">
+                Subtitle Text
+              </label>
+              <input
+                type="text"
+                value={selectedClip.titleDesign?.subtitleText || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (selectedClip.titleDesign) {
+                    onUpdateClip(selectedClip.id, {
+                      titleDesign: { ...selectedClip.titleDesign, subtitleText: val }
+                    });
+                  }
+                }}
+                placeholder="Optional subtitle..."
+                className="w-full rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 p-2 text-xs font-bold outline-none"
+              />
+            </div>
+
+            {/* Font Family & Size */}
+            {selectedClip.titleDesign && (
+              <div className="space-y-2 border-t border-studio-border pt-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-slate-500">Font</label>
+                    <select
+                      value={selectedClip.titleDesign.fontFamily}
+                      onChange={(e) => {
+                        onUpdateClip(selectedClip.id, {
+                          titleDesign: { ...selectedClip.titleDesign!, fontFamily: e.target.value }
+                        });
+                      }}
+                      className="w-full rounded-lg border border-studio-border bg-slate-50 dark:bg-studio-950 p-1.5 text-[11px] font-bold"
+                    >
+                      {['Montserrat', 'Inter', 'Poppins', 'Cinzel', 'Playfair Display', 'Oswald', 'Arial Black', 'Courier New'].map((f) => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500">Size ({selectedClip.titleDesign.fontSize}px)</label>
+                    <input
+                      type="range"
+                      min="16"
+                      max="100"
+                      value={selectedClip.titleDesign.fontSize}
+                      onChange={(e) => {
+                        onUpdateClip(selectedClip.id, {
+                          titleDesign: { ...selectedClip.titleDesign!, fontSize: parseInt(e.target.value) }
+                        });
+                      }}
+                      className="w-full h-1 bg-slate-200 dark:bg-studio-800 rounded appearance-none cursor-pointer accent-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Text Color & Tracking */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-slate-500">Color</label>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <input
+                        type="color"
+                        value={selectedClip.titleDesign.textColor || '#FFFFFF'}
+                        onChange={(e) => {
+                          onUpdateClip(selectedClip.id, {
+                            titleDesign: { ...selectedClip.titleDesign!, textColor: e.target.value }
+                          });
+                        }}
+                        className="h-6 w-6 rounded cursor-pointer border border-studio-border"
+                      />
+                      <span className="font-mono text-[10px]">{selectedClip.titleDesign.textColor || '#FFFFFF'}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500">Tracking ({selectedClip.titleDesign.letterSpacing || 0}px)</label>
+                    <input
+                      type="range"
+                      min="-2"
+                      max="30"
+                      value={selectedClip.titleDesign.letterSpacing || 0}
+                      onChange={(e) => {
+                        onUpdateClip(selectedClip.id, {
+                          titleDesign: { ...selectedClip.titleDesign!, letterSpacing: parseInt(e.target.value) }
+                        });
+                      }}
+                      className="w-full h-1 bg-slate-200 dark:bg-studio-800 rounded appearance-none cursor-pointer accent-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Animation Type */}
+                <div>
+                  <label className="text-[10px] text-slate-500">Motion Animation</label>
+                  <select
+                    value={selectedClip.titleDesign.animation?.type || 'fade'}
+                    onChange={(e) => {
+                      onUpdateClip(selectedClip.id, {
+                        titleDesign: {
+                          ...selectedClip.titleDesign!,
+                          animation: { ...selectedClip.titleDesign!.animation, type: e.target.value as any }
+                        }
+                      });
+                    }}
+                    className="w-full mt-1 rounded-lg border border-studio-border bg-slate-50 dark:bg-studio-950 p-1.5 text-[11px] font-bold"
+                  >
+                    <option value="fade">Fade In/Out</option>
+                    <option value="slide">Directional Slide</option>
+                    <option value="scale">Pop Scale</option>
+                    <option value="typewriter">Typewriter</option>
+                    <option value="tracking_reveal">Tracking Reveal</option>
+                    <option value="blur_reveal">Blur Reveal</option>
+                    <option value="mask_reveal">Mask Wipe</option>
+                    <option value="word_by_word">Word by Word</option>
+                    <option value="glitch">Cyber Glitch</option>
+                    <option value="cinematic_zoom">Slow Dolly Zoom</option>
+                    <option value="motion_blur">Motion Blur</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ==========================================
             TAB 1: TRANSFORM CONTROLS & CROP
             ========================================== */}

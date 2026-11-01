@@ -21,13 +21,15 @@ import {
   MediaAsset,
   TransitionType,
   EffectType,
-  TimelineClip
+  TimelineClip,
+  MotionTitleTemplate
 } from '../../../../shared/src/videoEditorTypes';
 import {
   TRANSITION_CATALOG,
   EFFECT_CATALOG,
   COLOR_PRESETS
 } from '../../../../shared/src/videoEditorDefaults';
+import { STARTER_MOTION_TEMPLATES } from '../../../../shared/src/motionGraphicsEngine';
 import { videoEditorApi } from '../../services/videoEditorApi';
 
 interface EditorSidebarProps {
@@ -35,12 +37,14 @@ interface EditorSidebarProps {
   onUploadAsset: (file: File) => Promise<void>;
   onAddClip: (asset: MediaAsset) => void;
   onAddText: (text: string, presetName?: string) => void;
+  onAddMotionClip?: (template: MotionTitleTemplate, customText?: string) => void;
+  onOpenMotionStudio?: () => void;
   selectedClip: TimelineClip | null;
   onUpdateClip: (clipId: string, patch: Partial<TimelineClip>) => void;
   onOpenCaptionStudio?: () => void;
 }
 
-type SidebarTab = 'media' | 'audio' | 'text' | 'transitions' | 'effects' | 'color' | 'stickers';
+type SidebarTab = 'media' | 'motion' | 'audio' | 'text' | 'transitions' | 'effects' | 'color' | 'stickers';
 
 const TEXT_PRESETS = [
   { id: 'bold_headline', name: 'Bold Headline', sample: 'BREAKING NEWS', font: 'Montserrat', bold: true },
@@ -60,6 +64,8 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   onUploadAsset,
   onAddClip,
   onAddText,
+  onAddMotionClip,
+  onOpenMotionStudio,
   selectedClip,
   onUpdateClip,
   onOpenCaptionStudio
@@ -90,13 +96,14 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   return (
     <aside className="glass-panel flex flex-col h-full rounded-2xl border border-studio-border bg-white dark:bg-studio-900 shadow-sm p-3.5 transition-colors">
       {/* Top Navigation Tabs */}
-      <div className="grid grid-cols-4 sm:grid-cols-7 gap-1 p-1 rounded-xl bg-slate-100 dark:bg-studio-800 border border-studio-border mb-3">
+      <div className="grid grid-cols-4 sm:grid-cols-8 gap-1 p-1 rounded-xl bg-slate-100 dark:bg-studio-800 border border-studio-border mb-3">
         {[
           ['media', 'Media', Video],
+          ['motion', 'Motion', Sparkles],
           ['audio', 'Audio', Music],
           ['text', 'Text', Type],
           ['transitions', 'Transit', Wand2],
-          ['effects', 'Effects', Sparkles],
+          ['effects', 'Effects', Sliders],
           ['color', 'Color', Palette],
           ['stickers', 'Stickers', Sticker]
         ].map(([tabId, label, Icon]: any) => {
@@ -212,6 +219,65 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 No imported assets yet. Drag and drop video or audio files above.
               </div>
             )}
+          </div>
+        )}
+
+        {/* ==========================================
+            TAB: MOTION GRAPHICS & STARTER TEMPLATES
+            ========================================== */}
+        {activeTab === 'motion' && (
+          <div className="space-y-3">
+            {onOpenMotionStudio && (
+              <button
+                type="button"
+                onClick={onOpenMotionStudio}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-black text-white dark:bg-white dark:text-black p-3 font-mono text-xs font-bold uppercase tracking-wider shadow hover:opacity-90 transition cursor-pointer"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>Open Title Designer</span>
+              </button>
+            )}
+
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                Motion Graphic Templates ({STARTER_MOTION_TEMPLATES.length})
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              {STARTER_MOTION_TEMPLATES.map((tpl) => (
+                <div
+                  key={tpl.id}
+                  onClick={() => onAddMotionClip?.(tpl)}
+                  className="group relative flex flex-col justify-between rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 p-2.5 hover:border-indigo-500 cursor-pointer shadow-sm transition"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-xs truncate text-slate-900 dark:text-white">
+                        {tpl.name}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase bg-slate-200 dark:bg-studio-800 text-slate-600 dark:text-slate-300">
+                        {tpl.category}
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 truncate" style={{ fontFamily: tpl.design.fontFamily }}>
+                      {tpl.design.mainText}
+                    </div>
+                    <p className="text-[9px] text-slate-400 line-clamp-1 mt-0.5">
+                      {tpl.description}
+                    </p>
+                  </div>
+
+                  <div className="mt-2 pt-1.5 border-t border-studio-border/60 flex items-center justify-between text-[9px] font-mono text-slate-400">
+                    <span>{tpl.design.fontFamily}</span>
+                    <span className="capitalize">{tpl.design.animation?.type?.replace('_', ' ')}</span>
+                    <span className="text-indigo-600 dark:text-indigo-400 font-bold group-hover:underline flex items-center gap-0.5">
+                      + Add
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

@@ -1,4 +1,11 @@
-import { EditorProject, MediaAsset, EditorExportOptions, EditorExportJob } from '../../../shared/src/videoEditorTypes';
+import {
+  EditorProject,
+  MediaAsset,
+  EditorExportOptions,
+  EditorExportJob,
+  CustomFontAsset,
+  MotionTitleTemplate
+} from '../../../shared/src/videoEditorTypes';
 
 const API_BASE = '/api/editor';
 
@@ -94,6 +101,53 @@ export const videoEditorApi = {
 
   async cancelExport(jobId: string): Promise<boolean> {
     const res = await fetch(`${API_BASE}/export/cancel/${jobId}`, { method: 'POST' });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data.success;
+  },
+
+  async listFonts(): Promise<CustomFontAsset[]> {
+    const res = await fetch(`${API_BASE}/fonts`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.fonts || [];
+  },
+
+  async uploadFont(file: File): Promise<CustomFontAsset> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/fonts/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to upload custom font');
+    }
+    const data = await res.json();
+    return data.font;
+  },
+
+  async listMotionTemplates(): Promise<MotionTitleTemplate[]> {
+    const res = await fetch(`${API_BASE}/motion-templates`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.templates || [];
+  },
+
+  async saveMotionTemplate(template: MotionTitleTemplate): Promise<MotionTitleTemplate> {
+    const res = await fetch(`${API_BASE}/motion-templates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(template)
+    });
+    if (!res.ok) throw new Error('Failed to save motion template');
+    const data = await res.json();
+    return data.template;
+  },
+
+  async deleteMotionTemplate(id: string): Promise<boolean> {
+    const res = await fetch(`${API_BASE}/motion-templates/${id}`, { method: 'DELETE' });
     if (!res.ok) return false;
     const data = await res.json();
     return data.success;

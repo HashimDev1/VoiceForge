@@ -77,17 +77,24 @@ export function applyEasing(
 function getClipBasePropertyValue(clip: TimelineClip, property: KeyframeProperty): number {
   switch (property) {
     case 'positionX':
-      return clip.transform?.x || 0;
+      return clip.transform?.x || clip.titleDesign?.positionX || 0;
     case 'positionY':
-      return clip.transform?.y || 0;
+      return clip.transform?.y || clip.titleDesign?.positionY || 0;
     case 'scale':
-      return clip.transform?.scale || 1.0;
+      return clip.transform?.scale || clip.titleDesign?.scale || 1.0;
     case 'rotation':
-      return clip.transform?.rotation || 0;
+      return clip.transform?.rotation || clip.titleDesign?.rotation || 0;
     case 'opacity':
       return clip.transform?.opacity ?? 1.0;
     case 'volume':
       return clip.audio?.volume ?? 100;
+    case 'blur':
+      return 0;
+    case 'letterSpacing':
+    case 'tracking':
+      return clip.titleDesign?.letterSpacing || 0;
+    case 'shadowIntensity':
+      return clip.titleDesign?.shadow ? clip.titleDesign.shadow.opacity * 100 : 0;
     default:
       return 0;
   }
@@ -144,6 +151,9 @@ export interface EvaluatedTransformAndAudio {
   rotation: number;
   opacity: number;
   volume: number;
+  blur: number;
+  letterSpacing: number;
+  shadowIntensity: number;
   transitionScale: number;
   transitionOpacity: number;
   transitionTranslateX: number;
@@ -167,6 +177,9 @@ export function evaluateClipKeyframes(
   const rotation = interpolateProperty(clip, 'rotation', localTime);
   const opacity = interpolateProperty(clip, 'opacity', localTime);
   const baseVolume = interpolateProperty(clip, 'volume', localTime);
+  const blur = interpolateProperty(clip, 'blur', localTime);
+  const letterSpacing = interpolateProperty(clip, 'letterSpacing', localTime);
+  const shadowIntensity = interpolateProperty(clip, 'shadowIntensity', localTime);
 
   // Transition In & Out modifiers
   let transitionScale = 1.0;
@@ -284,6 +297,9 @@ export function evaluateClipKeyframes(
     rotation,
     opacity,
     volume,
+    blur,
+    letterSpacing,
+    shadowIntensity,
     transitionScale,
     transitionOpacity,
     transitionTranslateX,

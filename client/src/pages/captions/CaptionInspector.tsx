@@ -99,9 +99,9 @@ export const CaptionInspector: React.FC<CaptionInspectorProps> = ({
   };
 
   return (
-    <aside className="glass-panel flex flex-col h-full rounded-2xl border border-studio-border bg-white dark:bg-studio-900 p-4 text-slate-900 dark:text-white shadow-sm transition-colors">
+    <aside className="glass-panel flex flex-col h-full rounded-2xl border border-white/10 dark:border-studio-border bg-slate-950/80 dark:bg-studio-900 p-4 text-slate-100 dark:text-white shadow-xl transition-colors">
       {/* Inspector Tab Bar - 6 Column Grid, never truncated or scrolled off */}
-      <div className="mb-4 grid grid-cols-6 gap-1 p-1 rounded-xl bg-slate-100 dark:bg-studio-800 border border-studio-border">
+      <div className="mb-4 grid grid-cols-6 gap-1 p-1 rounded-xl bg-slate-900/90 dark:bg-studio-800 border border-white/10 dark:border-studio-border">
         {[
           ['type', 'Type', Type],
           ['colors', 'Color', Palette],
@@ -118,8 +118,8 @@ export const CaptionInspector: React.FC<CaptionInspectorProps> = ({
               onClick={() => setActiveTab(tabId as any)}
               className={`flex flex-col sm:flex-row items-center justify-center gap-1 rounded-lg py-1.5 px-0.5 text-[11px] font-bold transition-all cursor-pointer ${
                 isCurrent
-                  ? 'bg-white dark:bg-studio-900 text-slate-900 dark:text-white shadow-sm font-extrabold'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-indigo-600 text-white shadow-md font-extrabold'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               <Icon className="h-3.5 w-3.5 shrink-0" />

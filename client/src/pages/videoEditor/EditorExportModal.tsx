@@ -26,7 +26,7 @@ export const EditorExportModal: React.FC<EditorExportModalProps> = ({
   onClose,
   project
 }) => {
-  const [resolution, setResolution] = useState<'1080x1920' | '1920x1080' | '1080x1080' | '720p'>('1080x1920');
+  const [resolution, setResolution] = useState<'1080x1920' | '1920x1080' | '1080x1080' | '720p' | '4k'>('1080x1920');
   const [fps, setFps] = useState<24 | 30 | 60>(30);
   const [videoBitrate, setVideoBitrate] = useState('10M');
   const [audioBitrate, setAudioBitrate] = useState('192k');
@@ -219,6 +219,7 @@ export const EditorExportModal: React.FC<EditorExportModalProps> = ({
                   <option value="1080x1920">1080x1920 (9:16 Shorts / Reels / TikTok)</option>
                   <option value="1920x1080">1920x1080 (16:9 Cinema / YouTube Landscape)</option>
                   <option value="1080x1080">1080x1080 (1:1 Square Feed)</option>
+                  <option value="4k">4K Ultra HD (3840x2160 / 2160x3840 Master)</option>
                   <option value="720p">720p Fast Export</option>
                 </select>
               </div>
