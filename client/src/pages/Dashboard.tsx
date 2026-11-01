@@ -13,7 +13,9 @@ import {
   Languages, 
   Layers, 
   Sun, 
-  Moon 
+  Moon,
+  Video,
+  Subtitles
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -50,6 +52,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // 6 core production service cards matching Script Studio visual tokens
   const capabilities: CapabilityItem[] = [
+    // 0. Video Editor (CapCut Desktop Studio)
+    {
+      id: 'video-editor',
+      label: 'Video Editor',
+      badge: 'PRO',
+      targetTab: 'video-editor',
+      renderIllustration: () => (
+        <div className="relative w-16 h-16 flex items-center justify-center">
+          <div className="w-13 h-13 rounded-2xl bg-black dark:bg-white text-white dark:text-black p-0.5 shadow-sm flex items-center justify-center">
+            <Video className="w-6 h-6" />
+          </div>
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+            <Sparkles className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      )
+    },
+
+    // 0.5. Caption Studio (86 Motion Subtitle Looks)
+    {
+      id: 'captions',
+      label: 'Caption Studio',
+      badge: '2.0',
+      targetTab: 'captions',
+      renderIllustration: () => (
+        <div className="relative w-16 h-16 flex items-center justify-center">
+          <div className="w-13 h-13 rounded-2xl bg-black dark:bg-white text-white dark:text-black p-0.5 shadow-sm flex items-center justify-center">
+            <Subtitles className="w-6 h-6" />
+          </div>
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-cyan-500 text-white flex items-center justify-center shadow-xs">
+            <Zap className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      )
+    },
+
     // 1. Flow Studio
     {
       id: 'google-flow',

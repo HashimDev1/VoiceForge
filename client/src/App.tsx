@@ -14,6 +14,7 @@ import { Settings } from './pages/Settings';
 import { CloneVoiceStudio } from './pages/CloneVoiceStudio';
 import { GoogleFlowStudio } from './pages/GoogleFlowStudio';
 import { CaptionsStudio } from './pages/CaptionsStudio';
+import { VideoEditorStudio } from './pages/VideoEditorStudio';
 import { VoiceCloneModal } from './components/VoiceCloneModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useProjectStore } from './hooks/useProjectStore';
@@ -155,6 +156,12 @@ export function App() {
               theme={theme}
               onToggleTheme={toggleTheme}
             />
+          )}
+
+          {activeTab === 'video-editor' && (
+            <ErrorBoundary>
+              <VideoEditorStudio onOpenCaptionStudio={() => setActiveTab('captions')} />
+            </ErrorBoundary>
           )}
 
           {activeTab === 'captions' && (

@@ -16,11 +16,13 @@ import asrRoutes from './routes/asrRoutes';
 import captionRoutes from './routes/captionRoutes';
 import translationRoutes from './routes/translationRoutes';
 import flowRoutes from './routes/flowRoutes';
+import videoEditorRoutes from './routes/videoEditorRoutes';
 import { ProjectService } from './services/projectService';
 import { VoiceTranslationStorageService } from './services/voiceTranslationStorageService';
 import { FlowStorageService } from './services/flowStorageService';
 import { FlowSchedulerService } from './services/flowSchedulerService';
 import { FlowAccountService } from './services/flowAccountService';
+import { VideoEditorService } from './services/videoEditorService';
 
 const app = express();
 
@@ -31,6 +33,7 @@ app.set('trust proxy', 1);
 ProjectService.initStorage();
 VoiceTranslationStorageService.initStorage();
 FlowStorageService.initStorage();
+VideoEditorService.initStorage();
 FlowAccountService.initAccounts().catch((err) => logger.warn('Flow accounts init:', err));
 FlowSchedulerService.init().catch((err) => logger.warn('Flow scheduler init:', err));
 
@@ -76,6 +79,7 @@ app.use('/api', asrRoutes);
 app.use('/api/captions', captionRoutes);
 app.use('/api/translation', translationRoutes);
 app.use('/api/flow', flowRoutes);
+app.use('/api/editor', videoEditorRoutes);
 
 // Static frontend serving (for production or unified single-port hosting)
 const clientDistPath = [

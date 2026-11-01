@@ -16,12 +16,14 @@ import {
   Globe,
   Subtitles,
   Cpu,
-  Film
+  Film,
+  Video
 } from 'lucide-react';
 import { ApiHealthResponse } from '../../../shared/src/types';
 
 export type TabType =
   | 'dashboard'
+  | 'video-editor'
   | 'captions'
   | 'google-flow'
   | 'clone-voice'
@@ -67,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleTheme
 }) => {
   const serviceItems: NavItem[] = [
+    { id: 'video-editor', label: 'Video Editor', icon: Video },
     { id: 'google-flow', label: 'Flow Studio', icon: Film },
     { id: 'captions', label: 'Caption Studio', icon: Subtitles },
     { id: 'clone-voice', label: 'Clone Voice', icon: Sparkles },

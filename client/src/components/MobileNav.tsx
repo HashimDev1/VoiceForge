@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, FileText, Mic, Globe, FolderKanban, Settings, Subtitles } from 'lucide-react';
+import { LayoutDashboard, FileText, Mic, Globe, FolderKanban, Settings, Subtitles, Video } from 'lucide-react';
 import { TabType } from './Sidebar';
 
 interface MobileNavProps {
@@ -10,8 +10,7 @@ interface MobileNavProps {
 export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, setActiveTab }) => {
   const tabs = [
     { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-    { id: 'voice-generator', label: 'Voices', icon: Mic },
-    { id: 'voice-translator', label: 'Translator', icon: Globe },
+    { id: 'video-editor', label: 'Editor', icon: Video },
     { id: 'captions', label: 'Captions', icon: Subtitles },
     { id: 'script-studio', label: 'Studio', icon: FileText },
     { id: 'projects', label: 'Projects', icon: FolderKanban },
