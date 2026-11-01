@@ -14,7 +14,10 @@ import {
   VolumeX,
   Plus,
   ArrowRight,
-  Maximize2
+  Maximize2,
+  Sparkles,
+  Music,
+  Radio
 } from 'lucide-react';
 import {
   EditorProject,
@@ -27,33 +30,38 @@ interface EditorTimelineProps {
   project: EditorProject;
   playhead: number;
   onSeek: (time: number) => void;
-  selectedClipId: string | null;
-  onSelectClip: (clipId: string | null) => void;
+  selectedClipIds: string[];
+  onSelectClip: (clipId: string | null, isMulti?: boolean) => void;
   selectedTrackId: string | null;
   onSelectTrack: (trackId: string | null) => void;
   zoom: number;
   setZoom: (z: number | ((prev: number) => number)) => void;
   snapEnabled: boolean;
   onToggleSnap: () => void;
-  activeTool: 'select' | 'split';
-  setActiveTool: (tool: 'select' | 'split') => void;
+  activeTool: 'select' | 'split' | 'crop';
+  setActiveTool: (tool: 'select' | 'split' | 'crop') => void;
   onSplitClip: (clipId?: string) => void;
   onDeleteClip: (clipId: string) => void;
+  onDeleteSelected: () => void;
   onDuplicateClip: (clipId: string) => void;
   onRippleDelete: (clipId: string) => void;
+  onFreezeFrame: (clipId?: string) => void;
   onTrimClipStart: (clipId: string, newStart: number) => void;
   onTrimClipEnd: (clipId: string, newEnd: number) => void;
   onMoveClip: (clipId: string, targetTrackId: string, newStart: number) => void;
   onToggleTrackLock: (trackId: string) => void;
   onToggleTrackMute: (trackId: string) => void;
+  onToggleTrackSolo?: (trackId: string) => void;
   onToggleTrackHidden: (trackId: string) => void;
+  onCopySelection?: () => void;
+  onPasteClips?: () => void;
 }
 
 export const EditorTimeline: React.FC<EditorTimelineProps> = ({
   project,
   playhead,
   onSeek,
-  selectedClipId,
+  selectedClipIds,
   onSelectClip,
   selectedTrackId,
   onSelectTrack,
@@ -65,29 +73,35 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
   setActiveTool,
   onSplitClip,
   onDeleteClip,
+  onDeleteSelected,
   onDuplicateClip,
   onRippleDelete,
+  onFreezeFrame,
   onTrimClipStart,
   onTrimClipEnd,
   onMoveClip,
   onToggleTrackLock,
   onToggleTrackMute,
-  onToggleTrackHidden
+  onToggleTrackSolo,
+  onToggleTrackHidden,
+  onCopySelection,
+  onPasteClips
 }) => {
   const timelineTracksRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
     clipId: string;
     mode: 'move' | 'trim-start' | 'trim-end';
     startX: number;
+    startY: number;
     origStart: number;
     origDuration: number;
     trackId: string;
   } | null>(null);
 
   const pxPerSecond = 45 * zoom;
-  const totalWidthPx = Math.max(800, (project.duration || 30) * pxPerSecond);
+  const totalWidthPx = Math.max(900, (project.duration || 30) * pxPerSecond);
 
-  // Ruler tick marks (every 1s, 5s, or 10s depending on zoom)
+  // Ruler tick marks (every 1s, 2s, or 5s depending on zoom)
   const step = zoom >= 2 ? 1 : zoom >= 0.8 ? 2 : 5;
   const ticks = useMemo(() => {
     const list = [];
@@ -110,13 +124,15 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
       return;
     }
 
-    onSelectClip(clip.id);
+    const isMulti = e.shiftKey || e.metaKey || e.ctrlKey;
+    onSelectClip(clip.id, isMulti);
     onSelectTrack(clip.trackId);
 
     dragRef.current = {
       clipId: clip.id,
       mode,
       startX: e.clientX,
+      startY: e.clientY,
       origStart: clip.start,
       origDuration: clip.duration,
       trackId: clip.trackId
@@ -127,13 +143,36 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragRef.current) return;
-    const { clipId, mode, startX, origStart, origDuration, trackId } = dragRef.current;
+    const { clipId, mode, startX, startY, origStart, origDuration, trackId } = dragRef.current;
     const deltaPx = e.clientX - startX;
     const deltaSec = deltaPx / pxPerSecond;
 
     if (mode === 'move') {
       const nextStart = Math.max(0, origStart + deltaSec);
-      onMoveClip(clipId, trackId, nextStart);
+
+      // Detect which track row is under the mouse cursor for vertical track drag
+      let targetTrackId = trackId;
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const trackRowEl = el?.closest('[data-track-id]');
+      if (trackRowEl) {
+        const foundId = trackRowEl.getAttribute('data-track-id');
+        if (foundId) {
+          // Check track type compatibility
+          const movingClip = project.clips.find((c) => c.id === clipId);
+          const candidateTrack = project.tracks.find((t) => t.id === foundId);
+          if (movingClip && candidateTrack) {
+            // Audio clips stay in audio tracks, visual clips in visual tracks
+            if (
+              (movingClip.type === 'audio' && candidateTrack.type === 'audio') ||
+              (movingClip.type !== 'audio' && candidateTrack.type !== 'audio')
+            ) {
+              targetTrackId = foundId;
+            }
+          }
+        }
+      }
+
+      onMoveClip(clipId, targetTrackId, nextStart);
     } else if (mode === 'trim-start') {
       const nextStart = Math.max(0, origStart + deltaSec);
       onTrimClipStart(clipId, nextStart);
@@ -158,6 +197,8 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
     const time = Math.max(0, clickX / pxPerSecond);
     onSeek(time);
   };
+
+  const primarySelectedClipId = selectedClipIds[0] || null;
 
   return (
     <section className="glass-panel flex flex-col rounded-2xl border border-studio-border bg-white dark:bg-studio-900 text-slate-900 dark:text-white shadow-sm transition-colors">
@@ -198,19 +239,32 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
           <button
             type="button"
             onClick={() => onSplitClip()}
-            title="Split selected clip at playhead"
+            title="Split selected clip at playhead (S)"
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-studio-800 transition cursor-pointer"
           >
             <Scissors className="h-3.5 w-3.5 text-indigo-500" />
             <span>Split (S)</span>
           </button>
 
+          {/* Freeze Frame */}
+          <button
+            type="button"
+            onClick={() => onFreezeFrame(primarySelectedClipId || undefined)}
+            title="Insert Freeze Frame (3s still) at playhead"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-studio-800 transition cursor-pointer"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+            <span>Freeze</span>
+          </button>
+
           {/* Duplicate Clip */}
-          {selectedClipId && (
+          {selectedClipIds.length > 0 && (
             <button
               type="button"
-              onClick={() => onDuplicateClip(selectedClipId)}
-              title="Duplicate selected clip"
+              onClick={() => {
+                if (primarySelectedClipId) onDuplicateClip(primarySelectedClipId);
+              }}
+              title="Duplicate selected clip (Ctrl+D)"
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-studio-800 transition cursor-pointer"
             >
               <Copy className="h-3.5 w-3.5 text-emerald-500" />
@@ -218,24 +272,24 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
             </button>
           )}
 
-          {/* Delete Clip */}
-          {selectedClipId && (
+          {/* Delete Clip / Multi Delete */}
+          {selectedClipIds.length > 0 && (
             <button
               type="button"
-              onClick={() => onDeleteClip(selectedClipId)}
-              title="Delete selected clip"
+              onClick={onDeleteSelected}
+              title="Delete selected clip(s) (Del)"
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/30 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition cursor-pointer"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              <span>Delete</span>
+              <span>Delete ({selectedClipIds.length})</span>
             </button>
           )}
 
           {/* Ripple Delete */}
-          {selectedClipId && (
+          {primarySelectedClipId && (
             <button
               type="button"
-              onClick={() => onRippleDelete(selectedClipId)}
+              onClick={() => onRippleDelete(primarySelectedClipId)}
               title="Ripple delete (shift subsequent clips backward)"
               className="px-2.5 py-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 transition cursor-pointer"
             >
@@ -291,8 +345,9 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
         {/* Left Track Headers Deck */}
         <div className="w-48 sm:w-56 shrink-0 border-r border-studio-border bg-slate-50/70 dark:bg-studio-950/70">
           {/* Header spacer aligned with time ruler */}
-          <div className="h-7 border-b border-studio-border px-3 flex items-center font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            TRACKS ({project.tracks.length})
+          <div className="h-7 border-b border-studio-border px-3 flex items-center justify-between font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <span>TRACKS ({project.tracks.length})</span>
+            <span className="text-[9px] text-indigo-500 font-bold">M / S / L / V</span>
           </div>
 
           {/* Track Header Items */}
@@ -309,13 +364,15 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                   <div className="truncate text-xs font-bold text-slate-900 dark:text-white">
                     {track.name}
                   </div>
-                  <div className="text-[9px] font-mono font-bold text-slate-400 uppercase">
-                    {track.type}
+                  <div className="text-[9px] font-mono font-bold text-slate-400 uppercase flex items-center gap-1">
+                    <span>{track.type}</span>
+                    {track.solo && <span className="text-amber-500 font-extrabold">[SOLO]</span>}
                   </div>
                 </div>
 
-                {/* Track Toggles: Mute, Lock, Hide */}
-                <div className="flex items-center gap-1 shrink-0 ml-1">
+                {/* Track Toggles: Mute, Solo, Lock, Hide */}
+                <div className="flex items-center gap-0.5 shrink-0 ml-1">
+                  {/* Mute */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -324,12 +381,32 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                     }}
                     title={track.muted ? 'Unmute track' : 'Mute track'}
                     className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-studio-800 ${
-                      track.muted ? 'text-rose-500' : 'text-slate-400'
+                      track.muted ? 'text-rose-500 font-bold' : 'text-slate-400'
                     }`}
                   >
                     {track.muted ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
                   </button>
 
+                  {/* Solo */}
+                  {onToggleTrackSolo && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleTrackSolo(track.id);
+                      }}
+                      title={track.solo ? 'Disable Solo' : 'Solo Track'}
+                      className={`px-1 py-0.5 rounded text-[9px] font-mono font-bold ${
+                        track.solo
+                          ? 'bg-amber-500 text-black'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      S
+                    </button>
+                  )}
+
+                  {/* Lock */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -344,6 +421,7 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                     {track.locked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
                   </button>
 
+                  {/* Hidden */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -363,48 +441,62 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
           </div>
         </div>
 
-        {/* Right Scrollable Timeline Lanes */}
+        {/* Right Scrollable Timeline Canvas */}
         <div
           ref={timelineTracksRef}
-          className="flex-1 overflow-x-auto relative select-none scrollbar-thin bg-slate-100 dark:bg-studio-950"
+          className="relative min-w-0 flex-1 overflow-x-auto overflow-y-hidden select-none bg-slate-100/50 dark:bg-studio-950/50"
         >
-          <div style={{ width: `${totalWidthPx}px` }} className="relative min-h-[300px]">
-            {/* Time Ruler Bar */}
+          <div style={{ width: `${totalWidthPx}px` }} className="relative flex flex-col">
+            {/* 1. Time Ruler Deck */}
             <div
               onClick={handleRulerClick}
-              className="h-7 border-b border-studio-border bg-slate-50 dark:bg-studio-900/60 relative cursor-pointer"
+              className="relative h-7 border-b border-studio-border bg-slate-100 dark:bg-studio-950 cursor-pointer overflow-hidden"
             >
-              {ticks.map((t) => (
-                <div
-                  key={t}
-                  className="absolute top-0 flex flex-col items-start"
-                  style={{ left: `${t * pxPerSecond}px` }}
-                >
-                  <span className="font-mono text-[9px] text-slate-400 pl-1">
-                    {Math.floor(t / 60)}:{String(Math.floor(t % 60)).padStart(2, '0')}
-                  </span>
-                  <div className="h-2 w-px bg-slate-300 dark:bg-studio-700" />
-                </div>
-              ))}
+              {ticks.map((t) => {
+                const left = t * pxPerSecond;
+                return (
+                  <div
+                    key={t}
+                    className="absolute top-0 bottom-0 border-l border-slate-300 dark:border-studio-800 pl-1"
+                    style={{ left: `${left}px` }}
+                  >
+                    <span className="font-mono text-[9px] font-bold text-slate-400 select-none">
+                      {Math.floor(t / 60)}:{String(Math.floor(t % 60)).padStart(2, '0')}s
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Track Lanes */}
-            <div className="flex flex-col">
+            {/* 2. Track Lanes */}
+            <div className="relative flex flex-col">
               {project.tracks.map((track) => {
                 const trackClips = project.clips.filter((c) => c.trackId === track.id);
 
                 return (
                   <div
                     key={track.id}
-                    className={`h-16 border-b border-studio-border relative ${
-                      track.locked ? 'bg-slate-200/30 dark:bg-studio-900/30' : ''
+                    data-track-id={track.id}
+                    className={`relative h-16 border-b border-studio-border/60 transition-colors ${
+                      track.locked
+                        ? 'bg-slate-200/40 dark:bg-studio-900/40 opacity-70'
+                        : 'hover:bg-slate-50/40 dark:hover:bg-studio-900/20'
                     }`}
                   >
-                    {/* Render clips on this track */}
+                    {/* Horizontal second grid lines */}
+                    {ticks.map((t) => (
+                      <div
+                        key={t}
+                        className="absolute top-0 bottom-0 border-l border-slate-200/50 dark:border-studio-800/30 pointer-events-none"
+                        style={{ left: `${t * pxPerSecond}px` }}
+                      />
+                    ))}
+
+                    {/* Clips positioned on this track */}
                     {trackClips.map((clip) => {
-                      const isSelected = selectedClipId === clip.id;
-                      const leftPx = clip.start * pxPerSecond;
-                      const widthPx = Math.max(20, clip.duration * pxPerSecond);
+                      const isSel = selectedClipIds.includes(clip.id);
+                      const left = clip.start * pxPerSecond;
+                      const width = Math.max(16, clip.duration * pxPerSecond);
 
                       return (
                         <div
@@ -412,41 +504,91 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                           onPointerDown={(e) => handlePointerDown(e, clip, 'move')}
                           onPointerMove={handlePointerMove}
                           onPointerUp={handlePointerUp}
-                          className={`absolute top-1.5 h-13 rounded-xl border flex items-center overflow-hidden transition-shadow shadow-sm cursor-grab active:cursor-grabbing ${
-                            isSelected
-                              ? 'z-20 border-2 border-indigo-600 dark:border-indigo-400 bg-indigo-600 text-white shadow-md'
-                              : clip.type === 'video'
-                              ? 'border-indigo-300/60 dark:border-indigo-900 bg-indigo-500/90 text-white'
-                              : clip.type === 'audio'
-                              ? 'border-emerald-300/60 dark:border-emerald-900 bg-emerald-600/90 text-white'
-                              : clip.type === 'text'
-                              ? 'border-purple-300/60 dark:border-purple-900 bg-purple-600/90 text-white'
-                              : 'border-studio-border bg-white dark:bg-studio-800 text-slate-800 dark:text-slate-200'
-                          }`}
                           style={{
-                            left: `${leftPx}px`,
-                            width: `${widthPx}px`
+                            left: `${left}px`,
+                            width: `${width}px`
                           }}
+                          className={`group absolute top-1.5 bottom-1.5 rounded-lg overflow-hidden border shadow-xs transition-all cursor-move select-none flex flex-col justify-between p-1.5 ${
+                            isSel
+                              ? 'ring-2 ring-indigo-500 shadow-md border-indigo-400 z-20'
+                              : 'border-studio-border z-10'
+                          } ${
+                            clip.type === 'video'
+                              ? 'bg-indigo-950/80 text-indigo-100 border-indigo-700/60'
+                              : clip.type === 'audio'
+                              ? 'bg-emerald-950/80 text-emerald-100 border-emerald-700/60'
+                              : clip.type === 'text' || clip.type === 'caption'
+                              ? 'bg-amber-950/80 text-amber-100 border-amber-700/60'
+                              : 'bg-cyan-950/80 text-cyan-100 border-cyan-700/60'
+                          }`}
                         >
+                          {/* Top clip meta header */}
+                          <div className="flex items-center justify-between gap-1 pointer-events-none">
+                            <span className="truncate font-sans text-[11px] font-extrabold tracking-tight">
+                              {clip.name}
+                            </span>
+                            <span className="shrink-0 font-mono text-[9px] opacity-75">
+                              {clip.duration.toFixed(1)}s
+                            </span>
+                          </div>
+
+                          {/* Audio Waveform visualization for audio/video clips */}
+                          {(clip.type === 'audio' || clip.type === 'video') && (
+                            <div className="h-3 w-full flex items-center gap-0.5 opacity-60 overflow-hidden pointer-events-none">
+                              {Array.from({ length: Math.min(60, Math.floor(width / 5)) }).map((_, idx) => {
+                                const pseudoH = 20 + Math.sin(idx * 0.8 + clip.start) * 40 + Math.cos(idx * 1.5) * 30;
+                                return (
+                                  <div
+                                    key={idx}
+                                    style={{ height: `${Math.max(15, Math.min(100, pseudoH))}%` }}
+                                    className={`w-0.5 rounded-full ${
+                                      clip.type === 'audio' ? 'bg-emerald-400' : 'bg-indigo-400'
+                                    }`}
+                                  />
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Keyframe diamond markers */}
+                          {clip.keyframes && clip.keyframes.length > 0 && (
+                            <div className="absolute bottom-1 left-2 right-2 flex items-center pointer-events-none">
+                              {clip.keyframes.map((kf) => {
+                                const kfPercent = (kf.time / clip.duration) * 100;
+                                return (
+                                  <div
+                                    key={kf.id}
+                                    style={{ left: `${kfPercent}%` }}
+                                    title={`Keyframe: ${kf.property} at ${kf.time.toFixed(2)}s`}
+                                    className="absolute h-2 w-2 -translate-x-1 rotate-45 bg-amber-400 border border-black shadow-xs"
+                                  />
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Transitions Badge */}
+                          {clip.transitionIn && clip.transitionIn.type !== 'none' && (
+                            <div className="absolute top-1 left-1 rounded bg-black/60 px-1 text-[8px] font-mono text-cyan-300 pointer-events-none">
+                              {clip.transitionIn.type}
+                            </div>
+                          )}
+
                           {/* Left Trim Handle */}
                           <div
                             onPointerDown={(e) => handlePointerDown(e, clip, 'trim-start')}
-                            className="h-full w-2 shrink-0 cursor-ew-resize bg-black/20 hover:bg-black/40"
-                          />
-
-                          {/* Clip Content Label */}
-                          <div className="flex-1 truncate px-2 text-center text-xs font-bold leading-tight">
-                            <span className="block truncate">{clip.name}</span>
-                            <span className="block font-mono text-[9px] opacity-75">
-                              {clip.duration.toFixed(1)}s
-                            </span>
+                            className="absolute top-0 bottom-0 left-0 w-2.5 bg-white/20 hover:bg-indigo-400 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-l-lg flex items-center justify-center"
+                          >
+                            <div className="w-0.5 h-4 bg-white/70 rounded-full" />
                           </div>
 
                           {/* Right Trim Handle */}
                           <div
                             onPointerDown={(e) => handlePointerDown(e, clip, 'trim-end')}
-                            className="h-full w-2 shrink-0 cursor-ew-resize bg-black/20 hover:bg-black/40"
-                          />
+                            className="absolute top-0 bottom-0 right-0 w-2.5 bg-white/20 hover:bg-indigo-400 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-r-lg flex items-center justify-center"
+                          >
+                            <div className="w-0.5 h-4 bg-white/70 rounded-full" />
+                          </div>
                         </div>
                       );
                     })}
@@ -455,12 +597,15 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
               })}
             </div>
 
-            {/* Red Scrubbing Playhead Line */}
+            {/* 3. Global Playhead Line with Draggable Scrubber Head */}
             <div
-              className="pointer-events-none absolute top-0 bottom-0 z-30 w-px bg-rose-500 shadow-[0_0_8px_#f43f5e]"
               style={{ left: `${playhead * pxPerSecond}px` }}
+              className="absolute top-0 bottom-0 z-30 pointer-events-none flex flex-col items-center"
             >
-              <div className="absolute -left-1.5 -top-1 h-3.5 w-3.5 rotate-45 rounded-sm bg-rose-500 shadow" />
+              {/* Playhead Badge */}
+              <div className="w-3.5 h-3.5 -mt-0.5 bg-indigo-500 rounded-xs rotate-45 shadow-md border border-white" />
+              {/* Red Line */}
+              <div className="w-0.5 flex-1 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
             </div>
           </div>
         </div>
@@ -468,4 +613,3 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
     </section>
   );
 };
-

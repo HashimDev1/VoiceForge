@@ -50,6 +50,12 @@ export const videoEditorApi = {
     return data.project;
   },
 
+  async verifyAssets(projectId: string): Promise<{ project: EditorProject; missingCount: number }> {
+    const res = await fetch(`${API_BASE}/projects/${projectId}/verify-assets`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to verify project assets');
+    return await res.json();
+  },
+
   async uploadMedia(file: File): Promise<MediaAsset> {
     const formData = new FormData();
     formData.append('file', file);
@@ -84,6 +90,12 @@ export const videoEditorApi = {
     if (!res.ok) throw new Error('Failed to check export status');
     const data = await res.json();
     return data.job;
+  },
+
+  async cancelExport(jobId: string): Promise<boolean> {
+    const res = await fetch(`${API_BASE}/export/cancel/${jobId}`, { method: 'POST' });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data.success;
   }
 };
-

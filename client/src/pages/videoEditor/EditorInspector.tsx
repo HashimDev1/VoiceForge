@@ -13,7 +13,11 @@ import {
   Sliders,
   Plus,
   Trash2,
-  X
+  X,
+  Crop,
+  Radio,
+  Pipette,
+  Layout
 } from 'lucide-react';
 import {
   TimelineClip,
@@ -21,14 +25,16 @@ import {
   ClipSpeed,
   ColorGrading,
   ClipAudioSettings,
-  Keyframe
+  Keyframe,
+  KeyframeProperty
 } from '../../../../shared/src/videoEditorTypes';
 import {
   DEFAULT_TRANSFORM,
   DEFAULT_SPEED,
   DEFAULT_COLOR_GRADING,
   DEFAULT_AUDIO_SETTINGS,
-  TRANSITION_CATALOG
+  TRANSITION_CATALOG,
+  COLOR_PRESETS
 } from '../../../../shared/src/videoEditorDefaults';
 
 interface EditorInspectorProps {
@@ -128,7 +134,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
       {/* Tab Panels */}
       <div className="flex-1 overflow-y-auto pr-1 space-y-3.5 max-h-[580px] scrollbar-thin text-xs">
         {/* ==========================================
-            TAB 1: TRANSFORM CONTROLS
+            TAB 1: TRANSFORM CONTROLS & CROP
             ========================================== */}
         {activeTab === 'transform' && (
           <div className="space-y-3">
@@ -142,8 +148,8 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
               </div>
               <input
                 type="range"
-                min="0.2"
-                max="3.0"
+                min="0.15"
+                max="3.5"
                 step="0.05"
                 value={tf.scale}
                 onChange={(e) => updateTransform({ scale: parseFloat(e.target.value) })}
@@ -210,7 +216,61 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
               />
             </div>
 
-            {/* Flip Horizontal / Vertical */}
+            {/* Crop Bounds (Top, Bottom, Left, Right %) */}
+            <div className="space-y-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 p-2.5">
+              <div className="flex items-center gap-1.5 font-bold text-[11px] text-slate-700 dark:text-slate-300">
+                <Crop className="h-3.5 w-3.5 text-indigo-500" />
+                <span>Crop Boundaries (%)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <label className="space-y-0.5">
+                  <span className="text-[9px] text-slate-400 font-mono">TOP</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={tf.cropTop || 0}
+                    onChange={(e) => updateTransform({ cropTop: parseInt(e.target.value) || 0 })}
+                    className="w-full rounded-lg border border-studio-border bg-white dark:bg-studio-900 px-2 py-1 text-xs font-mono"
+                  />
+                </label>
+                <label className="space-y-0.5">
+                  <span className="text-[9px] text-slate-400 font-mono">BOTTOM</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={tf.cropBottom || 0}
+                    onChange={(e) => updateTransform({ cropBottom: parseInt(e.target.value) || 0 })}
+                    className="w-full rounded-lg border border-studio-border bg-white dark:bg-studio-900 px-2 py-1 text-xs font-mono"
+                  />
+                </label>
+                <label className="space-y-0.5">
+                  <span className="text-[9px] text-slate-400 font-mono">LEFT</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={tf.cropLeft || 0}
+                    onChange={(e) => updateTransform({ cropLeft: parseInt(e.target.value) || 0 })}
+                    className="w-full rounded-lg border border-studio-border bg-white dark:bg-studio-900 px-2 py-1 text-xs font-mono"
+                  />
+                </label>
+                <label className="space-y-0.5">
+                  <span className="text-[9px] text-slate-400 font-mono">RIGHT</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={tf.cropRight || 0}
+                    onChange={(e) => updateTransform({ cropRight: parseInt(e.target.value) || 0 })}
+                    className="w-full rounded-lg border border-studio-border bg-white dark:bg-studio-900 px-2 py-1 text-xs font-mono"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Quick Actions: Flip, Rotate 90, Picture-in-Picture */}
             <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 type="button"
@@ -222,7 +282,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                 }`}
               >
                 <FlipHorizontal className="h-3.5 w-3.5" />
-                <span>Flip Horizontal</span>
+                <span>Flip H</span>
               </button>
 
               <button
@@ -235,19 +295,30 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                 }`}
               >
                 <FlipVertical className="h-3.5 w-3.5" />
-                <span>Flip Vertical</span>
+                <span>Flip V</span>
               </button>
             </div>
 
-            {/* Reset Transform */}
-            <button
-              type="button"
-              onClick={() => updateTransform(DEFAULT_TRANSFORM)}
-              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-studio-border bg-slate-100 dark:bg-studio-800 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 cursor-pointer"
-            >
-              <RotateCcw className="h-3 w-3" />
-              <span>Reset Transform</span>
-            </button>
+            {/* Picture-in-Picture and Reset */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => updateTransform({ scale: 0.35, x: 50, y: 50 })}
+                className="flex items-center justify-center gap-1 py-2 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-xs font-bold hover:bg-slate-100 dark:hover:bg-studio-800"
+              >
+                <Layout className="h-3 w-3 text-indigo-500" />
+                <span>Picture-in-Pic</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => updateTransform(DEFAULT_TRANSFORM)}
+                className="flex items-center justify-center gap-1 py-2 rounded-xl border border-studio-border bg-slate-100 dark:bg-studio-800 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 cursor-pointer"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>Reset</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -314,17 +385,39 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
         )}
 
         {/* ==========================================
-            TAB 3: COLOR GRADING
+            TAB 3: COLOR GRADING & LOOKS
             ========================================== */}
         {activeTab === 'color' && (
           <div className="space-y-3">
+            {/* Quick Cinematic Looks Chips */}
+            <div className="space-y-1.5">
+              <span className="font-bold text-[11px] text-slate-700 dark:text-slate-300">
+                Cinematic Looks
+              </span>
+              <div className="grid grid-cols-3 gap-1">
+                {COLOR_PRESETS.map((look) => (
+                  <button
+                    key={look.name}
+                    type="button"
+                    onClick={() => updateColor(look.grading)}
+                    className="p-1.5 rounded-lg border border-studio-border bg-slate-50 dark:bg-studio-950 text-[10px] font-bold text-center truncate hover:border-indigo-500 hover:text-indigo-600 transition"
+                  >
+                    {look.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sliders */}
             {[
               ['Exposure', 'exposure', -100, 100],
               ['Contrast', 'contrast', -100, 100],
               ['Brightness', 'brightness', -100, 100],
               ['Saturation', 'saturation', -100, 100],
               ['Temperature', 'temperature', -100, 100],
-              ['Tint', 'tint', -100, 100]
+              ['Tint', 'tint', -100, 100],
+              ['Highlights', 'highlights', -100, 100],
+              ['Shadows', 'shadows', -100, 100]
             ].map(([label, prop, min, max]: any) => (
               <div key={prop} className="space-y-1">
                 <div className="flex items-center justify-between">
@@ -420,7 +513,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
             <label className="flex items-center justify-between rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 p-2.5 cursor-pointer">
               <div>
                 <div className="font-semibold text-xs">Audio Ducking</div>
-                <div className="text-[10px] text-slate-400">Lower background music during dialogue</div>
+                <div className="text-[10px] text-slate-400">Lower background music during voiceover clips</div>
               </div>
               <input
                 type="checkbox"
@@ -469,6 +562,33 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   </option>
                 ))}
               </select>
+
+              {selectedClip.transitionIn && selectedClip.transitionIn.type !== 'none' && (
+                <div className="space-y-1 pt-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-slate-500">Duration</span>
+                    <span className="font-mono font-bold text-indigo-600">
+                      {selectedClip.transitionIn.duration}s
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="2.0"
+                    step="0.1"
+                    value={selectedClip.transitionIn.duration}
+                    onChange={(e) =>
+                      onUpdateClip(selectedClip.id, {
+                        transitionIn: {
+                          ...selectedClip.transitionIn!,
+                          duration: parseFloat(e.target.value)
+                        }
+                      })
+                    }
+                    className="w-full accent-indigo-600"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Active Effects Stack */}
@@ -531,20 +651,28 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
             <div className="rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 p-3 space-y-2">
               <span className="font-bold text-xs">Add Keyframe at Playhead</span>
               <p className="text-[10px] text-slate-400">
-                Interpolates transform and opacity parameters between timestamps.
+                Interpolates transform, opacity, and volume dynamically between timestamps.
               </p>
               <div className="grid grid-cols-2 gap-1.5 pt-1">
-                {['scale', 'opacity', 'rotation', 'positionX'].map((prop) => (
+                {(['scale', 'opacity', 'rotation', 'positionX', 'positionY', 'volume'] as KeyframeProperty[]).map((prop) => (
                   <button
                     key={prop}
                     type="button"
                     onClick={() => {
                       const offset = Math.max(0, playhead - selectedClip.start);
+                      let val = 1;
+                      if (prop === 'scale') val = tf.scale;
+                      else if (prop === 'opacity') val = tf.opacity ?? 1;
+                      else if (prop === 'rotation') val = tf.rotation;
+                      else if (prop === 'positionX') val = tf.x;
+                      else if (prop === 'positionY') val = tf.y;
+                      else if (prop === 'volume') val = au.volume;
+
                       const newKf: Keyframe = {
                         id: `kf_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
                         time: Number(offset.toFixed(2)),
-                        property: prop as any,
-                        value: (tf as any)[prop] || 1,
+                        property: prop,
+                        value: val,
                         easing: 'ease_in_out'
                       };
                       onUpdateClip(selectedClip.id, {
@@ -568,25 +696,48 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
               {selectedClip.keyframes?.map((kf) => (
                 <div
                   key={kf.id}
-                  className="flex items-center justify-between rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 p-2.5"
+                  className="flex flex-col gap-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 p-2.5"
                 >
-                  <div>
-                    <span className="font-bold text-xs capitalize">{kf.property}</span>
-                    <span className="ml-2 font-mono text-[10px] text-indigo-600 font-bold">
-                      at {kf.time}s ({kf.value})
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-xs capitalize">{kf.property}</span>
+                      <span className="ml-2 font-mono text-[10px] text-indigo-600 font-bold">
+                        at {kf.time}s ({kf.value})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateClip(selectedClip.id, {
+                          keyframes: selectedClip.keyframes.filter((k) => k.id !== kf.id)
+                        })
+                      }
+                      className="text-slate-400 hover:text-rose-500"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onUpdateClip(selectedClip.id, {
-                        keyframes: selectedClip.keyframes.filter((k) => k.id !== kf.id)
-                      })
-                    }
-                    className="text-slate-400 hover:text-rose-500"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+
+                  {/* Easing Selector */}
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-slate-400 font-medium">Easing Curve</span>
+                    <select
+                      value={kf.easing}
+                      onChange={(e) => {
+                        const easingVal = e.target.value as any;
+                        onUpdateClip(selectedClip.id, {
+                          keyframes: selectedClip.keyframes.map((k) => (k.id === kf.id ? { ...k, easing: easingVal } : k))
+                        });
+                      }}
+                      className="rounded border border-studio-border bg-white dark:bg-studio-900 px-1.5 py-0.5 font-bold outline-none"
+                    >
+                      <option value="linear">Linear</option>
+                      <option value="ease_in">Ease In</option>
+                      <option value="ease_out">Ease Out</option>
+                      <option value="ease_in_out">Ease In/Out</option>
+                      <option value="bezier">Bezier</option>
+                    </select>
+                  </div>
                 </div>
               ))}
             </div>
@@ -596,4 +747,3 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
     </aside>
   );
 };
-

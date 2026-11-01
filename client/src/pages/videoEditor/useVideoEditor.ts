@@ -6,7 +6,10 @@ import {
   MediaAsset,
   AspectRatio,
   TrackType,
-  Keyframe
+  Keyframe,
+  ClipTransform,
+  ProjectBackground,
+  ProjectVersionSnapshot
 } from '../../../../shared/src/videoEditorTypes';
 import {
   createNewProject,
@@ -24,23 +27,31 @@ export function useVideoEditor(initialProject?: EditorProject) {
   );
   const [playhead, setPlayhead] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+  const [selectedClipIds, setSelectedClipIds] = useState<string[]>([]);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
-  const [zoom, setZoom] = useState<number>(1.0); // 1.0 = 40px per second
+  const [zoom, setZoom] = useState<number>(1.0); // 1.0 = ~45px per second
   const [snapEnabled, setSnapEnabled] = useState<boolean>(true);
-  const [activeTool, setActiveTool] = useState<'select' | 'split'>('select');
+  const [activeTool, setActiveTool] = useState<'select' | 'split' | 'crop'>('select');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [lastSavedText, setLastSavedText] = useState<string>('All changes saved');
+  const [recoveryAvailable, setRecoveryAvailable] = useState<boolean>(false);
 
   // History stack for Undo/Redo
   const [undoStack, setUndoStack] = useState<EditorProject[]>([]);
   const [redoStack, setRedoStack] = useState<EditorProject[]>([]);
+
+  // Clipboard for Copy / Paste
+  const clipboardClipsRef = useRef<TimelineClip[]>([]);
 
   const playheadRef = useRef<number>(playhead);
   playheadRef.current = playhead;
 
   const projectRef = useRef<EditorProject>(project);
   projectRef.current = project;
+
+  // Single primary selected clip (for Inspector controls)
+  const primarySelectedClipId = selectedClipIds[0] || null;
+  const selectedClip = project.clips.find((c) => c.id === primarySelectedClipId) || null;
 
   // Record history snapshot before mutating project state
   const pushHistory = useCallback((currentProj: EditorProject) => {
@@ -64,6 +75,70 @@ export function useVideoEditor(initialProject?: EditorProject) {
     setProject(next);
   }, [redoStack]);
 
+  // Check for auto-save recovery on startup
+  useEffect(() => {
+    try {
+      const backupRaw = localStorage.getItem(`voiceforge_editor_backup_${project.id}`);
+      if (backupRaw) {
+        const backupData = JSON.parse(backupRaw);
+        if (
+          backupData &&
+          backupData.updatedAt &&
+          new Date(backupData.updatedAt).getTime() > new Date(project.updatedAt).getTime()
+        ) {
+          setRecoveryAvailable(true);
+        }
+      }
+    } catch {}
+  }, [project.id, project.updatedAt]);
+
+  const restoreFromBackup = useCallback(() => {
+    try {
+      const backupRaw = localStorage.getItem(`voiceforge_editor_backup_${project.id}`);
+      if (backupRaw) {
+        const backupData = JSON.parse(backupRaw) as EditorProject;
+        pushHistory(projectRef.current);
+        setProject(backupData);
+        setRecoveryAvailable(false);
+        setLastSavedText('Restored from autosave');
+      }
+    } catch {}
+  }, [project.id, pushHistory]);
+
+  const dismissRecovery = useCallback(() => {
+    setRecoveryAvailable(false);
+  }, []);
+
+  // Save project to backend API and localStorage with version history snapshot
+  const saveProject = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      const updatedProj: EditorProject = {
+        ...projectRef.current,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Store in local storage backup
+      localStorage.setItem(`voiceforge_editor_backup_${updatedProj.id}`, JSON.stringify(updatedProj));
+
+      // Persist to backend server
+      await videoEditorApi.saveProject(updatedProj);
+      setLastSavedText(`Saved ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`);
+    } catch {
+      setLastSavedText('Saved locally');
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
+
+  // Autosave periodically every 10 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveProject();
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [project, saveProject]);
+
   // Playhead animation loop when playing
   useEffect(() => {
     if (!isPlaying) return;
@@ -78,7 +153,7 @@ export function useVideoEditor(initialProject?: EditorProject) {
         const next = cur + deltaSec;
         if (next >= projectRef.current.duration) {
           setIsPlaying(false);
-          return 0; // loop back or stop
+          return 0; // loop back to start
         }
         return next;
       });
@@ -99,27 +174,65 @@ export function useVideoEditor(initialProject?: EditorProject) {
     setIsPlaying((p) => !p);
   }, []);
 
-  // Save project to backend API and localStorage
-  const saveProject = useCallback(async () => {
-    setIsSaving(true);
-    try {
-      localStorage.setItem(`voiceforge_editor_${project.id}`, JSON.stringify(project));
-      await videoEditorApi.saveProject(project);
-      setLastSavedText(`Saved ${new Date().toLocaleTimeString()}`);
-    } catch {
-      setLastSavedText('Saved locally');
-    } finally {
-      setIsSaving(false);
+  // Selection Handling
+  const selectClip = useCallback((clipId: string | null, isMulti: boolean = false) => {
+    if (!clipId) {
+      setSelectedClipIds([]);
+      return;
     }
-  }, [project]);
+    if (isMulti) {
+      setSelectedClipIds((prev) =>
+        prev.includes(clipId) ? prev.filter((id) => id !== clipId) : [...prev, clipId]
+      );
+    } else {
+      setSelectedClipIds([clipId]);
+    }
+  }, []);
 
-  // Autosave periodically
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      saveProject();
-    }, 15000);
-    return () => clearTimeout(timer);
-  }, [project, saveProject]);
+  const selectAllClips = useCallback(() => {
+    setSelectedClipIds(projectRef.current.clips.map((c) => c.id));
+  }, []);
+
+  // Copy & Paste
+  const copySelection = useCallback(() => {
+    const toCopy = projectRef.current.clips.filter((c) => selectedClipIds.includes(c.id));
+    if (toCopy.length > 0) {
+      clipboardClipsRef.current = JSON.parse(JSON.stringify(toCopy));
+      setLastSavedText(`Copied ${toCopy.length} clip(s)`);
+    }
+  }, [selectedClipIds]);
+
+  const pasteClips = useCallback(() => {
+    if (clipboardClipsRef.current.length === 0) return;
+    pushHistory(projectRef.current);
+
+    const minOrigStart = Math.min(...clipboardClipsRef.current.map((c) => c.start));
+    const targetBaseStart = playheadRef.current;
+    const newClips: TimelineClip[] = [];
+
+    clipboardClipsRef.current.forEach((orig) => {
+      const offset = orig.start - minOrigStart;
+      const pasted: TimelineClip = {
+        ...JSON.parse(JSON.stringify(orig)),
+        id: `clip_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        name: `${orig.name} (Copy)`,
+        start: targetBaseStart + offset
+      };
+      newClips.push(pasted);
+    });
+
+    setProject((prev) => {
+      const maxEnd = Math.max(...newClips.map((c) => c.start + c.duration));
+      return {
+        ...prev,
+        duration: Math.max(prev.duration, maxEnd + 2),
+        clips: [...prev.clips, ...newClips]
+      };
+    });
+
+    setSelectedClipIds(newClips.map((c) => c.id));
+    setLastSavedText(`Pasted ${newClips.length} clip(s)`);
+  }, [pushHistory]);
 
   // Update Project Metadata (Name, Aspect Ratio, Duration)
   const updateProjectMeta = useCallback((patch: Partial<EditorProject>) => {
@@ -139,6 +252,30 @@ export function useVideoEditor(initialProject?: EditorProject) {
       customHeight: def.height
     });
   }, [updateProjectMeta]);
+
+  const setProjectBackground = useCallback((bg: ProjectBackground) => {
+    pushHistory(projectRef.current);
+    setProject((prev) => ({
+      ...prev,
+      background: bg,
+      updatedAt: new Date().toISOString()
+    }));
+  }, [pushHistory]);
+
+  // Create Named Version Snapshot
+  const createVersionSnapshot = useCallback((name: string) => {
+    const snapshot: ProjectVersionSnapshot = {
+      id: `v_${Date.now()}`,
+      name: name.trim() || `Version ${new Date().toLocaleTimeString()}`,
+      timestamp: new Date().toISOString(),
+      clipsCount: projectRef.current.clips.length
+    };
+    setProject((prev) => ({
+      ...prev,
+      versions: [snapshot, ...(prev.versions || []).slice(0, 15)]
+    }));
+    setLastSavedText(`Snapshot '${snapshot.name}' created`);
+  }, []);
 
   // Media Asset Management
   const addAsset = useCallback((asset: MediaAsset) => {
@@ -187,7 +324,7 @@ export function useVideoEditor(initialProject?: EditorProject) {
       };
     });
 
-    setSelectedClipId(newClip.id);
+    setSelectedClipIds([newClip.id]);
   }, [pushHistory]);
 
   const addTextClip = useCallback((text: string, presetName?: string) => {
@@ -196,7 +333,7 @@ export function useVideoEditor(initialProject?: EditorProject) {
     if (!textTrack) {
       textTrack = {
         id: `track_text_${Date.now()}`,
-        name: 'Titles & Overlays',
+        name: 'Titles & Captions',
         type: 'text',
         locked: false,
         muted: false,
@@ -236,7 +373,7 @@ export function useVideoEditor(initialProject?: EditorProject) {
       };
     });
 
-    setSelectedClipId(newClip.id);
+    setSelectedClipIds([newClip.id]);
   }, [pushHistory]);
 
   const updateClip = useCallback((clipId: string, patch: Partial<TimelineClip>) => {
@@ -252,8 +389,18 @@ export function useVideoEditor(initialProject?: EditorProject) {
       ...prev,
       clips: prev.clips.filter((c) => c.id !== clipId)
     }));
-    if (selectedClipId === clipId) setSelectedClipId(null);
-  }, [pushHistory, selectedClipId]);
+    setSelectedClipIds((prev) => prev.filter((id) => id !== clipId));
+  }, [pushHistory]);
+
+  const deleteSelectedClips = useCallback(() => {
+    if (selectedClipIds.length === 0) return;
+    pushHistory(projectRef.current);
+    setProject((prev) => ({
+      ...prev,
+      clips: prev.clips.filter((c) => !selectedClipIds.includes(c.id))
+    }));
+    setSelectedClipIds([]);
+  }, [pushHistory, selectedClipIds]);
 
   const duplicateClip = useCallback((clipId: string) => {
     const orig = projectRef.current.clips.find((c) => c.id === clipId);
@@ -272,7 +419,7 @@ export function useVideoEditor(initialProject?: EditorProject) {
       duration: Math.max(prev.duration, dup.start + dup.duration + 2),
       clips: [...prev.clips, dup]
     }));
-    setSelectedClipId(dup.id);
+    setSelectedClipIds([dup.id]);
   }, [pushHistory]);
 
   const splitClipAtPlayhead = useCallback((targetClipId?: string) => {
@@ -287,7 +434,7 @@ export function useVideoEditor(initialProject?: EditorProject) {
     const firstDuration = curTime - clipToSplit.start;
     const secondDuration = clipToSplit.duration - firstDuration;
 
-    if (firstDuration < 0.1 || secondDuration < 0.1) return; // Ignore micro slivers
+    if (firstDuration < 0.1 || secondDuration < 0.1) return; // Prevent micro slivers
 
     const firstClip: TimelineClip = {
       ...clipToSplit,
@@ -306,7 +453,189 @@ export function useVideoEditor(initialProject?: EditorProject) {
       ...prev,
       clips: prev.clips.map((c) => (c.id === clipToSplit.id ? firstClip : c)).concat(secondClip)
     }));
-    setSelectedClipId(secondClip.id);
+    setSelectedClipIds([secondClip.id]);
+  }, [pushHistory]);
+
+  // Freeze Frame tool: splits clip at playhead and inserts a 3s still frame
+  const freezeFrame = useCallback((targetClipId?: string) => {
+    const curTime = playheadRef.current;
+    const clip = projectRef.current.clips.find((c) =>
+      targetClipId ? c.id === targetClipId : curTime >= c.start && curTime <= c.start + c.duration
+    );
+    if (!clip) return;
+    pushHistory(projectRef.current);
+
+    const freezeDuration = 3.0;
+    const freezeSourceOffset = (curTime - clip.start) * (clip.speed?.speed || 1) + (clip.sourceStart || 0);
+
+    const freezeClip: TimelineClip = {
+      ...JSON.parse(JSON.stringify(clip)),
+      id: `freeze_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      name: `${clip.name} (Freeze)`,
+      start: curTime,
+      duration: freezeDuration,
+      sourceStart: freezeSourceOffset,
+      speed: {
+        ...clip.speed,
+        speed: 0.001,
+        isFreezeFrame: true
+      }
+    };
+
+    // Push subsequent clips on same track forward by freezeDuration
+    setProject((prev) => {
+      const nextClips = prev.clips.map((c) => {
+        if (c.trackId === clip.trackId && c.start >= curTime && c.id !== clip.id) {
+          return { ...c, start: c.start + freezeDuration };
+        }
+        return c;
+      });
+
+      // Split the original clip into head and tail if playhead was inside it
+      if (curTime > clip.start && curTime < clip.start + clip.duration) {
+        const headDur = curTime - clip.start;
+        const tailDur = clip.duration - headDur;
+        const headClip: TimelineClip = { ...clip, duration: headDur };
+        const tailClip: TimelineClip = {
+          ...JSON.parse(JSON.stringify(clip)),
+          id: `clip_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          start: curTime + freezeDuration,
+          duration: tailDur,
+          sourceStart: (clip.sourceStart || 0) + headDur * (clip.speed?.speed || 1)
+        };
+        const finalClips = nextClips
+          .filter((c) => c.id !== clip.id)
+          .concat([headClip, freezeClip, tailClip]);
+        return {
+          ...prev,
+          duration: Math.max(prev.duration, curTime + freezeDuration + tailDur + 2),
+          clips: finalClips
+        };
+      }
+
+      return {
+        ...prev,
+        duration: Math.max(prev.duration, curTime + freezeDuration + 2),
+        clips: [...nextClips, freezeClip]
+      };
+    });
+
+    setSelectedClipIds([freezeClip.id]);
+    setLastSavedText('Inserted freeze frame');
+  }, [pushHistory]);
+
+  // Reverse Video toggle
+  const toggleReverseVideo = useCallback((clipId: string) => {
+    pushHistory(projectRef.current);
+    setProject((prev) => ({
+      ...prev,
+      clips: prev.clips.map((c) => {
+        if (c.id !== clipId) return c;
+        return {
+          ...c,
+          speed: {
+            ...c.speed,
+            reverse: !c.speed.reverse
+          }
+        };
+      })
+    }));
+  }, [pushHistory]);
+
+  // Speed adjustment
+  const setClipSpeed = useCallback((clipId: string, speedValue: number) => {
+    pushHistory(projectRef.current);
+    const speed = Math.max(0.25, Math.min(4.0, speedValue));
+    setProject((prev) => ({
+      ...prev,
+      clips: prev.clips.map((c) => {
+        if (c.id !== clipId) return c;
+        const currentSpeed = c.speed?.speed || 1;
+        const newDuration = (c.duration * currentSpeed) / speed;
+        return {
+          ...c,
+          duration: Math.max(0.2, newDuration),
+          speed: {
+            ...c.speed,
+            speed
+          }
+        };
+      })
+    }));
+  }, [pushHistory]);
+
+  // Picture in Picture preset
+  const applyPictureInPicture = useCallback((clipId: string) => {
+    pushHistory(projectRef.current);
+    setProject((prev) => ({
+      ...prev,
+      clips: prev.clips.map((c) => {
+        if (c.id !== clipId) return c;
+        return {
+          ...c,
+          transform: {
+            ...c.transform,
+            scale: 0.35,
+            x: 50,
+            y: 50
+          }
+        };
+      })
+    }));
+  }, [pushHistory]);
+
+  // Rotate 90 degrees
+  const rotateClip90 = useCallback((clipId: string) => {
+    pushHistory(projectRef.current);
+    setProject((prev) => ({
+      ...prev,
+      clips: prev.clips.map((c) => {
+        if (c.id !== clipId) return c;
+        const nextRot = ((c.transform?.rotation || 0) + 90) % 360;
+        return {
+          ...c,
+          transform: {
+            ...c.transform,
+            rotation: nextRot
+          }
+        };
+      })
+    }));
+  }, [pushHistory]);
+
+  // Flip Horizontal / Vertical
+  const flipClipHorizontal = useCallback((clipId: string) => {
+    pushHistory(projectRef.current);
+    setProject((prev) => ({
+      ...prev,
+      clips: prev.clips.map((c) => {
+        if (c.id !== clipId) return c;
+        return {
+          ...c,
+          transform: {
+            ...c.transform,
+            flipH: !c.transform?.flipH
+          }
+        };
+      })
+    }));
+  }, [pushHistory]);
+
+  const flipClipVertical = useCallback((clipId: string) => {
+    pushHistory(projectRef.current);
+    setProject((prev) => ({
+      ...prev,
+      clips: prev.clips.map((c) => {
+        if (c.id !== clipId) return c;
+        return {
+          ...c,
+          transform: {
+            ...c.transform,
+            flipV: !c.transform?.flipV
+          }
+        };
+      })
+    }));
   }, [pushHistory]);
 
   const trimClipStart = useCallback((clipId: string, newStart: number) => {
@@ -354,7 +683,7 @@ export function useVideoEditor(initialProject?: EditorProject) {
 
       // Magnetic snapping to playhead or other clip edges if enabled
       if (snapEnabled) {
-        const threshold = 0.3; // 300ms snap threshold
+        const threshold = 0.35; // 350ms snap threshold
         if (Math.abs(finalStart - playheadRef.current) < threshold) {
           finalStart = playheadRef.current;
         }
@@ -412,14 +741,21 @@ export function useVideoEditor(initialProject?: EditorProject) {
         })
     }));
 
-    if (selectedClipId === clipId) setSelectedClipId(null);
-  }, [pushHistory, selectedClipId]);
+    setSelectedClipIds((prev) => prev.filter((id) => id !== clipId));
+  }, [pushHistory]);
 
-  // Track Toggles
+  // Track Toggles: Mute, Lock, Solo, Hidden
   const toggleTrackMute = useCallback((trackId: string) => {
     setProject((prev) => ({
       ...prev,
       tracks: prev.tracks.map((t) => (t.id === trackId ? { ...t, muted: !t.muted } : t))
+    }));
+  }, []);
+
+  const toggleTrackSolo = useCallback((trackId: string) => {
+    setProject((prev) => ({
+      ...prev,
+      tracks: prev.tracks.map((t) => (t.id === trackId ? { ...t, solo: !t.solo } : t))
     }));
   }, []);
 
@@ -437,15 +773,17 @@ export function useVideoEditor(initialProject?: EditorProject) {
     }));
   }, []);
 
-  const selectedClip = project.clips.find((c) => c.id === selectedClipId) || null;
-
   return {
     project,
     setProject,
     playhead,
     isPlaying,
-    selectedClipId,
-    setSelectedClipId,
+    selectedClipIds,
+    setSelectedClipIds,
+    selectedClipId: primarySelectedClipId,
+    setSelectedClipId: (id: string | null) => selectClip(id, false),
+    selectClip,
+    selectAllClips,
     selectedClip,
     selectedTrackId,
     setSelectedTrackId,
@@ -457,6 +795,9 @@ export function useVideoEditor(initialProject?: EditorProject) {
     setActiveTool,
     isSaving,
     lastSavedText,
+    recoveryAvailable,
+    restoreFromBackup,
+    dismissRecovery,
     canUndo: undoStack.length > 0,
     canRedo: redoStack.length > 0,
     seek,
@@ -466,20 +807,32 @@ export function useVideoEditor(initialProject?: EditorProject) {
     saveProject,
     updateProjectMeta,
     setAspectRatio,
+    setProjectBackground,
+    createVersionSnapshot,
     addAsset,
     addClipToTrack,
     addTextClip,
     updateClip,
     deleteClip,
+    deleteSelectedClips,
     duplicateClip,
     splitClipAtPlayhead,
+    freezeFrame,
+    toggleReverseVideo,
+    setClipSpeed,
+    applyPictureInPicture,
+    rotateClip90,
+    flipClipHorizontal,
+    flipClipVertical,
     trimClipStart,
     trimClipEnd,
     moveClip,
     rippleDelete,
+    copySelection,
+    pasteClips,
     toggleTrackMute,
+    toggleTrackSolo,
     toggleTrackLock,
     toggleTrackHidden
   };
 }
-

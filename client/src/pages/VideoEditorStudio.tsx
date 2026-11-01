@@ -8,6 +8,7 @@ import { EditorInspector } from './videoEditor/EditorInspector';
 import { EditorExportModal } from './videoEditor/EditorExportModal';
 import { videoEditorApi } from '../services/videoEditorApi';
 import { MediaAsset } from '../../../shared/src/videoEditorTypes';
+import { AlertCircle, RotateCcw, X } from 'lucide-react';
 
 interface VideoEditorStudioProps {
   onOpenCaptionStudio?: () => void;
@@ -21,8 +22,11 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
     setProject,
     playhead,
     isPlaying,
+    selectedClipIds,
+    setSelectedClipIds,
     selectedClipId,
-    setSelectedClipId,
+    selectClip,
+    selectAllClips,
     selectedClip,
     selectedTrackId,
     setSelectedTrackId,
@@ -34,6 +38,9 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
     setActiveTool,
     isSaving,
     lastSavedText,
+    recoveryAvailable,
+    restoreFromBackup,
+    dismissRecovery,
     canUndo,
     canRedo,
     seek,
@@ -43,18 +50,31 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
     saveProject,
     updateProjectMeta,
     setAspectRatio,
+    setProjectBackground,
+    createVersionSnapshot,
     addAsset,
     addClipToTrack,
     addTextClip,
     updateClip,
     deleteClip,
+    deleteSelectedClips,
     duplicateClip,
     splitClipAtPlayhead,
+    freezeFrame,
+    toggleReverseVideo,
+    setClipSpeed,
+    applyPictureInPicture,
+    rotateClip90,
+    flipClipHorizontal,
+    flipClipVertical,
     trimClipStart,
     trimClipEnd,
     moveClip,
     rippleDelete,
+    copySelection,
+    pasteClips,
     toggleTrackMute,
+    toggleTrackSolo,
     toggleTrackLock,
     toggleTrackHidden
   } = useVideoEditor();
@@ -96,21 +116,62 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         splitClipAtPlayhead(selectedClipId || undefined);
       }
 
-      // Delete or Backspace: Delete selected clip
+      // F: Freeze frame
+      if (e.code === 'KeyF' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        freezeFrame(selectedClipId || undefined);
+      }
+
+      // V: Select tool
+      if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setActiveTool('select');
+      }
+
+      // Delete or Backspace: Delete selected clip(s)
       if (e.code === 'Delete' || e.code === 'Backspace') {
-        if (selectedClipId) {
+        if (e.shiftKey && selectedClipId) {
           e.preventDefault();
-          deleteClip(selectedClipId);
+          rippleDelete(selectedClipId);
+        } else if (selectedClipIds.length > 0) {
+          e.preventDefault();
+          deleteSelectedClips();
         }
       }
 
-      // Ctrl+Z or Cmd+Z: Undo
+      // Ctrl+D: Duplicate
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyD') {
+        if (selectedClipId) {
+          e.preventDefault();
+          duplicateClip(selectedClipId);
+        }
+      }
+
+      // Ctrl+C: Copy
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyC') {
+        e.preventDefault();
+        copySelection();
+      }
+
+      // Ctrl+V: Paste
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyV') {
+        e.preventDefault();
+        pasteClips();
+      }
+
+      // Ctrl+A: Select All
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
+        e.preventDefault();
+        selectAllClips();
+      }
+
+      // Ctrl+Z: Undo
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.code === 'KeyZ') {
         e.preventDefault();
         undo();
       }
 
-      // Ctrl+Y or Cmd+Y or Ctrl+Shift+Z: Redo
+      // Ctrl+Y or Ctrl+Shift+Z: Redo
       if (
         ((e.ctrlKey || e.metaKey) && e.code === 'KeyY') ||
         ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'KeyZ')
@@ -119,14 +180,16 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         redo();
       }
 
-      // Left / Right Arrow: Seek 1 sec
+      // Left / Right Arrow: Seek 1 sec (or 5s with Shift)
       if (e.code === 'ArrowLeft') {
         e.preventDefault();
-        seek(Math.max(0, playhead - 1));
+        const delta = e.shiftKey ? 5 : 1;
+        seek(Math.max(0, playhead - delta));
       }
       if (e.code === 'ArrowRight') {
         e.preventDefault();
-        seek(Math.min(project.duration, playhead + 1));
+        const delta = e.shiftKey ? 5 : 1;
+        seek(Math.min(project.duration, playhead + delta));
       }
     };
 
@@ -136,7 +199,16 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
     togglePlay,
     splitClipAtPlayhead,
     selectedClipId,
+    selectedClipIds,
     deleteClip,
+    deleteSelectedClips,
+    rippleDelete,
+    duplicateClip,
+    copySelection,
+    pasteClips,
+    selectAllClips,
+    freezeFrame,
+    setActiveTool,
     undo,
     redo,
     seek,
@@ -145,8 +217,37 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
   ]);
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-[1720px] space-y-3.5 font-sans select-none pb-12">
-      {/* 1. TOP TOOLBAR */}
+    <div className="flex flex-col gap-3.5 pb-20 select-none">
+      {/* Auto-Save Recovery Notice Banner */}
+      {recoveryAvailable && (
+        <div className="flex items-center justify-between rounded-xl border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 px-4 py-2.5 text-xs text-amber-800 dark:text-amber-200 shadow-sm animate-fade-in">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+            <span>
+              An unsaved session was recovered from your browser. Would you like to restore it?
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={restoreFromBackup}
+              className="flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-bold text-black hover:bg-amber-400"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Restore</span>
+            </button>
+            <button
+              type="button"
+              onClick={dismissRecovery}
+              className="rounded-lg p-1 text-amber-700 dark:text-amber-400 hover:bg-amber-200/50"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 1. TOP STUDIO BAR */}
       <EditorTopBar
         project={project}
         canUndo={canUndo}
@@ -210,8 +311,8 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         project={project}
         playhead={playhead}
         onSeek={seek}
-        selectedClipId={selectedClipId}
-        onSelectClip={setSelectedClipId}
+        selectedClipIds={selectedClipIds}
+        onSelectClip={selectClip}
         selectedTrackId={selectedTrackId}
         onSelectTrack={setSelectedTrackId}
         zoom={zoom}
@@ -222,14 +323,19 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         setActiveTool={setActiveTool}
         onSplitClip={splitClipAtPlayhead}
         onDeleteClip={deleteClip}
+        onDeleteSelected={deleteSelectedClips}
         onDuplicateClip={duplicateClip}
         onRippleDelete={rippleDelete}
+        onFreezeFrame={freezeFrame}
         onTrimClipStart={trimClipStart}
         onTrimClipEnd={trimClipEnd}
         onMoveClip={moveClip}
         onToggleTrackLock={toggleTrackLock}
         onToggleTrackMute={toggleTrackMute}
+        onToggleTrackSolo={toggleTrackSolo}
         onToggleTrackHidden={toggleTrackHidden}
+        onCopySelection={copySelection}
+        onPasteClips={pasteClips}
       />
 
       {/* 4. EXPORT MODAL */}
@@ -241,4 +347,3 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
     </div>
   );
 };
-

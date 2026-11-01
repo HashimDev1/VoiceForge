@@ -15,6 +15,7 @@ export interface MediaAsset {
   fps?: number;
   fileSize?: number;
   thumbnailUrl?: string;
+  isMissing?: boolean;
   createdAt: string;
 }
 
@@ -124,7 +125,8 @@ export interface Keyframe {
   time: number; // offset in seconds from clip start
   property: KeyframeProperty;
   value: number;
-  easing: 'linear' | 'ease_in' | 'ease_out' | 'ease_in_out';
+  easing: 'linear' | 'ease_in' | 'ease_out' | 'ease_in_out' | 'bezier';
+  bezier?: [number, number, number, number];
 }
 
 export interface TimelineClip {
@@ -140,6 +142,7 @@ export interface TimelineClip {
   url?: string;
   text?: string;
   captionPresetId?: string;
+  captionStyle?: any;
   transform: ClipTransform;
   speed: ClipSpeed;
   colorGrading: ColorGrading;
@@ -161,6 +164,20 @@ export interface TimelineTrack {
   order: number;
 }
 
+export interface ProjectBackground {
+  type: 'color' | 'blur' | 'image';
+  color?: string;
+  imageUrl?: string;
+  blurAmount?: number;
+}
+
+export interface ProjectVersionSnapshot {
+  id: string;
+  name: string;
+  timestamp: string;
+  clipsCount: number;
+}
+
 export interface EditorProject {
   id: string;
   name: string;
@@ -172,6 +189,8 @@ export interface EditorProject {
   tracks: TimelineTrack[];
   clips: TimelineClip[];
   assets: MediaAsset[];
+  background?: ProjectBackground;
+  versions?: ProjectVersionSnapshot[];
   createdAt: string;
   updatedAt: string;
   previewQuality: '360p' | '720p' | '1080p';
@@ -189,7 +208,7 @@ export interface EditorExportOptions {
 
 export interface EditorExportJob {
   id: string;
-  status: 'pending' | 'rendering' | 'completed' | 'failed';
+  status: 'pending' | 'rendering' | 'completed' | 'failed' | 'cancelled';
   progress: number;
   stage: string;
   outputUrl?: string;

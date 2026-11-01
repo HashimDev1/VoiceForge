@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { randomUUID } from 'crypto';
-import { execFile } from 'child_process';
+import { execFile, ChildProcess } from 'child_process';
 import util from 'util';
 import { config } from '../config';
 import { logger } from '../utils/logger';
@@ -17,14 +17,17 @@ import {
   ColorGrading
 } from '../../../shared/src/videoEditorTypes';
 import { createNewProject, ASPECT_RATIOS } from '../../../shared/src/videoEditorDefaults';
+import { evaluateClipKeyframes } from '../../../shared/src/videoEditorKeyframes';
 
 const execFileAsync = util.promisify(execFile);
 
 export class VideoEditorService {
   private static projectsDir = path.join(process.cwd(), 'data', 'editor_projects');
+  private static versionsDir = path.join(process.cwd(), 'data', 'editor_projects', 'versions');
   private static assetsDir = path.join(process.cwd(), 'uploads', 'editor_assets');
   private static exportsDir = path.join(process.cwd(), 'uploads', 'editor_exports');
   private static exportJobs: Map<string, EditorExportJob> = new Map();
+  private static activeExportProcesses: Map<string, ChildProcess> = new Map();
 
   /**
    * Initializes storage directories
@@ -33,6 +36,9 @@ export class VideoEditorService {
     try {
       if (!fs.existsSync(this.projectsDir)) {
         fs.mkdirSync(this.projectsDir, { recursive: true });
+      }
+      if (!fs.existsSync(this.versionsDir)) {
+        fs.mkdirSync(this.versionsDir, { recursive: true });
       }
       if (!fs.existsSync(this.assetsDir)) {
         fs.mkdirSync(this.assetsDir, { recursive: true });
@@ -55,7 +61,7 @@ export class VideoEditorService {
   }
 
   // ==========================================
-  // PROJECT CRUD
+  // PROJECT CRUD & RECOVERY & ASSET VERIFICATION
   // ==========================================
 
   public static async listProjects(): Promise<Array<{
@@ -85,9 +91,7 @@ export class VideoEditorService {
             clipsCount: p.clips?.length || 0,
             assetsCount: p.assets?.length || 0
           });
-        } catch {
-          // ignore corrupted files
-        }
+        } catch {}
       }
     }
 
@@ -101,7 +105,25 @@ export class VideoEditorService {
       throw new Error(`Project with ID ${id} not found.`);
     }
     const content = await fs.promises.readFile(filePath, 'utf8');
-    return JSON.parse(content) as EditorProject;
+    const project = JSON.parse(content) as EditorProject;
+
+    // Check media assets existence (Missing Media Detection)
+    await this.verifyProjectAssets(project);
+    return project;
+  }
+
+  public static async verifyProjectAssets(project: EditorProject): Promise<{ project: EditorProject; missingCount: number }> {
+    let missingCount = 0;
+    if (project.assets && Array.isArray(project.assets)) {
+      for (const asset of project.assets) {
+        const filename = path.basename(asset.url);
+        const fullPath = path.join(this.assetsDir, filename);
+        const exists = fs.existsSync(fullPath);
+        asset.isMissing = !exists;
+        if (!exists) missingCount++;
+      }
+    }
+    return { project, missingCount };
   }
 
   public static async saveProject(project: EditorProject): Promise<EditorProject> {
@@ -109,6 +131,13 @@ export class VideoEditorService {
     project.updatedAt = new Date().toISOString();
     const filePath = path.join(this.projectsDir, `${project.id}.json`);
     await fs.promises.writeFile(filePath, JSON.stringify(project, null, 2), 'utf8');
+
+    // Save project backup version snapshot (retaining last 10 versions)
+    try {
+      const versionFile = path.join(this.versionsDir, `${project.id}_${Date.now()}.json`);
+      await fs.promises.writeFile(versionFile, JSON.stringify(project, null, 2), 'utf8');
+    } catch {}
+
     return project;
   }
 
@@ -189,7 +218,7 @@ export class VideoEditorService {
     if (isImage) {
       duration = 5.0; // Default 5s still display
       try {
-        const ffprobe = await FFmpegHelper.getFfprobePath();
+        const ffprobe = await FFprobeHelperOrPath();
         const { stdout } = await execFileAsync(
           ffprobe,
           ['-v', 'error', '-show_entries', 'stream=width,height', '-of', 'json', filePath],
@@ -247,6 +276,7 @@ export class VideoEditorService {
       fps,
       fileSize: stats.size,
       thumbnailUrl,
+      isMissing: false,
       createdAt: new Date().toISOString()
     };
   }
@@ -257,6 +287,28 @@ export class VideoEditorService {
 
   public static getExportJob(jobId: string): EditorExportJob | undefined {
     return this.exportJobs.get(jobId);
+  }
+
+  /**
+   * Cancels a running export job and kills its child process
+   */
+  public static cancelExport(jobId: string): boolean {
+    const job = this.exportJobs.get(jobId);
+    if (!job) return false;
+
+    const child = this.activeExportProcesses.get(jobId);
+    if (child) {
+      try {
+        child.kill('SIGKILL');
+      } catch {}
+      this.activeExportProcesses.delete(jobId);
+    }
+
+    job.status = 'cancelled';
+    job.stage = 'Export cancelled by user.';
+    job.progress = 0;
+    logger.info(`Export job ${jobId} was cancelled.`);
+    return true;
   }
 
   public static async startExport(
@@ -278,7 +330,7 @@ export class VideoEditorService {
     this.executeExport(jobId, project, options).catch((err) => {
       logger.error(`Export failed for job ${jobId}:`, err);
       const j = this.exportJobs.get(jobId);
-      if (j) {
+      if (j && j.status !== 'cancelled') {
         j.status = 'failed';
         j.error = err.message || 'Unknown export rendering error';
       }
@@ -326,19 +378,38 @@ export class VideoEditorService {
       job.progress = 15;
       job.stage = 'Processing media layers & transforms...';
 
-      // Separate video clips and audio clips
-      const videoClips = project.clips.filter((c) => c.type === 'video' || c.type === 'image' || c.type === 'overlay');
-      const audioClips = project.clips.filter((c) => c.type === 'audio');
+      // Check track solo/mute status
+      const hasSoloTrack = project.tracks.some((t) => t.solo);
+      const trackMap = new Map<string, TimelineTrack>();
+      project.tracks.forEach((t) => trackMap.set(t.id, t));
 
-      // Sort clips by start time
-      videoClips.sort((a, b) => a.start - b.start);
-      audioClips.sort((a, b) => a.start - b.start);
+      // Filter visible video/visual clips
+      const videoClips = project.clips.filter((c) => {
+        const track = trackMap.get(c.trackId);
+        if (track?.hidden) return false;
+        return c.type === 'video' || c.type === 'image' || c.type === 'overlay' || c.type === 'text' || c.type === 'caption';
+      });
+
+      // Filter audible audio clips
+      const audioClips = project.clips.filter((c) => {
+        const track = trackMap.get(c.trackId);
+        if (track?.muted) return false;
+        if (hasSoloTrack && !track?.solo) return false;
+        return c.type === 'audio' || c.type === 'video';
+      });
+
+      // Sort clips by start time and track order
+      videoClips.sort((a, b) => {
+        const orderA = trackMap.get(a.trackId)?.order ?? 0;
+        const orderB = trackMap.get(b.trackId)?.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.start - b.start;
+      });
 
       const totalDuration = Math.max(1, project.duration || 10);
 
-      // If no video clips, generate background color canvas
+      // If no visual clips, generate simple background color video
       if (videoClips.length === 0) {
-        // Simple blank slate video
         await execFileAsync(
           ffmpeg,
           [
@@ -361,14 +432,29 @@ export class VideoEditorService {
         const filterComplex: string[] = [];
         let inputIndex = 0;
 
-        // Base canvas input 0: Black background of exact duration and resolution
-        inputArgs.push('-f', 'lavfi', '-i', `color=c=black:s=${targetWidth}x${targetHeight}:d=${totalDuration}:r=${project.fps || 30}`);
+        // Base canvas input 0: Black or colored background
+        const bgColor = project.background?.color ? project.background.color.replace('#', '') : 'black';
+        inputArgs.push('-f', 'lavfi', '-i', `color=c=${bgColor}:s=${targetWidth}x${targetHeight}:d=${totalDuration}:r=${project.fps || 30}`);
         let currentVideoOut = '0:v';
         inputIndex = 1;
 
         // Track inputs and build layer overlays
         for (let i = 0; i < videoClips.length; i++) {
+          if ((this.exportJobs.get(jobId)?.status as string) === 'cancelled') return;
+
           const clip = videoClips[i];
+
+          // Text / Caption clip handling (using drawtext or ASS)
+          if (clip.type === 'text' || clip.type === 'caption') {
+            const rawText = (clip.text || 'Subtitle').replace(/['":\\]/g, ' ');
+            const nextCanvas = `canvas_v${i}`;
+            const textY = clip.transform?.y ? Math.round(targetHeight / 2 + clip.transform.y) : Math.round(targetHeight * 0.8);
+            const textFilter = `[${currentVideoOut}]drawtext=text='${rawText}':fontsize=44:fontcolor=white:borderw=3:bordercolor=black:x=(w-text_w)/2:y=${textY}:enable='between(t,${clip.start},${clip.start + clip.duration})'[${nextCanvas}];`;
+            filterComplex.push(textFilter);
+            currentVideoOut = nextCanvas;
+            continue;
+          }
+
           const asset = project.assets.find((a) => a.id === clip.assetId);
           let localFilePath = '';
 
@@ -393,8 +479,10 @@ export class VideoEditorService {
             // Step 1: Trim clip
             let clipChain = `[${clipInput}:v]trim=start=${sourceStart}:duration=${sourceDuration},setpts=PTS-STARTPTS`;
 
-            // Step 2: Speed adjustment
-            if (speed !== 1) {
+            // Step 2: Speed adjustment or Reverse
+            if (clip.speed?.reverse) {
+              clipChain += `,reverse`;
+            } else if (speed !== 1) {
               clipChain += `,setpts=(1/${speed})*PTS`;
             }
 
@@ -407,18 +495,32 @@ export class VideoEditorService {
               const g = cg.gamma || 1;
               clipChain += `,eq=brightness=${b.toFixed(2)}:contrast=${c.toFixed(2)}:saturation=${s.toFixed(2)}:gamma=${g.toFixed(2)}`;
 
-              if (cg.temperature !== 0) {
-                const kelvin = Math.round(6500 + (cg.temperature || 0) * 25);
+              if (cg.temperature && cg.temperature !== 0) {
+                const kelvin = Math.round(6500 + cg.temperature * 25);
                 clipChain += `,colortemperature=temperature=${kelvin}`;
               }
             }
 
-            // Step 4: Scale to canvas according to fitMode and transform.scale
-            const scaleFactor = clip.transform?.scale || 1;
+            // Step 4: Crop
+            const tf = clip.transform;
+            if (tf && (tf.cropTop || tf.cropBottom || tf.cropLeft || tf.cropRight)) {
+              const top = tf.cropTop || 0;
+              const bottom = tf.cropBottom || 0;
+              const left = tf.cropLeft || 0;
+              const right = tf.cropRight || 0;
+              clipChain += `,crop=iw*(1-${(left + right) / 100}):ih*(1-${(top + bottom) / 100}):iw*${left / 100}:ih*${top / 100}`;
+            }
+
+            // Step 5: Flips
+            if (tf?.flipH) clipChain += `,hflip`;
+            if (tf?.flipV) clipChain += `,vflip`;
+
+            // Step 6: Scale to canvas according to fitMode and transform.scale
+            const scaleFactor = tf?.scale || 1;
             clipChain += `,scale=w='min(${targetWidth},iw*${scaleFactor})':h='min(${targetHeight},ih*${scaleFactor})':force_original_aspect_ratio=decrease`;
 
-            // Step 5: Format for overlay with alpha
-            const opacity = clip.transform?.opacity ?? 1;
+            // Step 7: Format for overlay with alpha
+            const opacity = tf?.opacity ?? 1;
             if (opacity < 1) {
               clipChain += `,format=yuva420p,colorchannelmixer=aa=${opacity.toFixed(2)}`;
             }
@@ -426,10 +528,10 @@ export class VideoEditorService {
             const processedClipTag = `proc_v${i}`;
             filterComplex.push(`${clipChain}[${processedClipTag}];`);
 
-            // Step 6: Overlay onto base canvas at clip.start
+            // Step 8: Overlay onto base canvas at clip.start
             const nextCanvas = `canvas_v${i}`;
-            const posX = Math.round((targetWidth - targetWidth * scaleFactor) / 2 + (clip.transform?.x || 0));
-            const posY = Math.round((targetHeight - targetHeight * scaleFactor) / 2 + (clip.transform?.y || 0));
+            const posX = Math.round((targetWidth - targetWidth * scaleFactor) / 2 + (tf?.x || 0));
+            const posY = Math.round((targetHeight - targetHeight * scaleFactor) / 2 + (tf?.y || 0));
 
             const overlayStr = `[${currentVideoOut}][${processedClipTag}]overlay=x=${posX}:y=${posY}:enable='between(t,${clip.start},${clip.start + clip.duration})'[${nextCanvas}];`;
             filterComplex.push(overlayStr);
@@ -444,6 +546,8 @@ export class VideoEditorService {
         const audioInputs: string[] = [];
 
         for (let i = 0; i < audioClips.length; i++) {
+          if ((this.exportJobs.get(jobId)?.status as string) === 'cancelled') return;
+
           const aClip = audioClips[i];
           const asset = project.assets.find((a) => a.id === aClip.assetId);
           let localAudioPath = '';
@@ -467,6 +571,16 @@ export class VideoEditorService {
             const aDuration = aClip.duration;
 
             let aChain = `[${aIndex}:a]atrim=start=${aSourceStart}:duration=${aDuration},asetpts=PTS-STARTPTS,volume=${vol}`;
+
+            // Fade in / Fade out
+            if (aClip.audio?.fadeInDuration && aClip.audio.fadeInDuration > 0) {
+              aChain += `,afade=t=in:ss=0:d=${aClip.audio.fadeInDuration}`;
+            }
+            if (aClip.audio?.fadeOutDuration && aClip.audio.fadeOutDuration > 0) {
+              const startFade = Math.max(0, aDuration - aClip.audio.fadeOutDuration);
+              aChain += `,afade=t=out:st=${startFade}:d=${aClip.audio.fadeOutDuration}`;
+            }
+
             if (delayMs > 0) {
               aChain += `,adelay=${delayMs}|${delayMs}`;
             }
@@ -496,7 +610,6 @@ export class VideoEditorService {
         if (audioOutTag) {
           finalArgs.push('-map', `[${audioOutTag}]`, '-c:a', 'aac', '-b:a', options.audioBitrate || '192k');
         } else {
-          // Silent audio track so output is valid MP4 with audio stream
           finalArgs.push('-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo', '-shortest', '-c:a', 'aac', '-b:a', '128k');
         }
 
@@ -510,9 +623,26 @@ export class VideoEditorService {
           outputPath
         );
 
-        logger.info(`Running editor export with ${videoClips.length} video clips & ${audioClips.length} audio clips...`);
-        await execFileAsync(ffmpeg, finalArgs, { maxBuffer: 50 * 1024 * 1024 });
+        logger.info(`Running editor export with ${videoClips.length} visual clips & ${audioClips.length} audio clips...`);
+
+        // Track process for cancellation support
+        const child = execFile(ffmpeg, finalArgs, { maxBuffer: 50 * 1024 * 1024 });
+        this.activeExportProcesses.set(jobId, child);
+
+        await new Promise<void>((resolve, reject) => {
+          child.on('close', (code) => {
+            this.activeExportProcesses.delete(jobId);
+            if (code === 0) resolve();
+            else reject(new Error(`FFmpeg exited with error code ${code}`));
+          });
+          child.on('error', (err) => {
+            this.activeExportProcesses.delete(jobId);
+            reject(err);
+          });
+        });
       }
+
+      if ((this.exportJobs.get(jobId)?.status as string) === 'cancelled') return;
 
       job.progress = 100;
       job.status = 'completed';
@@ -521,12 +651,18 @@ export class VideoEditorService {
       job.filename = outputFilename;
       logger.info(`Export completed: ${outputPath}`);
     } catch (err: any) {
-      job.status = 'failed';
-      job.error = err.message || 'Export failed';
+      if ((this.exportJobs.get(jobId)?.status as string) !== 'cancelled') {
+        job.status = 'failed';
+        job.error = err.message || 'Export failed';
+      }
       throw err;
     } finally {
+      this.activeExportProcesses.delete(jobId);
       await fs.promises.rm(tempDir, { recursive: true, force: true }).catch(() => {});
     }
   }
 }
 
+async function FFprobeHelperOrPath(): Promise<string> {
+  return await FFmpegHelper.getFfprobePath();
+}

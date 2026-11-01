@@ -183,6 +183,25 @@ export const EditorExportModal: React.FC<EditorExportModalProps> = ({
                   style={{ width: `${job?.progress || 10}%` }}
                 />
               </div>
+
+              {/* Cancel Button */}
+              {job && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (job?.id) {
+                        await videoEditorApi.cancelExport(job.id);
+                        setIsExporting(false);
+                        setErrorMessage('Export was cancelled by user.');
+                      }
+                    }}
+                    className="rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-4 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-100"
+                  >
+                    Cancel Export
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             /* Export Settings Form */

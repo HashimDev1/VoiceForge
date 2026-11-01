@@ -81,6 +81,16 @@ router.post('/projects/:id/duplicate', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/projects/:id/verify-assets', async (req: Request, res: Response) => {
+  try {
+    const project = await VideoEditorService.getProject(req.params.id);
+    const result = await VideoEditorService.verifyProjectAssets(project);
+    res.json({ success: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ==========================================
 // MEDIA UPLOAD & ASSETS
 // ==========================================
@@ -134,6 +144,11 @@ router.get('/export/status/:jobId', (req: Request, res: Response) => {
   res.json({ success: true, job });
 });
 
+router.post('/export/cancel/:jobId', (req: Request, res: Response) => {
+  const cancelled = VideoEditorService.cancelExport(req.params.jobId);
+  res.json({ success: cancelled });
+});
+
 router.get('/exports/:filename', (req: Request, res: Response) => {
   const filePath = path.join(VideoEditorService.getExportsDir(), req.params.filename);
   if (!fs.existsSync(filePath)) {
@@ -143,4 +158,3 @@ router.get('/exports/:filename', (req: Request, res: Response) => {
 });
 
 export default router;
-

@@ -10,13 +10,20 @@ import {
   VolumeX,
   ShieldAlert,
   Move,
-  Crop
+  Crop,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import {
   EditorProject,
   TimelineClip,
-  AspectRatio
+  AspectRatio,
+  TimelineTrack
 } from '../../../../shared/src/videoEditorTypes';
+import {
+  evaluateClipKeyframes,
+  EvaluatedTransformAndAudio
+} from '../../../../shared/src/videoEditorKeyframes';
 
 interface EditorPreviewCanvasProps {
   project: EditorProject;
@@ -39,7 +46,13 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
 }) => {
   const [showSafeZones, setShowSafeZones] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // References to active media elements for real-time playhead synchronization
+  const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
+  const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
+
   const dragRef = useRef<{
     startX: number;
     startY: number;
@@ -49,15 +62,37 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
     mode: 'move' | 'scale';
   } | null>(null);
 
-  // Active clips at current playhead position
-  const activeClips = project.clips
-    .filter((c) => playhead >= c.start && playhead <= c.start + c.duration)
+  // Check if any track is soloed
+  const hasSoloTrack = project.tracks.some((t) => t.solo);
+
+  // Filter visible active tracks
+  const trackMap = new Map<string, TimelineTrack>();
+  project.tracks.forEach((t) => trackMap.set(t.id, t));
+
+  // Visual clips at current playhead position (not hidden)
+  const activeVisualClips = project.clips
+    .filter((c) => {
+      const track = trackMap.get(c.trackId);
+      if (track?.hidden) return false;
+      return (
+        playhead >= c.start &&
+        playhead <= c.start + c.duration &&
+        (c.type === 'video' || c.type === 'image' || c.type === 'text' || c.type === 'caption' || c.type === 'overlay')
+      );
+    })
     .sort((a, b) => {
-      // Order by track order
-      const trackA = project.tracks.find((t) => t.id === a.trackId)?.order ?? 0;
-      const trackB = project.tracks.find((t) => t.id === b.trackId)?.order ?? 0;
+      const trackA = trackMap.get(a.trackId)?.order ?? 0;
+      const trackB = trackMap.get(b.trackId)?.order ?? 0;
       return trackA - trackB;
     });
+
+  // Audio clips and video audio at current playhead position
+  const activeAudioClips = project.clips.filter((c) => {
+    const track = trackMap.get(c.trackId);
+    if (track?.muted) return false;
+    if (hasSoloTrack && !track?.solo) return false;
+    return playhead >= c.start && playhead <= c.start + c.duration;
+  });
 
   // Aspect ratio canvas sizing
   const getAspectRatioDimensions = (ratio: AspectRatio) => {
@@ -67,7 +102,7 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
       case '16:9':
         return { aspect: '16/9', maxH: '480px', maxW: '853px' };
       case '1:1':
-        return { aspect: '1/1', maxH: '500px', maxW: '500px' };
+        return { aspect: '1/1', maxH: '490px', maxW: '490px' };
       case '4:5':
         return { aspect: '4/5', maxH: '520px', maxW: '416px' };
       default:
@@ -84,6 +119,81 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
     const ms = Math.floor((s % 1) * 100);
     return `${String(m).padStart(2, '0')}:${String(remS).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
   };
+
+  // Synchronize active HTMLVideoElements and HTMLAudioElements with the playhead
+  useEffect(() => {
+    activeVisualClips.forEach((clip) => {
+      if (clip.type === 'video') {
+        const vEl = videoRefs.current.get(clip.id);
+        if (vEl) {
+          const speed = Math.max(0.25, clip.speed?.speed || 1);
+          const localOffset = playhead - clip.start;
+          let targetTime = (clip.sourceStart || 0) + localOffset * speed;
+          if (clip.speed?.reverse) {
+            targetTime = (clip.sourceStart || 0) + (clip.duration - localOffset) * speed;
+          }
+          if (clip.speed?.isFreezeFrame) {
+            targetTime = clip.sourceStart || 0;
+          }
+
+          if (Math.abs(vEl.currentTime - targetTime) > 0.15) {
+            try {
+              vEl.currentTime = targetTime;
+            } catch {}
+          }
+
+          if (isPlaying) {
+            vEl.playbackRate = clip.speed?.isFreezeFrame ? 0 : speed;
+            vEl.play().catch(() => {});
+          } else {
+            vEl.pause();
+          }
+        }
+      }
+    });
+
+    // Handle audio tracks and audio playback
+    activeAudioClips.forEach((clip) => {
+      const aEl = audioRefs.current.get(clip.id);
+      if (aEl) {
+        const speed = Math.max(0.25, clip.speed?.speed || 1);
+        const localOffset = playhead - clip.start;
+        const targetTime = (clip.sourceStart || 0) + localOffset * speed;
+
+        if (Math.abs(aEl.currentTime - targetTime) > 0.15) {
+          try {
+            aEl.currentTime = targetTime;
+          } catch {}
+        }
+
+        const evalTransform = evaluateClipKeyframes(clip, playhead);
+        const track = trackMap.get(clip.trackId);
+        const trackMuted = track?.muted || isMuted;
+        const soloSilenced = hasSoloTrack && !track?.solo;
+        const finalVol = trackMuted || soloSilenced ? 0 : Math.max(0, Math.min(1, evalTransform.volume / 100));
+
+        aEl.volume = finalVol;
+        if (isPlaying) {
+          aEl.playbackRate = speed;
+          aEl.play().catch(() => {});
+        } else {
+          aEl.pause();
+        }
+      }
+    });
+
+    // Pause any clips that have exited active window
+    videoRefs.current.forEach((el, id) => {
+      if (!activeVisualClips.some((c) => c.id === id)) {
+        el.pause();
+      }
+    });
+    audioRefs.current.forEach((el, id) => {
+      if (!activeAudioClips.some((c) => c.id === id)) {
+        el.pause();
+      }
+    });
+  }, [playhead, isPlaying, isMuted, activeVisualClips, activeAudioClips, hasSoloTrack]);
 
   // On-screen bounding box interactive drag handling
   const handlePointerDown = (e: React.PointerEvent, mode: 'move' | 'scale') => {
@@ -119,7 +229,7 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
       });
     } else if (mode === 'scale') {
       const scaleDelta = (deltaX + deltaY) * 0.005;
-      const nextScale = Math.max(0.2, Math.min(3.5, Number((origScale + scaleDelta).toFixed(2))));
+      const nextScale = Math.max(0.15, Math.min(4.0, Number((origScale + scaleDelta).toFixed(2))));
       onUpdateClip(selectedClip.id, {
         transform: {
           ...selectedClip.transform,
@@ -138,6 +248,9 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
     }
   };
 
+  // Find topmost active video for blurred background if project.background.type === 'blur'
+  const primaryVideoClip = activeVisualClips.find((c) => c.type === 'video');
+
   return (
     <div
       ref={containerRef}
@@ -150,11 +263,30 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
             VIEWPORT
           </span>
           <span className="rounded-full bg-slate-100 dark:bg-studio-800 border border-studio-border px-2 py-0.5 text-[9px] font-mono font-bold text-slate-600 dark:text-slate-300">
-            {project.aspectRatio} · {project.fps} FPS
+            {project.aspectRatio} · {project.fps} FPS · {formatTimecode(playhead)}
           </span>
+          {activeVisualClips.length > 0 && (
+            <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+              {activeVisualClips.length} active layer{activeVisualClips.length > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Mute Preview Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsMuted((m) => !m)}
+            title={isMuted ? 'Unmute Preview Audio' : 'Mute Preview Audio'}
+            className={`p-1.5 rounded-lg border border-studio-border transition cursor-pointer ${
+              isMuted
+                ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-500 border-rose-400'
+                : 'bg-slate-50 dark:bg-studio-950 text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+          </button>
+
           {/* Safe Zones Toggle */}
           <button
             type="button"
@@ -198,58 +330,135 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
             maxHeight: dims.maxH,
             maxWidth: dims.maxW,
             width: '100%',
-            height: '100%'
+            height: '100%',
+            backgroundColor: project.background?.type === 'color' ? project.background.color || '#000000' : '#000000'
           }}
         >
+          {/* Background Layer: Blurred Duplicate Video Background (CapCut style) */}
+          {project.background?.type === 'blur' && primaryVideoClip?.url && (
+            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-60">
+              <video
+                src={primaryVideoClip.url}
+                className="h-full w-full object-cover blur-2xl scale-125"
+                muted
+              />
+            </div>
+          )}
+
           {/* Active Visual Layers */}
-          {activeClips.map((clip) => {
+          {activeVisualClips.map((clip) => {
             const isSel = selectedClip?.id === clip.id;
             const tf = clip.transform || {};
             const cg = clip.colorGrading || {};
 
-            // Compute CSS Filter String
-            const b = 1 + (cg.brightness || 0) / 100;
+            // Dynamic keyframe & transition evaluation
+            const evalTransform = evaluateClipKeyframes(clip, playhead);
+
+            // Compute CSS Filters
+            const b = 1 + (cg.brightness || 0) / 100 + evalTransform.transitionFlash;
             const c = 1 + (cg.contrast || 0) / 100;
             const s = 1 + (cg.saturation || 0) / 100;
             const hue = cg.hue || 0;
-            const filterStr = `brightness(${b}) contrast(${c}) saturate(${s}) hue-rotate(${hue}deg)`;
+            const blurVal = evalTransform.transitionBlurPx;
 
-            const posX = tf.x || 0;
-            const posY = tf.y || 0;
-            const scale = tf.scale || 1;
-            const rotation = tf.rotation || 0;
-            const opacity = tf.opacity ?? 1;
+            let filterStr = `brightness(${b}) contrast(${c}) saturate(${s}) hue-rotate(${hue}deg)`;
+            if (blurVal > 0) {
+              filterStr += ` blur(${blurVal}px)`;
+            }
+
+            // Transform matrix
+            const finalScale = evalTransform.scale * evalTransform.transitionScale;
+            const finalOpacity = evalTransform.opacity * evalTransform.transitionOpacity;
+            const finalX = evalTransform.x + evalTransform.transitionTranslateX;
+            const finalY = evalTransform.y + evalTransform.transitionTranslateY;
+            const scaleX = tf.flipH ? -finalScale : finalScale;
+            const scaleY = tf.flipV ? -finalScale : finalScale;
+
+            // Crop Inset
+            const cropTop = tf.cropTop || 0;
+            const cropRight = tf.cropRight || 0;
+            const cropBottom = tf.cropBottom || 0;
+            const cropLeft = tf.cropLeft || 0;
+            const hasCrop = cropTop > 0 || cropRight > 0 || cropBottom > 0 || cropLeft > 0;
+            const clipPath = hasCrop
+              ? `inset(${cropTop}% ${cropRight}% ${cropBottom}% ${cropLeft}%)`
+              : undefined;
 
             return (
               <div
                 key={clip.id}
                 className="absolute inset-0 flex items-center justify-center pointer-events-none"
                 style={{
-                  transform: `translate(${posX}px, ${posY}px) scale(${scale}) rotate(${rotation}deg)`,
-                  opacity,
-                  filter: filterStr
+                  transform: `translate(${finalX}px, ${finalY}px) scale(${scaleX}, ${scaleY}) rotate(${evalTransform.rotation}deg)`,
+                  opacity: Math.max(0, Math.min(1, finalOpacity)),
+                  filter: filterStr,
+                  clipPath
                 }}
               >
-                {/* Media Element */}
+                {/* Media Element: Video */}
                 {clip.type === 'video' && clip.url ? (
                   <video
+                    ref={(el) => {
+                      if (el) videoRefs.current.set(clip.id, el);
+                      else videoRefs.current.delete(clip.id);
+                    }}
                     src={clip.url}
-                    className="h-full w-full object-contain"
+                    className={`h-full w-full ${tf.fitMode === 'fill' ? 'object-cover' : 'object-contain'}`}
+                    playsInline
                     muted
                   />
                 ) : clip.type === 'image' && clip.url ? (
-                  <img src={clip.url} alt={clip.name} className="h-full w-full object-contain" />
-                ) : clip.type === 'text' ? (
-                  <div className="px-4 py-2 font-black text-2xl text-white text-center drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+                  <img
+                    src={clip.url}
+                    alt={clip.name}
+                    className={`h-full w-full ${tf.fitMode === 'fill' ? 'object-cover' : 'object-contain'}`}
+                  />
+                ) : clip.type === 'text' || clip.type === 'caption' ? (
+                  <div
+                    className="px-6 py-3 font-sans font-black text-2xl text-white text-center rounded-xl select-none"
+                    style={{
+                      textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.7)',
+                      letterSpacing: '0.05em',
+                      backgroundColor: clip.captionPresetId?.includes('pill') ? 'rgba(0,0,0,0.6)' : undefined
+                    }}
+                  >
                     {clip.text}
                   </div>
                 ) : null}
+
+                {/* Vignette Overlay if enabled on clip */}
+                {clip.effects?.some((e) => e.type === 'vignette' && e.enabled) && (
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: 'radial-gradient(circle, transparent 40%, rgba(0,0,0,0.75) 100%)'
+                    }}
+                  />
+                )}
               </div>
             );
           })}
 
+          {/* Hidden Audio Elements for Multitrack Audio Mixing */}
+          {activeAudioClips.map((clip) => {
+            if (clip.type === 'audio' && clip.url) {
+              return (
+                <audio
+                  key={clip.id}
+                  ref={(el) => {
+                    if (el) audioRefs.current.set(clip.id, el);
+                    else audioRefs.current.delete(clip.id);
+                  }}
+                  src={clip.url}
+                  preload="auto"
+                />
+              );
+            }
+            return null;
+          })}
+
           {/* Interactive Bounding Box for Selected Clip */}
-          {selectedClip && (
+          {selectedClip && activeVisualClips.some((c) => c.id === selectedClip.id) && (
             <div
               onPointerDown={(e) => handlePointerDown(e, 'move')}
               onPointerMove={handlePointerMove}
@@ -268,6 +477,12 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
                 <span>X: {selectedClip.transform?.x || 0}</span>
                 <span>·</span>
                 <span>Y: {selectedClip.transform?.y || 0}</span>
+                {selectedClip.transform?.rotation ? (
+                  <>
+                    <span>·</span>
+                    <span>{selectedClip.transform.rotation}°</span>
+                  </>
+                ) : null}
               </div>
 
               {/* 4 Corner Resize Handles */}
@@ -275,7 +490,7 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
                 <div
                   key={pos}
                   onPointerDown={(e) => handlePointerDown(e, 'scale')}
-                  className={`absolute h-3 w-3 rounded-full bg-white border-2 border-indigo-600 shadow cursor-nwse-resize ${
+                  className={`absolute h-3.5 w-3.5 rounded-full bg-white border-2 border-indigo-600 shadow cursor-nwse-resize ${
                     pos === 'tl'
                       ? '-top-1.5 -left-1.5'
                       : pos === 'tr'
@@ -302,25 +517,24 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
               </div>
             </div>
           )}
-
-          {/* Empty Canvas Notice */}
-          {activeClips.length === 0 && (
-            <div className="p-4 text-center text-xs text-slate-500 font-mono">
-              [Canvas Ready · Add media to timeline]
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Transport Deck Controls */}
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 px-4 py-2.5 transition-colors">
-        {/* Playback Buttons */}
-        <div className="flex items-center gap-1.5">
+      {/* Bottom Transport Deck */}
+      <div className="mt-3 flex items-center justify-between border-t border-studio-border pt-2.5">
+        <div className="flex items-center gap-1 font-mono text-xs font-bold">
+          <span className="text-indigo-600 dark:text-indigo-400">{formatTimecode(playhead)}</span>
+          <span className="text-slate-400">/</span>
+          <span className="text-slate-500">{formatTimecode(project.duration)}</span>
+        </div>
+
+        {/* Playback Controls */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => onSeek(Math.max(0, playhead - 1))}
-            title="Step back 1 second (←)"
-            className="rounded-lg p-1.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-studio-800 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+            title="Rewind 1s"
+            className="p-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white cursor-pointer"
           >
             <RotateCcw className="h-4 w-4" />
           </button>
@@ -329,51 +543,26 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
             type="button"
             onClick={onTogglePlay}
             title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-black text-white dark:bg-white dark:text-black shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="flex items-center justify-center h-10 w-10 rounded-full bg-black dark:bg-white text-white dark:text-black shadow hover:scale-105 active:scale-95 transition cursor-pointer"
           >
-            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
+            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
           </button>
 
           <button
             type="button"
             onClick={() => onSeek(Math.min(project.duration, playhead + 1))}
-            title="Step forward 1 second (→)"
-            className="rounded-lg p-1.5 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-studio-800 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+            title="Forward 1s"
+            className="p-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white cursor-pointer"
           >
             <RotateCw className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Playhead Timecode */}
-        <div className="flex items-center gap-2 font-mono text-xs">
-          <span className="font-bold text-indigo-600 dark:text-indigo-400">
-            {formatTimecode(playhead)}
-          </span>
-          <span className="text-slate-400 dark:text-slate-600">/</span>
-          <span className="text-slate-600 dark:text-slate-400 font-semibold">
-            {formatTimecode(project.duration)}
-          </span>
-        </div>
-
-        {/* Jump Controls */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onSeek(0)}
-            className="rounded-lg border border-studio-border bg-white dark:bg-studio-900 px-2 py-1 font-mono text-[11px] text-slate-700 dark:text-slate-300 hover:bg-slate-100 cursor-pointer shadow-sm"
-          >
-            Start
-          </button>
-          <button
-            type="button"
-            onClick={() => onSeek(project.duration)}
-            className="rounded-lg border border-studio-border bg-white dark:bg-studio-900 px-2 py-1 font-mono text-[11px] text-slate-700 dark:text-slate-300 hover:bg-slate-100 cursor-pointer shadow-sm"
-          >
-            End
-          </button>
+        {/* Quality indicator */}
+        <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
+          <span>Real-time Canvas</span>
         </div>
       </div>
     </div>
   );
 };
-
