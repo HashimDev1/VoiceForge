@@ -25,6 +25,7 @@ try {
   execSync(`${tsNodeCmd} tests/captionSpacingAndTheme.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/videoEditor.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/motionGraphics.test.ts`, { stdio: 'inherit' });
+  execSync(`${tsNodeCmd} tests/documentaryWorkflow.test.ts`, { stdio: 'inherit' });
   console.log('\n✅ ALL UNIT TESTS PASSED SUCCESSFULLY!');
 } catch (err) {
   console.error('\n❌ TEST RUNNER FAILED:', err.message);

@@ -1,0 +1,137 @@
+[
+  {
+    "id": "doc_proj_1793569154112_default",
+    "name": "Chronicles of the Ancient Silk Road",
+    "synopsis": "An investigative historical journey through the trade routes and forgotten fortresses that connected East and West.",
+    "tone": "cinematic_historical",
+    "aspectRatio": "16:9",
+    "scenes": [
+      {
+        "id": "scene_1_intro",
+        "sceneNumber": 1,
+        "title": "Prologue: Whispers in the Dust",
+        "narrationText": "Across four thousand miles of windswept desert, an ancient network of routes connected empires and reshaped the destiny of mankind.",
+        "visualInstruction": "Cinematic wide aerial drone shot drifting over sprawling mountain passes and sunlit desert ruins.",
+        "sceneDescription": "Epic historical overture setting the grand scale of the documentary.",
+        "duration": 5.5,
+        "motionGraphic": {
+          "enabled": true,
+          "templateId": "cinematic_master_title",
+          "type": "opening",
+          "titleDesign": {
+            "mainText": "SILK ROAD CHRONICLES",
+            "subtitleText": "AN INVESTIGATIVE HISTORICAL JOURNEY",
+            "fontFamily": "Cinzel",
+            "fontSize": 52,
+            "fontWeight": 800,
+            "letterSpacing": 8,
+            "lineHeight": 1.2,
+            "textAlign": "center",
+            "textColor": "#E2E8F0",
+            "subtitleFontFamily": "Inter",
+            "subtitleFontSize": 16,
+            "subtitleColor": "#F59E0B",
+            "animation": {
+              "type": "tracking_reveal",
+              "inDuration": 0.8,
+              "outDuration": 0.5,
+              "delay": 0,
+              "easing": "ease_out"
+            }
+          },
+          "startTimeOffset": 0.5,
+          "duration": 4.5
+        }
+      },
+      {
+        "id": "scene_2_discovery",
+        "sceneNumber": 2,
+        "title": "The Great Oasis of Samarkand",
+        "narrationText": "At the heart of the journey lay Samarkand, a city of turquoise domes, scholars, and merchants whose wealth rivaled the greatest kingdoms of Europe.",
+        "visualInstruction": "Slow tracking shot showcasing monumental archways, intricate Islamic calligraphy, and dusty desert roads.",
+        "sceneDescription": "Focus on architectural wonder, wealth, and cultural crossroads.",
+        "duration": 6,
+        "motionGraphic": {
+          "enabled": true,
+          "templateId": "documentary_lower_third",
+          "type": "lower_third",
+          "titleDesign": {
+            "mainText": "SAMARKAND, CENTRAL ASIA",
+            "subtitleText": "Trading Crossroads • 14th Century",
+            "fontFamily": "Montserrat",
+            "fontSize": 24,
+            "fontWeight": 800,
+            "letterSpacing": 2,
+            "lineHeight": 1.2,
+            "textAlign": "left",
+            "textColor": "#FFFFFF",
+            "subtitleFontFamily": "Inter",
+            "subtitleFontSize": 13,
+            "subtitleColor": "#CBD5E1",
+            "backgroundBox": {
+              "enabled": true,
+              "color": "#0F172A",
+              "opacity": 0.85,
+              "paddingX": 18,
+              "paddingY": 10,
+              "borderRadius": 8
+            },
+            "animation": {
+              "type": "slide",
+              "inDuration": 0.6,
+              "outDuration": 0.4,
+              "delay": 0,
+              "easing": "ease_out",
+              "direction": "left"
+            }
+          },
+          "startTimeOffset": 1,
+          "duration": 4
+        }
+      },
+      {
+        "id": "scene_3_legacy",
+        "sceneNumber": 3,
+        "title": "Epilogue: Legacy of Knowledge",
+        "narrationText": "Though the ancient trade routes fell silent centuries ago, the ideas, paper, and mathematics they carried forward continue to define our modern world.",
+        "visualInstruction": "Sun setting over ancient ruins, with golden hour dust motes floating into twilight.",
+        "sceneDescription": "Contemplative conclusion highlighting enduring human achievement.",
+        "duration": 5.5,
+        "motionGraphic": {
+          "enabled": true,
+          "templateId": "modern_lower_third",
+          "type": "heading",
+          "titleDesign": {
+            "mainText": "THE ENDURING LEGACY",
+            "subtitleText": "VoiceForge Studio AI Documentary Production",
+            "fontFamily": "Inter",
+            "fontSize": 26,
+            "fontWeight": 700,
+            "letterSpacing": 3,
+            "lineHeight": 1.2,
+            "textAlign": "center",
+            "textColor": "#F8FAFC",
+            "animation": {
+              "type": "fade",
+              "inDuration": 0.7,
+              "outDuration": 0.5,
+              "delay": 0,
+              "easing": "ease_in_out"
+            }
+          },
+          "startTimeOffset": 0.5,
+          "duration": 4
+        }
+      }
+    ],
+    "captionSettings": {
+      "enabled": true,
+      "presetId": "doc_classic",
+      "fontFamily": "Inter",
+      "fontSize": 34,
+      "activeColor": "#38BDF8"
+    },
+    "createdAt": "2026-11-01T21:39:14.112Z",
+    "updatedAt": "2026-11-01T21:39:14.112Z"
+  }
+]

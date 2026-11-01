@@ -57,6 +57,16 @@ export function useVideoEditor(initialProject?: EditorProject) {
   const primarySelectedClipId = selectedClipIds[0] || null;
   const selectedClip = project.clips.find((c) => c.id === primarySelectedClipId) || null;
 
+  // Synchronize when initialProject is handed off
+  useEffect(() => {
+    if (initialProject && initialProject.id && initialProject.id !== project.id) {
+      setProject(initialProject);
+      setPlayhead(0);
+      setIsPlaying(false);
+      setSelectedClipIds([]);
+    }
+  }, [initialProject]);
+
   // Record history snapshot before mutating project state
   const pushHistory = useCallback((currentProj: EditorProject) => {
     setUndoStack((prev) => [...prev.slice(-30), JSON.parse(JSON.stringify(currentProj))]);

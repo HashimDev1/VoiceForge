@@ -17,12 +17,14 @@ import captionRoutes from './routes/captionRoutes';
 import translationRoutes from './routes/translationRoutes';
 import flowRoutes from './routes/flowRoutes';
 import videoEditorRoutes from './routes/videoEditorRoutes';
+import documentaryRoutes from './routes/documentaryRoutes';
 import { ProjectService } from './services/projectService';
 import { VoiceTranslationStorageService } from './services/voiceTranslationStorageService';
 import { FlowStorageService } from './services/flowStorageService';
 import { FlowSchedulerService } from './services/flowSchedulerService';
 import { FlowAccountService } from './services/flowAccountService';
 import { VideoEditorService } from './services/videoEditorService';
+import { DocumentaryService } from './services/documentaryService';
 
 const app = express();
 
@@ -34,6 +36,7 @@ ProjectService.initStorage();
 VoiceTranslationStorageService.initStorage();
 FlowStorageService.initStorage();
 VideoEditorService.initStorage();
+DocumentaryService.initStorage();
 FlowAccountService.initAccounts().catch((err) => logger.warn('Flow accounts init:', err));
 FlowSchedulerService.init().catch((err) => logger.warn('Flow scheduler init:', err));
 
@@ -80,6 +83,7 @@ app.use('/api/captions', captionRoutes);
 app.use('/api/translation', translationRoutes);
 app.use('/api/flow', flowRoutes);
 app.use('/api/editor', videoEditorRoutes);
+app.use('/api/documentary', documentaryRoutes);
 
 // Static frontend serving (for production or unified single-port hosting)
 const clientDistPath = [

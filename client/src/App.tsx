@@ -15,6 +15,7 @@ import { CloneVoiceStudio } from './pages/CloneVoiceStudio';
 import { GoogleFlowStudio } from './pages/GoogleFlowStudio';
 import { CaptionsStudio } from './pages/CaptionsStudio';
 import { VideoEditorStudio } from './pages/VideoEditorStudio';
+import { DocumentaryStudio } from './pages/DocumentaryStudio';
 import { VoiceCloneModal } from './components/VoiceCloneModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useProjectStore } from './hooks/useProjectStore';
@@ -25,6 +26,7 @@ export function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
+  const [handedOffEditorProject, setHandedOffEditorProject] = useState<any>(null);
 
   // Theme state: default to dark (VoiceForge professional dark studio theme)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -166,9 +168,23 @@ export function App() {
             />
           )}
 
+          {activeTab === 'documentary-studio' && (
+            <ErrorBoundary>
+              <DocumentaryStudio
+                onOpenVideoEditor={(editorProject) => {
+                  setHandedOffEditorProject(editorProject);
+                  setActiveTab('video-editor');
+                }}
+              />
+            </ErrorBoundary>
+          )}
+
           {activeTab === 'video-editor' && (
             <ErrorBoundary>
-              <VideoEditorStudio onOpenCaptionStudio={() => setActiveTab('captions')} />
+              <VideoEditorStudio
+                initialProject={handedOffEditorProject}
+                onOpenCaptionStudio={() => setActiveTab('captions')}
+              />
             </ErrorBoundary>
           )}
 

@@ -15,7 +15,8 @@ import {
   Sun, 
   Moon,
   Video,
-  Subtitles
+  Subtitles,
+  Clapperboard
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -52,7 +53,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // 6 core production service cards matching Script Studio visual tokens
   const capabilities: CapabilityItem[] = [
-    // 0. Video Editor (CapCut Desktop Studio)
+    // 0. Documentary Studio (AI Documentary Production Workflow)
+    {
+      id: 'documentary-studio',
+      label: 'Documentary Studio',
+      badge: 'Phase 4',
+      targetTab: 'documentary-studio',
+      renderIllustration: () => (
+        <div className="relative w-16 h-16 flex items-center justify-center">
+          <div className="w-13 h-13 rounded-2xl bg-black dark:bg-white text-white dark:text-black p-0.5 shadow-sm flex items-center justify-center">
+            <Clapperboard className="w-6 h-6" />
+          </div>
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-xs">
+            <Sparkles className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      )
+    },
+
+    // 0.5. Video Editor (CapCut Desktop Studio)
     {
       id: 'video-editor',
       label: 'Video Editor',

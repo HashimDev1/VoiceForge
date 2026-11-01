@@ -13,10 +13,12 @@ import { AlertCircle, RotateCcw, X } from 'lucide-react';
 
 interface VideoEditorStudioProps {
   onOpenCaptionStudio?: () => void;
+  initialProject?: any;
 }
 
 export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
-  onOpenCaptionStudio
+  onOpenCaptionStudio,
+  initialProject
 }) => {
   const {
     project,
@@ -82,7 +84,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
     updateTitleDesign,
     copyAnimationSettings,
     pasteAnimationSettings
-  } = useVideoEditor();
+  } = useVideoEditor(initialProject);
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isMotionStudioOpen, setIsMotionStudioOpen] = useState(false);

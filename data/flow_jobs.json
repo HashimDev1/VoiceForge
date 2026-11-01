@@ -1,5 +1,54 @@
 [
   {
+    "id": "flow_job_1793569723021_rvl6f",
+    "createdAt": "2026-11-01T21:48:43.021Z",
+    "updatedAt": "2026-11-01T21:48:57.622Z",
+    "prompt": "Scene 2: Drone flying into mist",
+    "mediaType": "video",
+    "sceneNumber": "002",
+    "batchId": "batch_1793569723016",
+    "settings": {
+      "aspectRatio": "16:9",
+      "motionIntensity": 5,
+      "cameraMovement": "cinematic",
+      "stylePreset": "Cinematic",
+      "durationSeconds": 5
+    },
+    "selectionMode": "auto",
+    "status": "needs_attention",
+    "progressPercent": 15,
+    "stageMessage": "User action or sign-in required in Google Flow session.",
+    "retryCount": 0,
+    "maxRetries": 3,
+    "accountId": "acc_2",
+    "accountName": "Google AI Pro 2",
+    "manualActionRequired": "Could not connect to Google Chrome via DevTools Protocol on port 9222. Please ensure Chrome is running or click 'Open in Chrome'."
+  },
+  {
+    "id": "flow_job_1793569723016_3kq92",
+    "createdAt": "2026-11-01T21:48:43.016Z",
+    "updatedAt": "2026-11-01T21:48:44.615Z",
+    "prompt": "Scene 1: Golden sunrise over mountain sanctuary",
+    "mediaType": "image",
+    "sceneNumber": "001",
+    "batchId": "batch_1793569723016",
+    "settings": {
+      "aspectRatio": "16:9",
+      "motionIntensity": 5,
+      "cameraMovement": "cinematic",
+      "stylePreset": "Cinematic",
+      "durationSeconds": 5
+    },
+    "selectionMode": "auto",
+    "status": "running",
+    "progressPercent": 15,
+    "stageMessage": "Connecting to Google Chrome session for Hashim Pro Master 1...",
+    "retryCount": 0,
+    "maxRetries": 3,
+    "accountId": "acc_1",
+    "accountName": "Hashim Pro Master 1"
+  },
+  {
     "id": "flow_job_1793283365951_2aag0",
     "createdAt": "2026-10-29T14:16:05.951Z",
     "updatedAt": "2026-10-29T14:16:20.073Z",
