@@ -24,6 +24,7 @@ try {
   execSync(`${tsNodeCmd} tests/captionStudio2.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/captionSpacingAndTheme.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/videoEditor.test.ts`, { stdio: 'inherit' });
+  execSync(`${tsNodeCmd} tests/timelineCapcutScrubber.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/motionGraphics.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/documentaryWorkflow.test.ts`, { stdio: 'inherit' });
   console.log('\n✅ ALL UNIT TESTS PASSED SUCCESSFULLY!');

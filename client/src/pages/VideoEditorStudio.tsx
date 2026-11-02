@@ -188,16 +188,30 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         redo();
       }
 
-      // Left / Right Arrow: Seek 1 sec (or 5s with Shift)
+      // Home: Seek to project start (0:00)
+      if (e.code === 'Home') {
+        e.preventDefault();
+        seek(0);
+      }
+
+      // End: Seek to project end
+      if (e.code === 'End') {
+        e.preventDefault();
+        seek(project.duration || 0);
+      }
+
+      // Left / Right Arrow: CapCut-style precision frame stepping (single frame or 1s with Shift)
       if (e.code === 'ArrowLeft') {
         e.preventDefault();
-        const delta = e.shiftKey ? 5 : 1;
-        seek(Math.max(0, playhead - delta));
+        const frameTime = 1 / (project.fps || 30);
+        const delta = e.shiftKey ? 1.0 : frameTime;
+        seek(Math.max(0, Number((playhead - delta).toFixed(3))));
       }
       if (e.code === 'ArrowRight') {
         e.preventDefault();
-        const delta = e.shiftKey ? 5 : 1;
-        seek(Math.min(project.duration, playhead + delta));
+        const frameTime = 1 / (project.fps || 30);
+        const delta = e.shiftKey ? 1.0 : frameTime;
+        seek(Math.min(project.duration, Number((playhead + delta).toFixed(3))));
       }
     };
 

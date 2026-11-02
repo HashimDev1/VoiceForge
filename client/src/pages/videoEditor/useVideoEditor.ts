@@ -16,6 +16,7 @@ import {
 } from '../../../../shared/src/videoEditorTypes';
 import {
   createNewProject,
+  calculateTimelineDuration,
   DEFAULT_TRANSFORM,
   DEFAULT_SPEED,
   DEFAULT_COLOR_GRADING,
@@ -25,9 +26,16 @@ import {
 import { videoEditorApi } from '../../services/videoEditorApi';
 
 export function useVideoEditor(initialProject?: EditorProject) {
-  const [project, setProject] = useState<EditorProject>(
-    () => initialProject || createNewProject('New Video Project', '9:16')
-  );
+  const [project, setProject] = useState<EditorProject>(() => {
+    const base = initialProject || createNewProject('New Video Project', '9:16');
+    if (base.clips && base.clips.length > 0) {
+      return {
+        ...base,
+        duration: calculateTimelineDuration(base.clips)
+      };
+    }
+    return base;
+  });
   const [playhead, setPlayhead] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [selectedClipIds, setSelectedClipIds] = useState<string[]>([]);
@@ -60,12 +68,32 @@ export function useVideoEditor(initialProject?: EditorProject) {
   // Synchronize when initialProject is handed off
   useEffect(() => {
     if (initialProject && initialProject.id && initialProject.id !== project.id) {
-      setProject(initialProject);
+      const computedDuration = calculateTimelineDuration(
+        initialProject.clips,
+        initialProject.clips.length > 0 ? undefined : initialProject.duration || 5
+      );
+      setProject({
+        ...initialProject,
+        duration: computedDuration
+      });
       setPlayhead(0);
       setIsPlaying(false);
       setSelectedClipIds([]);
     }
   }, [initialProject]);
+
+  // Auto-correct project duration whenever clips change so it strictly matches content length
+  useEffect(() => {
+    if (project.clips.length > 0) {
+      const accurateDur = calculateTimelineDuration(project.clips);
+      if (Math.abs(project.duration - accurateDur) > 0.05) {
+        setProject((prev) => ({
+          ...prev,
+          duration: accurateDur
+        }));
+      }
+    }
+  }, [project.clips.length]);
 
   // Record history snapshot before mutating project state
   const pushHistory = useCallback((currentProj: EditorProject) => {
@@ -236,11 +264,11 @@ export function useVideoEditor(initialProject?: EditorProject) {
     });
 
     setProject((prev) => {
-      const maxEnd = Math.max(...newClips.map((c) => c.start + c.duration));
+      const allClips = [...prev.clips, ...newClips];
       return {
         ...prev,
-        duration: Math.max(prev.duration, maxEnd + 2),
-        clips: [...prev.clips, ...newClips]
+        duration: calculateTimelineDuration(allClips),
+        clips: allClips
       };
     });
 
@@ -330,11 +358,11 @@ export function useVideoEditor(initialProject?: EditorProject) {
     };
 
     setProject((prev) => {
-      const nextDuration = Math.max(prev.duration, start + clipDuration + 2);
+      const allClips = [...prev.clips, newClip];
       return {
         ...prev,
-        duration: nextDuration,
-        clips: [...prev.clips, newClip]
+        duration: calculateTimelineDuration(allClips),
+        clips: allClips
       };
     });
 
@@ -384,11 +412,11 @@ export function useVideoEditor(initialProject?: EditorProject) {
     };
 
     setProject((prev) => {
-      const nextDuration = Math.max(prev.duration, start + duration + 1);
+      const allClips = [...prev.clips, newClip];
       return {
         ...prev,
-        duration: nextDuration,
-        clips: [...prev.clips, newClip]
+        duration: calculateTimelineDuration(allClips),
+        clips: allClips
       };
     });
 
@@ -481,11 +509,11 @@ export function useVideoEditor(initialProject?: EditorProject) {
     };
 
     setProject((prev) => {
-      const nextDuration = Math.max(prev.duration, start + duration + 1);
+      const allClips = [...prev.clips, newClip];
       return {
         ...prev,
-        duration: nextDuration,
-        clips: [...prev.clips, newClip]
+        duration: calculateTimelineDuration(allClips),
+        clips: allClips
       };
     });
 
@@ -501,20 +529,28 @@ export function useVideoEditor(initialProject?: EditorProject) {
 
   const deleteClip = useCallback((clipId: string) => {
     pushHistory(projectRef.current);
-    setProject((prev) => ({
-      ...prev,
-      clips: prev.clips.filter((c) => c.id !== clipId)
-    }));
+    setProject((prev) => {
+      const nextClips = prev.clips.filter((c) => c.id !== clipId);
+      return {
+        ...prev,
+        duration: calculateTimelineDuration(nextClips),
+        clips: nextClips
+      };
+    });
     setSelectedClipIds((prev) => prev.filter((id) => id !== clipId));
   }, [pushHistory]);
 
   const deleteSelectedClips = useCallback(() => {
     if (selectedClipIds.length === 0) return;
     pushHistory(projectRef.current);
-    setProject((prev) => ({
-      ...prev,
-      clips: prev.clips.filter((c) => !selectedClipIds.includes(c.id))
-    }));
+    setProject((prev) => {
+      const nextClips = prev.clips.filter((c) => !selectedClipIds.includes(c.id));
+      return {
+        ...prev,
+        duration: calculateTimelineDuration(nextClips),
+        clips: nextClips
+      };
+    });
     setSelectedClipIds([]);
   }, [pushHistory, selectedClipIds]);
 
@@ -530,11 +566,14 @@ export function useVideoEditor(initialProject?: EditorProject) {
       start: orig.start + orig.duration + 0.1
     };
 
-    setProject((prev) => ({
-      ...prev,
-      duration: Math.max(prev.duration, dup.start + dup.duration + 2),
-      clips: [...prev.clips, dup]
-    }));
+    setProject((prev) => {
+      const nextClips = [...prev.clips, dup];
+      return {
+        ...prev,
+        duration: calculateTimelineDuration(nextClips),
+        clips: nextClips
+      };
+    });
     setSelectedClipIds([dup.id]);
   }, [pushHistory]);
 
@@ -565,10 +604,14 @@ export function useVideoEditor(initialProject?: EditorProject) {
       sourceStart: (clipToSplit.sourceStart || 0) + firstDuration * (clipToSplit.speed?.speed || 1)
     };
 
-    setProject((prev) => ({
-      ...prev,
-      clips: prev.clips.map((c) => (c.id === clipToSplit.id ? firstClip : c)).concat(secondClip)
-    }));
+    setProject((prev) => {
+      const nextClips = prev.clips.map((c) => (c.id === clipToSplit.id ? firstClip : c)).concat(secondClip);
+      return {
+        ...prev,
+        duration: calculateTimelineDuration(nextClips),
+        clips: nextClips
+      };
+    });
     setSelectedClipIds([secondClip.id]);
   }, [pushHistory]);
 
@@ -624,15 +667,16 @@ export function useVideoEditor(initialProject?: EditorProject) {
           .concat([headClip, freezeClip, tailClip]);
         return {
           ...prev,
-          duration: Math.max(prev.duration, curTime + freezeDuration + tailDur + 2),
+          duration: calculateTimelineDuration(finalClips),
           clips: finalClips
         };
       }
 
+      const finalClips = [...nextClips, freezeClip];
       return {
         ...prev,
-        duration: Math.max(prev.duration, curTime + freezeDuration + 2),
-        clips: [...nextClips, freezeClip]
+        duration: calculateTimelineDuration(finalClips),
+        clips: finalClips
       };
     });
 
@@ -662,9 +706,8 @@ export function useVideoEditor(initialProject?: EditorProject) {
   const setClipSpeed = useCallback((clipId: string, speedValue: number) => {
     pushHistory(projectRef.current);
     const speed = Math.max(0.25, Math.min(4.0, speedValue));
-    setProject((prev) => ({
-      ...prev,
-      clips: prev.clips.map((c) => {
+    setProject((prev) => {
+      const nextClips = prev.clips.map((c) => {
         if (c.id !== clipId) return c;
         const currentSpeed = c.speed?.speed || 1;
         const newDuration = (c.duration * currentSpeed) / speed;
@@ -676,8 +719,13 @@ export function useVideoEditor(initialProject?: EditorProject) {
             speed
           }
         };
-      })
-    }));
+      });
+      return {
+        ...prev,
+        duration: calculateTimelineDuration(nextClips),
+        clips: nextClips
+      };
+    });
   }, [pushHistory]);
 
   // Picture in Picture preset
@@ -756,39 +804,43 @@ export function useVideoEditor(initialProject?: EditorProject) {
 
   const trimClipStart = useCallback((clipId: string, newStart: number) => {
     setProject((prev) => {
+      const nextClips = prev.clips.map((c) => {
+        if (c.id !== clipId) return c;
+        const end = c.start + c.duration;
+        const clampedStart = Math.max(0, Math.min(end - 0.2, newStart));
+        const diff = clampedStart - c.start;
+        const newDur = end - clampedStart;
+        const newSourceStart = Math.max(0, (c.sourceStart || 0) + diff * (c.speed?.speed || 1));
+        return {
+          ...c,
+          start: clampedStart,
+          duration: newDur,
+          sourceStart: newSourceStart
+        };
+      });
       return {
         ...prev,
-        clips: prev.clips.map((c) => {
-          if (c.id !== clipId) return c;
-          const end = c.start + c.duration;
-          const clampedStart = Math.max(0, Math.min(end - 0.2, newStart));
-          const diff = clampedStart - c.start;
-          const newDur = end - clampedStart;
-          const newSourceStart = Math.max(0, (c.sourceStart || 0) + diff * (c.speed?.speed || 1));
-          return {
-            ...c,
-            start: clampedStart,
-            duration: newDur,
-            sourceStart: newSourceStart
-          };
-        })
+        duration: calculateTimelineDuration(nextClips),
+        clips: nextClips
       };
     });
   }, []);
 
   const trimClipEnd = useCallback((clipId: string, newEnd: number) => {
     setProject((prev) => {
+      const nextClips = prev.clips.map((c) => {
+        if (c.id !== clipId) return c;
+        const minEnd = c.start + 0.2;
+        const clampedEnd = Math.max(minEnd, newEnd);
+        return {
+          ...c,
+          duration: clampedEnd - c.start
+        };
+      });
       return {
         ...prev,
-        clips: prev.clips.map((c) => {
-          if (c.id !== clipId) return c;
-          const minEnd = c.start + 0.2;
-          const clampedEnd = Math.max(minEnd, newEnd);
-          return {
-            ...c,
-            duration: clampedEnd - c.start
-          };
-        })
+        duration: calculateTimelineDuration(nextClips),
+        clips: nextClips
       };
     });
   }, []);
@@ -827,10 +879,9 @@ export function useVideoEditor(initialProject?: EditorProject) {
         };
       });
 
-      const maxEnd = Math.max(...nextClips.map((c) => c.start + c.duration), 10);
       return {
         ...prev,
-        duration: Math.max(prev.duration, maxEnd + 2),
+        duration: calculateTimelineDuration(nextClips),
         clips: nextClips
       };
     });
@@ -845,17 +896,21 @@ export function useVideoEditor(initialProject?: EditorProject) {
     const clipStart = clip.start;
     const trackId = clip.trackId;
 
-    setProject((prev) => ({
-      ...prev,
-      clips: prev.clips
+    setProject((prev) => {
+      const nextClips = prev.clips
         .filter((c) => c.id !== clipId)
         .map((c) => {
           if (c.trackId === trackId && c.start > clipStart) {
             return { ...c, start: Math.max(0, c.start - shiftAmount) };
           }
           return c;
-        })
-    }));
+        });
+      return {
+        ...prev,
+        duration: calculateTimelineDuration(nextClips),
+        clips: nextClips
+      };
+    });
 
     setSelectedClipIds((prev) => prev.filter((id) => id !== clipId));
   }, [pushHistory]);

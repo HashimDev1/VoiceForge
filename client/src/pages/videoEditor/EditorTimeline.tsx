@@ -98,18 +98,129 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
     trackId: string;
   } | null>(null);
 
+  const [isScrubbing, setIsScrubbing] = useState<boolean>(false);
+  const [isNeedleHovered, setIsNeedleHovered] = useState<boolean>(false);
+  const scrubberDragRef = useRef<boolean>(false);
+  const rulerDragRef = useRef<boolean>(false);
+
+  const formatTimecode = (seconds: number): string => {
+    const s = Math.max(0, seconds || 0);
+    const mins = Math.floor(s / 60);
+    const secs = Math.floor(s % 60);
+    const ms = Math.floor((s % 1) * 100);
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+  };
+
   const pxPerSecond = 45 * zoom;
-  const totalWidthPx = Math.max(900, (project.duration || 30) * pxPerSecond);
+  const projectDur = Math.max(1, project.duration || 5);
+  const totalWidthPx = Math.max(900, Math.ceil((projectDur + 2) * pxPerSecond));
 
   // Ruler tick marks (every 1s, 2s, or 5s depending on zoom)
   const step = zoom >= 2 ? 1 : zoom >= 0.8 ? 2 : 5;
   const ticks = useMemo(() => {
     const list = [];
-    for (let t = 0; t <= (project.duration || 30); t += step) {
+    const maxTick = Math.ceil(projectDur + 1);
+    for (let t = 0; t <= maxTick; t += step) {
       list.push(t);
     }
     return list;
-  }, [project.duration, step]);
+  }, [projectDur, step]);
+
+  const getTimeFromClientX = (clientX: number): number => {
+    if (!timelineTracksRef.current) return 0;
+    const rect = timelineTracksRef.current.getBoundingClientRect();
+    const scrollLeft = timelineTracksRef.current.scrollLeft || 0;
+    const x = clientX - rect.left + scrollLeft;
+    const dur = project.duration || 5;
+    let time = Math.max(0, Math.min(dur, x / pxPerSecond));
+
+    // Magnetic snapping if enabled
+    if (snapEnabled) {
+      const snapThreshold = 0.15; // 150ms snap threshold
+      if (time < snapThreshold) {
+        time = 0;
+      } else if (Math.abs(time - dur) < snapThreshold) {
+        time = dur;
+      } else {
+        for (const clip of project.clips) {
+          if (Math.abs(time - clip.start) < snapThreshold) {
+            time = clip.start;
+            break;
+          }
+          if (Math.abs(time - (clip.start + clip.duration)) < snapThreshold) {
+            time = clip.start + clip.duration;
+            break;
+          }
+        }
+      }
+    }
+    return Number(time.toFixed(2));
+  };
+
+  const handleScrubberPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    scrubberDragRef.current = true;
+    setIsScrubbing(true);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    const time = getTimeFromClientX(e.clientX);
+    onSeek(time);
+  };
+
+  const handleScrubberPointerMove = (e: React.PointerEvent) => {
+    if (!scrubberDragRef.current) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const time = getTimeFromClientX(e.clientX);
+    onSeek(time);
+  };
+
+  const handleScrubberPointerUp = (e: React.PointerEvent) => {
+    if (scrubberDragRef.current) {
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {}
+      scrubberDragRef.current = false;
+      setIsScrubbing(false);
+    }
+  };
+
+  const handleRulerPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    rulerDragRef.current = true;
+    setIsScrubbing(true);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    const time = getTimeFromClientX(e.clientX);
+    onSeek(time);
+  };
+
+  const handleRulerPointerMove = (e: React.PointerEvent) => {
+    if (!rulerDragRef.current) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const time = getTimeFromClientX(e.clientX);
+    onSeek(time);
+  };
+
+  const handleRulerPointerUp = (e: React.PointerEvent) => {
+    if (rulerDragRef.current) {
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch {}
+      rulerDragRef.current = false;
+      setIsScrubbing(false);
+    }
+  };
+
+  const handleTracksPointerDown = (e: React.PointerEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-clip-id]') || target.closest('button')) {
+      return;
+    }
+    const time = getTimeFromClientX(e.clientX);
+    onSeek(time);
+  };
 
   const handlePointerDown = (
     e: React.PointerEvent,
@@ -189,13 +300,6 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
       } catch {}
       dragRef.current = null;
     }
-  };
-
-  const handleRulerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const time = Math.max(0, clickX / pxPerSecond);
-    onSeek(time);
   };
 
   const primarySelectedClipId = selectedClipIds[0] || null;
@@ -447,17 +551,20 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
           className="relative min-w-0 flex-1 overflow-x-auto overflow-y-hidden select-none bg-slate-100/50 dark:bg-studio-950/50"
         >
           <div style={{ width: `${totalWidthPx}px` }} className="relative flex flex-col">
-            {/* 1. Time Ruler Deck */}
+            {/* 1. Time Ruler Deck with Drag-Scrubbing */}
             <div
-              onClick={handleRulerClick}
-              className="relative h-7 border-b border-studio-border bg-slate-100 dark:bg-studio-950 cursor-pointer overflow-hidden"
+              onPointerDown={handleRulerPointerDown}
+              onPointerMove={handleRulerPointerMove}
+              onPointerUp={handleRulerPointerUp}
+              title="Click or drag to scrub playhead"
+              className="relative h-7 border-b border-studio-border bg-slate-100 dark:bg-studio-950 cursor-ew-resize overflow-hidden select-none"
             >
               {ticks.map((t) => {
                 const left = t * pxPerSecond;
                 return (
                   <div
                     key={t}
-                    className="absolute top-0 bottom-0 border-l border-slate-300 dark:border-studio-800 pl-1"
+                    className="absolute top-0 bottom-0 border-l border-slate-300 dark:border-studio-800 pl-1 pointer-events-none"
                     style={{ left: `${left}px` }}
                   >
                     <span className="font-mono text-[9px] font-bold text-slate-400 select-none">
@@ -468,8 +575,11 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
               })}
             </div>
 
-            {/* 2. Track Lanes */}
-            <div className="relative flex flex-col">
+            {/* 2. Track Lanes (Click empty space to seek) */}
+            <div
+              onPointerDown={handleTracksPointerDown}
+              className="relative flex flex-col"
+            >
               {project.tracks.map((track) => {
                 const trackClips = project.clips.filter((c) => c.trackId === track.id);
 
@@ -501,6 +611,7 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                       return (
                         <div
                           key={clip.id}
+                          data-clip-id={clip.id}
                           onPointerDown={(e) => handlePointerDown(e, clip, 'move')}
                           onPointerMove={handlePointerMove}
                           onPointerUp={handlePointerUp}
@@ -597,15 +708,64 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
               })}
             </div>
 
-            {/* 3. Global Playhead Line with Draggable Scrubber Head */}
+            {/* Project End Boundary Marker */}
+            <div
+              style={{ left: `${projectDur * pxPerSecond}px` }}
+              className="absolute top-0 bottom-0 z-20 pointer-events-none flex flex-col"
+            >
+              <div className="h-7 px-1.5 flex items-center bg-slate-800/90 text-[9px] font-mono font-bold text-slate-200 border-l-2 border-indigo-500 shadow-sm rounded-r">
+                END ({formatTimecode(projectDur)})
+              </div>
+              <div className="w-0.5 flex-1 border-r border-dashed border-slate-400/60 dark:border-studio-700/80" />
+            </div>
+
+            {/* Out-of-bounds dimmed area beyond project duration */}
+            {totalWidthPx > projectDur * pxPerSecond && (
+              <div
+                style={{
+                  left: `${projectDur * pxPerSecond}px`,
+                  width: `${totalWidthPx - projectDur * pxPerSecond}px`
+                }}
+                className="absolute top-0 bottom-0 pointer-events-none opacity-20 dark:opacity-30 bg-[repeating-linear-gradient(45deg,#000,#000_10px,transparent_10px,transparent_20px)]"
+              />
+            )}
+
+            {/* 3. Global Playhead Line with CapCut-style Draggable Scrubber Head */}
             <div
               style={{ left: `${playhead * pxPerSecond}px` }}
-              className="absolute top-0 bottom-0 z-30 pointer-events-none flex flex-col items-center"
+              className="absolute top-0 bottom-0 z-30 flex flex-col items-center -translate-x-1/2 pointer-events-none"
             >
-              {/* Playhead Badge */}
-              <div className="w-3.5 h-3.5 -mt-0.5 bg-indigo-500 rounded-xs rotate-45 shadow-md border border-white" />
-              {/* Red Line */}
-              <div className="w-0.5 flex-1 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+              {/* Floating Tooltip Pill showing timecode when scrubbing or hovering */}
+              {(isScrubbing || isNeedleHovered) && (
+                <div className="absolute -top-6 whitespace-nowrap rounded-md bg-indigo-600 px-1.5 py-0.5 text-[10px] font-mono font-bold text-white shadow-lg pointer-events-none z-50">
+                  {formatTimecode(playhead)}
+                </div>
+              )}
+
+              {/* Scrubber Needle Head - CapCut iconic draggable badge */}
+              <div
+                onPointerDown={handleScrubberPointerDown}
+                onPointerMove={handleScrubberPointerMove}
+                onPointerUp={handleScrubberPointerUp}
+                onMouseEnter={() => setIsNeedleHovered(true)}
+                onMouseLeave={() => setIsNeedleHovered(false)}
+                title={`Playhead: ${formatTimecode(playhead)} (Drag to scrub)`}
+                className="pointer-events-auto group relative flex h-7 w-7 items-center justify-center cursor-ew-resize z-40"
+              >
+                {/* Visual Head Badge */}
+                <div
+                  className={`w-3.5 h-4.5 bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-300 border-2 border-white rounded-t-xs shadow-md flex items-center justify-center transition-transform ${
+                    isScrubbing ? 'scale-125' : 'group-hover:scale-110'
+                  }`}
+                >
+                  <div className="w-0.5 h-2 bg-white/90 rounded-full" />
+                </div>
+                {/* Downward chevron pointer directly over the line */}
+                <div className="absolute top-[18px] w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-indigo-500 pointer-events-none" />
+              </div>
+
+              {/* Red/Indigo Scrubber Needle Line extending down across all tracks */}
+              <div className="w-0.5 flex-1 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] pointer-events-none" />
             </div>
           </div>
         </div>

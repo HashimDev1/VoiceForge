@@ -220,6 +220,12 @@ export const ASPECT_RATIOS: Array<{
   { id: '4:5', label: '4:5 Portrait Feed', width: 1080, height: 1350, iconName: 'Smartphone', description: 'Instagram Portrait Feed' }
 ];
 
+export function calculateTimelineDuration(clips?: TimelineClip[], fallbackMin: number = 5): number {
+  if (!clips || clips.length === 0) return fallbackMin;
+  const maxEnd = Math.max(...clips.map((c) => (c.start || 0) + (c.duration || 0)));
+  return Math.max(0.5, Number(maxEnd.toFixed(2)));
+}
+
 export function createNewProject(name: string = 'Untitled Project', aspectRatio: AspectRatio = '9:16'): EditorProject {
   const defaultRatio = ASPECT_RATIOS.find((r) => r.id === aspectRatio) || ASPECT_RATIOS[0];
   const initialTracks: TimelineTrack[] = [
@@ -236,7 +242,7 @@ export function createNewProject(name: string = 'Untitled Project', aspectRatio:
     aspectRatio,
     customWidth: defaultRatio.width,
     customHeight: defaultRatio.height,
-    duration: 30, // seconds
+    duration: 5, // compact default; automatically matches video length when media is added
     fps: 30,
     tracks: initialTracks,
     clips: [],
