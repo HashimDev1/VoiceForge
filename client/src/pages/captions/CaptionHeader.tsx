@@ -34,7 +34,7 @@ interface CaptionHeaderProps {
   onReset: () => void;
 }
 
-export const CaptionHeader: React.FC<CaptionHeaderProps> = ({
+export const CaptionHeader = React.memo<CaptionHeaderProps>(({
   settings,
   canUndo,
   canRedo,
@@ -235,4 +235,4 @@ export const CaptionHeader: React.FC<CaptionHeaderProps> = ({
       </div>
     </header>
   );
-};
+});

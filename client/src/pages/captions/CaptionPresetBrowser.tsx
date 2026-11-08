@@ -31,7 +31,7 @@ interface CaptionPresetBrowserProps {
   onOpenAiRecommender?: () => void;
 }
 
-export const CaptionPresetBrowser: React.FC<CaptionPresetBrowserProps> = ({
+export const CaptionPresetBrowser = React.memo<CaptionPresetBrowserProps>(({
   currentPresetId,
   onSelectPreset,
   aiRecommendedId,
@@ -292,4 +292,4 @@ export const CaptionPresetBrowser: React.FC<CaptionPresetBrowserProps> = ({
       </div>
     </aside>
   );
-};
+});

@@ -31,6 +31,7 @@ interface CaptionStageProps {
   playhead: number;
   duration: number;
   onSeek: (time: number) => void;
+  onTimeProgress?: (time: number) => void;
   selectedSegmentId: string;
   onSelectSegment: (id: string) => void;
   isResultVideo: boolean;
@@ -245,6 +246,7 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
   playhead,
   duration,
   onSeek,
+  onTimeProgress,
   selectedSegmentId,
   onSelectSegment,
   isResultVideo,
@@ -283,15 +285,22 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
     return () => ro.disconnect();
   }, [settings.aspectRatio]);
 
-  // Sync isPlaying state with video and run smooth 60fps playhead loop
+  // Sync isPlaying state with video and run smooth, lightweight playhead loop for subtitles
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
 
     let animId: number | null = null;
+    let lastTime = 0;
+
     const loop = () => {
       if (el && !el.paused) {
-        onSeek(el.currentTime);
+        const cur = el.currentTime;
+        // Throttle updates to ~30fps (33ms) so browser hardware decoder has full performance
+        if (Math.abs(cur - lastTime) >= 0.033) {
+          lastTime = cur;
+          if (onTimeProgress) onTimeProgress(cur);
+        }
         animId = requestAnimationFrame(loop);
       }
     };
@@ -304,7 +313,7 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
     const handlePause = () => {
       setIsPlaying(false);
       if (animId) cancelAnimationFrame(animId);
-      onSeek(el.currentTime);
+      if (onTimeProgress) onTimeProgress(el.currentTime);
     };
     const handleEnded = () => {
       setIsPlaying(false);
@@ -320,7 +329,7 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
       el.removeEventListener('pause', handlePause);
       el.removeEventListener('ended', handleEnded);
     };
-  }, [videoRef, videoSrc, onSeek]);
+  }, [videoRef, videoSrc, onTimeProgress]);
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -687,9 +696,12 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
             ref={videoRef}
             src={videoSrc}
             playsInline
+            preload="auto"
             muted={isMuted}
             onClick={togglePlay}
-            onTimeUpdate={(e) => onSeek(e.currentTarget.currentTime)}
+            onTimeUpdate={(e) => {
+              if (onTimeProgress) onTimeProgress(e.currentTarget.currentTime);
+            }}
             className="h-full w-full object-contain cursor-pointer"
           />
 

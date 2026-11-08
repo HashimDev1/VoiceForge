@@ -268,6 +268,32 @@ export const CaptionsStudio: React.FC = () => {
     setSettings(next.settings);
   }, [redoStack, segments, settings]);
 
+  const segmentsRef = useRef(segments);
+  segmentsRef.current = segments;
+  const selectedSegmentIdRef = useRef(selectedSegmentId);
+  selectedSegmentIdRef.current = selectedSegmentId;
+
+  // Explicit user seek handler (ONLY when user scrubs or clicks timeline)
+  const handleSeek = useCallback(
+    (targetTime: number) => {
+      const clamped = Math.max(0, Math.min(duration || 1000, targetTime));
+      if (videoRef.current && Math.abs(videoRef.current.currentTime - clamped) > 0.02) {
+        videoRef.current.currentTime = clamped;
+      }
+      setPlayhead(clamped);
+    },
+    [duration]
+  );
+
+  // Playback time progress (does NOT touch video.currentTime, ensuring 100% smooth native playback)
+  const handleTimeProgress = useCallback((t: number) => {
+    setPlayhead(t);
+    const active = segmentsRef.current.find((s) => t >= s.start && t <= s.end);
+    if (active && active.id !== selectedSegmentIdRef.current) {
+      setSelectedSegmentId(active.id);
+    }
+  }, []);
+
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -295,55 +321,43 @@ export const CaptionsStudio: React.FC = () => {
         handleRedo();
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        const target = Math.max(0, playhead - 1);
-        if (videoRef.current) videoRef.current.currentTime = target;
-        setPlayhead(target);
+        handleSeek(Math.max(0, playhead - 1));
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        const target = Math.min(duration, playhead + 1);
-        if (videoRef.current) videoRef.current.currentTime = target;
-        setPlayhead(target);
+        handleSeek(Math.min(duration, playhead + 1));
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [playhead, duration, handleUndo, handleRedo]);
+  }, [playhead, duration, handleUndo, handleRedo, handleSeek]);
 
-  const handleSelectSegmentWithSeek = useCallback((id: string) => {
-    setSelectedSegmentId(id);
-    const target = segments.find((s) => s.id === id);
-    if (target && videoRef.current) {
-      videoRef.current.currentTime = Math.max(0, target.start + 0.02);
-      setPlayhead(Math.max(0, target.start + 0.02));
-    }
-  }, [segments]);
+  const handleSelectSegmentWithSeek = useCallback(
+    (id: string) => {
+      setSelectedSegmentId(id);
+      const target = segments.find((s) => s.id === id);
+      if (target) {
+        handleSeek(Math.max(0, target.start + 0.02));
+      }
+    },
+    [segments, handleSeek]
+  );
 
-  // Video time updates
+  // Video loaded metadata
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
-
-    const handleTimeUpdate = () => {
-      const t = el.currentTime;
-      setPlayhead(t);
-      const active = segments.find((s) => t >= s.start && t <= s.end);
-      if (active && active.id !== selectedSegmentId) {
-        setSelectedSegmentId(active.id);
-      }
-    };
 
     const handleLoadedMetadata = () => {
       setDuration(el.duration || 0);
     };
 
-    el.addEventListener('timeupdate', handleTimeUpdate);
     el.addEventListener('loadedmetadata', handleLoadedMetadata);
+    if (el.duration) setDuration(el.duration);
     return () => {
-      el.removeEventListener('timeupdate', handleTimeUpdate);
       el.removeEventListener('loadedmetadata', handleLoadedMetadata);
     };
-  }, [segments, selectedSegmentId, file, localVideoUrl, renderResult]);
+  }, [localVideoUrl, renderResult]);
 
   // Update Settings property
   const updateSettings = useCallback(
@@ -957,10 +971,8 @@ export const CaptionsStudio: React.FC = () => {
               segments={segments}
               playhead={playhead}
               duration={duration}
-              onSeek={(t) => {
-                if (videoRef.current) videoRef.current.currentTime = t;
-                setPlayhead(t);
-              }}
+              onSeek={handleSeek}
+              onTimeProgress={handleTimeProgress}
               selectedSegmentId={selectedSegmentId}
               onSelectSegment={handleSelectSegmentWithSeek}
               isResultVideo={Boolean(renderResult)}
@@ -998,10 +1010,7 @@ export const CaptionsStudio: React.FC = () => {
           segments={segments}
           duration={duration}
           playhead={playhead}
-          onSeek={(t) => {
-            if (videoRef.current) videoRef.current.currentTime = t;
-            setPlayhead(t);
-          }}
+          onSeek={handleSeek}
           selectedSegmentId={selectedSegmentId}
           onSelectSegment={handleSelectSegmentWithSeek}
           onUpdateSegment={handleUpdateSegment}

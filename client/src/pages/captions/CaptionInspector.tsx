@@ -68,7 +68,7 @@ const ANIMATION_OPTIONS: Array<{ id: CaptionAnimation; label: string }> = [
   { id: 'none', label: 'Static Text' }
 ];
 
-export const CaptionInspector: React.FC<CaptionInspectorProps> = ({
+export const CaptionInspector = React.memo<CaptionInspectorProps>(({
   settings,
   onUpdate,
   savedPresets,
@@ -979,4 +979,4 @@ export const CaptionInspector: React.FC<CaptionInspectorProps> = ({
       </div>
     </aside>
   );
-};
+});
