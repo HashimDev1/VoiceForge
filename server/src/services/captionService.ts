@@ -53,13 +53,20 @@ export class CaptionService {
       }
     }
     if (current.length) groups.push(current);
-    return groups.map((group,index) => ({
-      id: 'caption_' + (index + 1),
-      start: group[0].start,
-      end: group[group.length - 1].end,
-      text: group.map(word => word.word).join(' ').trim(),
-      words: group
-    }));
+    return groups.map((group, index) => {
+      const nextGroup = groups[index + 1];
+      const rawEnd = group[group.length - 1].end;
+      const seamlessEnd = nextGroup
+        ? Math.min(nextGroup[0].start, rawEnd + 0.35)
+        : rawEnd;
+      return {
+        id: 'caption_' + (index + 1),
+        start: group[0].start,
+        end: Math.max(group[0].start + 0.1, seamlessEnd),
+        text: group.map(word => word.word.trim()).join(' ').trim(),
+        words: group.map(w => ({ ...w, word: w.word.trim() }))
+      };
+    });
   }
 
   public static async generateFromAudio(

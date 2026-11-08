@@ -48,26 +48,18 @@ def transcribe_with_faster_whisper(audio_path, force_language=None):
         norm = force_language.lower().strip()
         lang_param = norm[:2] if len(norm) >= 2 else None
 
-    # Tuned parameters:
-    # - task='transcribe': strict transcription, never translate to English
-    # - temperature=0.0: deterministic decoding, eliminating stochastic hallucinations
-    # - condition_on_previous_text=False: stops error cascading across chunks
-    # - repetition_penalty=1.2 & no_repeat_ngram_size=3: suppresses looping phrases
-    # - vad_filter=False by default to avoid clipping voiceovers/subtle speech
-    use_vad = os.environ.get("WHISPER_VAD_FILTER", "false").lower() in ["1", "true", "yes"]
-
+    # High accuracy transcription parameters matching industry standards (CapCut / Whisper)
     segments_gen, info = model.transcribe(
         audio_path,
         language=lang_param,
         task="transcribe",
-        beam_size=3,
-        best_of=3,
+        beam_size=5,
+        best_of=5,
         temperature=0.0,
-        condition_on_previous_text=False,
-        repetition_penalty=1.2,
-        no_repeat_ngram_size=3,
+        condition_on_previous_text=True,
         word_timestamps=True,
-        vad_filter=use_vad
+        vad_filter=True,
+        vad_parameters=dict(min_silence_duration_ms=400)
     )
 
     detected_code = getattr(info, 'language', 'en') or 'en'
@@ -95,7 +87,7 @@ def transcribe_with_faster_whisper(audio_path, force_language=None):
                 w_str = (w.word or '').strip()
                 if w_str:
                     words_data.append({
-                        "word": w.word,
+                        "word": w_str,
                         "start": round(float(w.start), 3),
                         "end": round(float(w.end), 3),
                         "probability": round(float(getattr(w, 'probability', 1.0)), 2)

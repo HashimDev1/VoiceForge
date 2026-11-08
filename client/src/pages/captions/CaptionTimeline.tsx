@@ -157,6 +157,33 @@ export const CaptionTimeline: React.FC<CaptionTimelineProps> = ({
 
         {/* Toolbar: Actions & Zoom */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Quick Word Chunking Selector (CapCut style) */}
+          {onRegroupAll && segments.length > 0 && (
+            <div className="flex items-center gap-1 rounded-xl border border-studio-border bg-slate-100 dark:bg-studio-800 p-1">
+              {[
+                { count: 1, label: '1W' },
+                { count: 2, label: '2W' },
+                { count: 3, label: '3W ⭐' },
+                { count: 4, label: '4W' },
+                { count: 20, label: 'Full' }
+              ].map((item) => (
+                <button
+                  key={item.count}
+                  type="button"
+                  onClick={() => onRegroupAll(item.count)}
+                  title={`Chunk speech into ${item.count >= 16 ? 'full sentences' : `${item.count} words per caption on screen`}`}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition cursor-pointer ${
+                    (item.count >= 16 ? maxWords >= 16 : maxWords === item.count)
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Zoom controls */}
           <div className="flex items-center gap-1 rounded-xl border border-studio-border bg-slate-100 dark:bg-studio-800 p-1">
             <button

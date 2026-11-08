@@ -34,6 +34,7 @@ import { CaptionPresetBrowser } from './captions/CaptionPresetBrowser';
 import { CaptionInspector } from './captions/CaptionInspector';
 import { CaptionTimeline } from './captions/CaptionTimeline';
 import { AiStyleModal } from './captions/AiStyleModal';
+import { AutoCaptionsModal } from './captions/AutoCaptionsModal';
 
 const STORAGE_SAVED_PRESETS = 'voiceforge_caption_saved_presets_v2';
 const STORAGE_PROJECT_STATE = 'voiceforge_caption_studio_autosave_v2';
@@ -204,6 +205,9 @@ export const CaptionsStudio: React.FC = () => {
   // AI Style Recommendation
   const [aiAnalysis, setAiAnalysis] = useState<CaptionAnalysisResult | null>(null);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
+  // CapCut Auto Captions Modal
+  const [isAutoCaptionsOpen, setIsAutoCaptionsOpen] = useState(false);
 
   // Undo / Redo History Stack
   const [undoStack, setUndoStack] = useState<
@@ -575,8 +579,12 @@ export const CaptionsStudio: React.FC = () => {
   }, []);
 
   // Transcribe Video API
-  const handleTranscribe = async () => {
-    if (!file) return;
+  const handleTranscribe = async (customSettings?: CaptionStudioSettings) => {
+    if (!file) {
+      fileInputRef.current?.click();
+      return;
+    }
+    const activeSettings = customSettings || settings;
     setIsBusy(true);
     setBusyStage('Transcribing audio via Speech Recognition...');
     setErrorMessage('');
@@ -585,7 +593,7 @@ export const CaptionsStudio: React.FC = () => {
     try {
       const form = new FormData();
       form.append('video', file);
-      form.append('settings', JSON.stringify(settings));
+      form.append('settings', JSON.stringify(activeSettings));
 
       const response = await fetch('/api/captions/transcribe-video', {
         method: 'POST',
@@ -614,6 +622,44 @@ export const CaptionsStudio: React.FC = () => {
     } finally {
       setIsBusy(false);
       setBusyStage('');
+    }
+  };
+
+  // CapCut Auto Captions Handler
+  const handleGenerateAutoCaptions = async (options: {
+    language: string;
+    maxWords: number;
+    presetId: string;
+    wordHighlight: boolean;
+    uppercase: boolean;
+  }) => {
+    const matchedPreset =
+      CAPTION_PRESETS.find((p) => p.id === options.presetId) || CAPTION_PRESETS[0];
+
+    pushUndoSnapshot();
+    const updatedSettings: CaptionStudioSettings = {
+      ...settingsFromPreset(settings, matchedPreset),
+      language: options.language,
+      maxWords: options.maxWords,
+      wordHighlight: options.wordHighlight,
+      uppercase: options.uppercase
+    };
+    setSettings(updatedSettings);
+
+    // If already transcribed and language is the same, regroup existing words instantly!
+    if (transcribed && segments.length > 0 && options.language === settings.language) {
+      setSegments((cur) => regroupWords(cur, options.maxWords));
+      setIsAutoCaptionsOpen(false);
+      setLastSavedText(`Regrouped into ${options.maxWords}-word captions`);
+      return;
+    }
+
+    // Otherwise, transcribe speech from the video file
+    try {
+      await handleTranscribe(updatedSettings);
+      setIsAutoCaptionsOpen(false);
+    } catch {
+      // error handled inside handleTranscribe
     }
   };
 
@@ -701,6 +747,13 @@ export const CaptionsStudio: React.FC = () => {
         hasVideo={Boolean(file)}
         hasSegments={segments.length > 0}
         transcribed={transcribed}
+        onOpenAutoCaptions={() => {
+          if (!file) {
+            fileInputRef.current?.click();
+          } else {
+            setIsAutoCaptionsOpen(true);
+          }
+        }}
         onOpenAiModal={() => setIsAiModalOpen(true)}
         onTriggerAction={transcribed ? handleRenderVideo : handleTranscribe}
         result={renderResult}
@@ -845,6 +898,7 @@ export const CaptionsStudio: React.FC = () => {
                 setTranscribed(false);
                 setRenderResult(null);
                 setErrorMessage('');
+                setIsAutoCaptionsOpen(true);
               }
             }}
           />
@@ -853,6 +907,23 @@ export const CaptionsStudio: React.FC = () => {
             /* Upload Dropzone */
             <div
               onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const droppedFile = e.dataTransfer.files?.[0];
+                if (droppedFile) {
+                  setFile(droppedFile);
+                  setSegments([]);
+                  setTranscribed(false);
+                  setRenderResult(null);
+                  setErrorMessage('');
+                  setIsAutoCaptionsOpen(true);
+                }
+              }}
               className="glass-panel group flex min-h-[540px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-studio-border bg-white dark:bg-studio-900 p-8 text-center transition-all hover:border-indigo-500/60 hover:bg-slate-50 dark:hover:bg-studio-800/60 shadow-sm"
             >
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-black text-white dark:bg-white dark:text-black transition-transform group-hover:scale-110 shadow-sm">
@@ -943,8 +1014,9 @@ export const CaptionsStudio: React.FC = () => {
           maxWords={settings.maxWords}
           onRegroupAll={(count) => {
             pushUndoSnapshot();
+            setSettings((prev) => ({ ...prev, maxWords: count }));
             setSegments((cur) => regroupWords(cur, count));
-            setLastSavedText(`Regrouped into ${count}-word captions`);
+            setLastSavedText(`Regrouped into ${count >= 16 ? 'full sentence' : `${count}-word`} captions`);
           }}
         />
       )}
@@ -955,6 +1027,18 @@ export const CaptionsStudio: React.FC = () => {
         onClose={() => setIsAiModalOpen(false)}
         analysis={aiAnalysis}
         onApplyRecommendation={handleApplyAiRecommendation}
+      />
+
+      {/* CapCut-style Auto Captions Modal */}
+      <AutoCaptionsModal
+        isOpen={isAutoCaptionsOpen}
+        onClose={() => setIsAutoCaptionsOpen(false)}
+        onGenerate={handleGenerateAutoCaptions}
+        isGenerating={isBusy}
+        generatingStage={busyStage}
+        initialLanguage={settings.language}
+        initialMaxWords={settings.maxWords}
+        initialPresetId={settings.preset}
       />
     </div>
   );

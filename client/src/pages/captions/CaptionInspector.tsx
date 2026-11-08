@@ -564,7 +564,7 @@ export const CaptionInspector: React.FC<CaptionInspectorProps> = ({
                 >
                   Complete Sentence (Full Natural Flow)
                 </button>
-                {[2, 3, 4, 6, 8, 12].map((count) => (
+                {[1, 2, 3, 4, 6, 8].map((count) => (
                   <button
                     key={count}
                     type="button"
@@ -575,7 +575,7 @@ export const CaptionInspector: React.FC<CaptionInspectorProps> = ({
                         : 'border border-studio-border bg-slate-50 dark:bg-studio-950 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-studio-800'
                     }`}
                   >
-                    {count} Words
+                    {count === 3 ? '3 Words ⭐' : `${count} Word${count > 1 ? 's' : ''}`}
                   </button>
                 ))}
               </div>

@@ -387,17 +387,17 @@ export class CaptionVideoService {
     options: CaptionRenderOptions
   ): Promise<CaptionTranscriptionResult> {
     const temp = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'voiceforge-caption-asr-'));
-    const audio = path.join(temp, 'audio.mp3');
+    const audio = path.join(temp, 'audio.wav');
     try {
       const ffmpeg = await FFmpegHelper.getFfmpegPath();
       await execFileAsync(
         ffmpeg,
-        ['-y', '-i', inputPath, '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'libmp3lame', '-q:a', '3', audio],
-        { maxBuffer: 20 * 1024 * 1024 }
+        ['-y', '-i', inputPath, '-vn', '-map', '0:a:0?', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', audio],
+        { maxBuffer: 30 * 1024 * 1024 }
       );
       const generated = await CaptionService.generateFromAudio(
         await fs.promises.readFile(audio),
-        'source-audio.mp3',
+        'source-audio.wav',
         options
       );
       if (!generated.segments.length) throw new Error('No speech was detected in this video.');

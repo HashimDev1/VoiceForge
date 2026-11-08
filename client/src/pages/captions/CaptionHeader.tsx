@@ -9,7 +9,8 @@ import {
   Loader2,
   Download,
   FileText,
-  RotateCcw
+  RotateCcw,
+  Zap
 } from 'lucide-react';
 import { CaptionStudioSettings, CaptionRenderResult } from './types';
 import { CAPTION_PRESETS } from '@shared/captionPresets';
@@ -26,6 +27,7 @@ interface CaptionHeaderProps {
   hasVideo: boolean;
   hasSegments: boolean;
   transcribed: boolean;
+  onOpenAutoCaptions: () => void;
   onOpenAiModal: () => void;
   onTriggerAction: () => void;
   result: CaptionRenderResult | null;
@@ -44,6 +46,7 @@ export const CaptionHeader: React.FC<CaptionHeaderProps> = ({
   hasVideo,
   hasSegments,
   transcribed,
+  onOpenAutoCaptions,
   onOpenAiModal,
   onTriggerAction,
   result,
@@ -90,6 +93,17 @@ export const CaptionHeader: React.FC<CaptionHeaderProps> = ({
               {settings.animationStyle.replace('_', ' ')}
             </span>
           </div>
+
+          {/* CapCut Auto Captions Pill */}
+          <button
+            type="button"
+            onClick={onOpenAutoCaptions}
+            title="CapCut-Style Auto Captions (Word Chunks & Styles)"
+            className="px-3 py-2 text-xs font-mono font-bold uppercase tracking-wider bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-300" />
+            <span>Auto Captions</span>
+          </button>
 
           {/* AI Auto-Style Pill */}
           {hasSegments && (
