@@ -9,5 +9,7 @@ uploads/
 data/chrome_flow_userdata/
 data/editor_projects/
 server/data/
+server/models/
+*.onnx
 scratch_flow_html.html
 test_stroke.html
