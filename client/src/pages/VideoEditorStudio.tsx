@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import './videoEditor/editorDesignTokens.css';
 import { useVideoEditor } from './videoEditor/useVideoEditor';
 import { EditorTopBar } from './videoEditor/EditorTopBar';
 import { EditorSidebar } from './videoEditor/EditorSidebar';
@@ -7,6 +8,12 @@ import { EditorTimeline } from './videoEditor/EditorTimeline';
 import { EditorInspector } from './videoEditor/EditorInspector';
 import { EditorExportModal } from './videoEditor/EditorExportModal';
 import { MotionGraphicsStudio } from './videoEditor/MotionGraphicsStudio';
+import { EditorPanelSplitter } from './videoEditor/EditorPanelSplitter';
+import {
+  WorkspaceMode,
+  WORKSPACE_PRESETS,
+  WORKSPACE_CONSTRAINTS
+} from './videoEditor/EditorWorkspacePresets';
 import { videoEditorApi } from '../services/videoEditorApi';
 import { MediaAsset } from '../../../shared/src/videoEditorTypes';
 import { AlertCircle, RotateCcw, X } from 'lucide-react';
@@ -15,6 +22,9 @@ interface VideoEditorStudioProps {
   onOpenCaptionStudio?: () => void;
   initialProject?: any;
 }
+
+const STORAGE_KEY_DIMENSIONS = 'voiceforge_editor_v2_dimensions';
+const STORAGE_KEY_MODE = 'voiceforge_editor_v2_mode';
 
 export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
   onOpenCaptionStudio,
@@ -88,6 +98,72 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isMotionStudioOpen, setIsMotionStudioOpen] = useState(false);
+
+  // 5-Region Workspace Layout & Dimension States
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(() => {
+    try {
+      const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
+      if (savedMode === 'default' || savedMode === 'focus-preview' || savedMode === 'focus-timeline') {
+        return savedMode;
+      }
+    } catch {}
+    return 'default';
+  });
+
+  const [leftWidth, setLeftWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_DIMENSIONS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.leftWidth === 'number') return parsed.leftWidth;
+      }
+    } catch {}
+    return WORKSPACE_PRESETS.default.leftWidth;
+  });
+
+  const [inspectorWidth, setInspectorWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_DIMENSIONS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.inspectorWidth === 'number') return parsed.inspectorWidth;
+      }
+    } catch {}
+    return WORKSPACE_PRESETS.default.inspectorWidth;
+  });
+
+  const [timelineHeight, setTimelineHeight] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_DIMENSIONS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.timelineHeight === 'number') return parsed.timelineHeight;
+      }
+    } catch {}
+    return WORKSPACE_PRESETS.default.timelineHeight;
+  });
+
+  // Save dimensions to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY_DIMENSIONS,
+        JSON.stringify({ leftWidth, inspectorWidth, timelineHeight })
+      );
+    } catch {}
+  }, [leftWidth, inspectorWidth, timelineHeight]);
+
+  // Handle Workspace mode switching
+  const handleSelectWorkspaceMode = (mode: WorkspaceMode) => {
+    setWorkspaceMode(mode);
+    const preset = WORKSPACE_PRESETS[mode];
+    setLeftWidth(preset.leftWidth);
+    setInspectorWidth(preset.inspectorWidth);
+    setTimelineHeight(preset.timelineHeight);
+    try {
+      localStorage.setItem(STORAGE_KEY_MODE, mode);
+    } catch {}
+  };
 
   // Handle uploading media files to project
   const handleUploadAsset = async (file: File) => {
@@ -200,7 +276,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         seek(project.duration || 0);
       }
 
-      // Left / Right Arrow: CapCut-style precision frame stepping (single frame or 1s with Shift)
+      // Left / Right Arrow: CapCut-style precision frame stepping
       if (e.code === 'ArrowLeft') {
         e.preventDefault();
         const frameTime = 1 / (project.fps || 30);
@@ -235,16 +311,17 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
     redo,
     seek,
     playhead,
-    project.duration
+    project.duration,
+    project.fps
   ]);
 
   return (
-    <div className="flex flex-col gap-3.5 pb-20 select-none">
+    <div className="flex flex-col h-full w-full bg-[#0B0E13] overflow-hidden select-none">
       {/* Auto-Save Recovery Notice Banner */}
       {recoveryAvailable && (
-        <div className="flex items-center justify-between rounded-xl border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 px-4 py-2.5 text-xs text-amber-800 dark:text-amber-200 shadow-sm animate-fade-in">
+        <div className="shrink-0 flex items-center justify-between border-b border-amber-500/40 bg-amber-950/80 px-4 py-2 text-xs text-amber-200 z-40">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+            <AlertCircle className="h-4 w-4 text-amber-400 shrink-0" />
             <span>
               An unsaved session was recovered from your browser. Would you like to restore it?
             </span>
@@ -253,7 +330,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
             <button
               type="button"
               onClick={restoreFromBackup}
-              className="flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-bold text-black hover:bg-amber-400"
+              className="flex items-center gap-1 rounded bg-amber-500 px-2.5 py-1 text-xs font-bold text-black hover:bg-amber-400 cursor-pointer"
             >
               <RotateCcw className="h-3 w-3" />
               <span>Restore</span>
@@ -261,7 +338,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
             <button
               type="button"
               onClick={dismissRecovery}
-              className="rounded-lg p-1 text-amber-700 dark:text-amber-400 hover:bg-amber-200/50"
+              className="rounded p-1 text-amber-400 hover:bg-amber-900/60 cursor-pointer"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -269,7 +346,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         </div>
       )}
 
-      {/* 1. TOP STUDIO BAR */}
+      {/* REGION A: TOP APPLICATION TOOLBAR (44px fixed height) */}
       <EditorTopBar
         project={project}
         canUndo={canUndo}
@@ -282,12 +359,17 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         onUpdateMeta={updateProjectMeta}
         onOpenExport={() => setIsExportModalOpen(true)}
         onOpenCaptionStudio={onOpenCaptionStudio}
+        workspaceMode={workspaceMode}
+        onSelectWorkspaceMode={handleSelectWorkspaceMode}
       />
 
-      {/* 2. 3-PANEL EDITING WORKSPACE */}
-      <div className="grid min-w-0 grid-cols-1 items-start gap-3.5 lg:grid-cols-[310px_minmax(0,1fr)_340px] xl:grid-cols-[340px_minmax(0,1fr)_370px]">
-        {/* Left Panel: Media Pool, Audio, Text, Transitions, Effects */}
-        <div className="min-w-0 h-[640px]">
+      {/* 5-REGION DESKTOP WORKSPACE LAYOUT */}
+      <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative">
+        {/* REGION B: LEFT MEDIA & CREATIVE TOOLS WORKSPACE (Full height down to bottom) */}
+        <div
+          style={{ width: `${leftWidth}px` }}
+          className="h-full shrink-0 min-h-0 flex flex-col overflow-hidden"
+        >
           <EditorSidebar
             assets={project.assets}
             onUploadAsset={handleUploadAsset}
@@ -319,72 +401,136 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
           />
         </div>
 
-        {/* Center Panel: Video Viewport & Playback Stage */}
-        <div className="min-w-0 flex flex-col gap-3.5">
-          <EditorPreviewCanvas
-            project={project}
-            playhead={playhead}
-            isPlaying={isPlaying}
-            onTogglePlay={togglePlay}
-            onSeek={seek}
-            selectedClip={selectedClip}
-            onUpdateClip={updateClip}
-          />
-        </div>
+        {/* SPLITTER 1: Between Left Media Workspace and Right Workspace */}
+        <EditorPanelSplitter
+          direction="horizontal"
+          onResize={(delta) => {
+            setLeftWidth((w) =>
+              Math.max(
+                WORKSPACE_CONSTRAINTS.minLeftWidth,
+                Math.min(WORKSPACE_CONSTRAINTS.maxLeftWidth, w + delta)
+              )
+            );
+          }}
+          onReset={() => setLeftWidth(WORKSPACE_PRESETS[workspaceMode].leftWidth)}
+          title="Drag to resize Media Panel (Double-click to reset)"
+        />
 
-        {/* Right Panel: Contextual Clip Inspector */}
-        <div className="min-w-0 h-[640px]">
-          <EditorInspector
-            selectedClip={selectedClip}
-            onUpdateClip={updateClip}
-            playhead={playhead}
+        {/* RIGHT EDITING WORKSPACE: UPPER ROW (Preview + Inspector) & LOWER ROW (Timeline) */}
+        <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
+          {/* UPPER ROW: Preview Canvas (Region C) & Inspector (Region D) */}
+          <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
+            {/* REGION C: CENTER VIDEO PREVIEW PLAYER CANVAS */}
+            <div className="flex-1 min-w-0 min-h-0 h-full overflow-hidden">
+              <EditorPreviewCanvas
+                project={project}
+                playhead={playhead}
+                isPlaying={isPlaying}
+                onTogglePlay={togglePlay}
+                onSeek={seek}
+                selectedClip={selectedClip}
+                onUpdateClip={updateClip}
+              />
+            </div>
+
+            {/* SPLITTER 2: Between Preview and Inspector */}
+            <EditorPanelSplitter
+              direction="horizontal"
+              onResize={(delta) => {
+                // Dragging right decreases inspector width; dragging left increases it
+                setInspectorWidth((w) =>
+                  Math.max(
+                    WORKSPACE_CONSTRAINTS.minInspectorWidth,
+                    Math.min(WORKSPACE_CONSTRAINTS.maxInspectorWidth, w - delta)
+                  )
+                );
+              }}
+              onReset={() => setInspectorWidth(WORKSPACE_PRESETS[workspaceMode].inspectorWidth)}
+              title="Drag to resize Inspector Panel (Double-click to reset)"
+            />
+
+            {/* REGION D: RIGHT PROPERTIES INSPECTOR */}
+            <div
+              style={{ width: `${inspectorWidth}px` }}
+              className="h-full shrink-0 min-h-0 overflow-hidden"
+            >
+              <EditorInspector
+                selectedClip={selectedClip}
+                onUpdateClip={updateClip}
+                playhead={playhead}
+              />
+            </div>
+          </div>
+
+          {/* SPLITTER 3: Horizontal splitter between Upper Region and Timeline */}
+          <EditorPanelSplitter
+            direction="vertical"
+            onResize={(delta) => {
+              // Dragging down decreases timeline height; dragging up increases it
+              setTimelineHeight((h) =>
+                Math.max(
+                  WORKSPACE_CONSTRAINTS.minTimelineHeight,
+                  Math.min(
+                    window.innerHeight * WORKSPACE_CONSTRAINTS.maxTimelineHeightRatio,
+                    h - delta
+                  )
+                )
+              );
+            }}
+            onReset={() => setTimelineHeight(WORKSPACE_PRESETS[workspaceMode].timelineHeight)}
+            title="Drag to resize Timeline (Double-click to reset)"
           />
+
+          {/* REGION E: MULTITRACK TIMELINE (Spans horizontally under Preview and Inspector) */}
+          <div
+            style={{ height: `${timelineHeight}px` }}
+            className="w-full shrink-0 min-w-0 overflow-hidden"
+          >
+            <EditorTimeline
+              project={project}
+              playhead={playhead}
+              onSeek={seek}
+              selectedClipIds={selectedClipIds}
+              onSelectClip={selectClip}
+              selectedTrackId={selectedTrackId}
+              onSelectTrack={setSelectedTrackId}
+              zoom={zoom}
+              setZoom={setZoom}
+              snapEnabled={snapEnabled}
+              onToggleSnap={() => setSnapEnabled((s) => !s)}
+              activeTool={activeTool}
+              setActiveTool={setActiveTool}
+              onSplitClip={splitClipAtPlayhead}
+              onDeleteClip={deleteClip}
+              onDeleteSelected={deleteSelectedClips}
+              onDuplicateClip={duplicateClip}
+              onRippleDelete={rippleDelete}
+              onFreezeFrame={freezeFrame}
+              onTrimClipStart={trimClipStart}
+              onTrimClipEnd={trimClipEnd}
+              onMoveClip={moveClip}
+              onToggleTrackLock={toggleTrackLock}
+              onToggleTrackMute={toggleTrackMute}
+              onToggleTrackSolo={toggleTrackSolo}
+              onToggleTrackHidden={toggleTrackHidden}
+              onCopySelection={copySelection}
+              onPasteClips={pasteClips}
+            />
+          </div>
         </div>
       </div>
 
-      {/* 3. MULTITRACK EDITING TIMELINE */}
-      <EditorTimeline
-        project={project}
-        playhead={playhead}
-        onSeek={seek}
-        selectedClipIds={selectedClipIds}
-        onSelectClip={selectClip}
-        selectedTrackId={selectedTrackId}
-        onSelectTrack={setSelectedTrackId}
-        zoom={zoom}
-        setZoom={setZoom}
-        snapEnabled={snapEnabled}
-        onToggleSnap={() => setSnapEnabled((s) => !s)}
-        activeTool={activeTool}
-        setActiveTool={setActiveTool}
-        onSplitClip={splitClipAtPlayhead}
-        onDeleteClip={deleteClip}
-        onDeleteSelected={deleteSelectedClips}
-        onDuplicateClip={duplicateClip}
-        onRippleDelete={rippleDelete}
-        onFreezeFrame={freezeFrame}
-        onTrimClipStart={trimClipStart}
-        onTrimClipEnd={trimClipEnd}
-        onMoveClip={moveClip}
-        onToggleTrackLock={toggleTrackLock}
-        onToggleTrackMute={toggleTrackMute}
-        onToggleTrackSolo={toggleTrackSolo}
-        onToggleTrackHidden={toggleTrackHidden}
-        onCopySelection={copySelection}
-        onPasteClips={pasteClips}
-      />
-
-      {/* 4. EXPORT MODAL */}
+      {/* EXPORT MODAL */}
       <EditorExportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         project={project}
       />
 
-      {/* 5. MOTION GRAPHICS STUDIO MODAL */}
+      {/* MOTION GRAPHICS STUDIO MODAL */}
       {isMotionStudioOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl h-[90vh] overflow-hidden rounded-2xl shadow-2xl border border-studio-border bg-white dark:bg-studio-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl h-[90vh] overflow-hidden rounded-xl shadow-2xl border border-[#303740] bg-[#15191F]">
             <MotionGraphicsStudio
               onAddMotionClip={(template, customText) => {
                 addMotionGraphicClip(template, customText);

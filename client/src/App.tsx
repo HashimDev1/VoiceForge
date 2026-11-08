@@ -16,6 +16,7 @@ import { GoogleFlowStudio } from './pages/GoogleFlowStudio';
 import { CaptionsStudio } from './pages/CaptionsStudio';
 import { VideoEditorStudio } from './pages/VideoEditorStudio';
 import { DocumentaryStudio } from './pages/DocumentaryStudio';
+import { MetadataCleanerStudio } from './pages/MetadataCleanerStudio';
 import { VoiceCloneModal } from './components/VoiceCloneModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useProjectStore } from './hooks/useProjectStore';
@@ -133,7 +134,7 @@ export function App() {
             : sidebarCollapsed
             ? 'md:pl-20'
             : 'md:pl-64'
-        }`}
+        } ${activeTab === 'video-editor' ? 'h-screen overflow-hidden' : ''}`}
       >
         {/* Top Navbar Header - Only displayed on the Script Studio page */}
         {activeTab === 'script-studio' && (
@@ -150,10 +151,12 @@ export function App() {
 
         {/* Main Tab Viewport */}
         <main
-          className={`flex-1 overflow-y-auto ${
-            activeTab === 'dashboard'
-              ? 'p-4 sm:p-8 flex items-center justify-center'
-              : 'p-4 sm:p-6 pb-28 md:pb-28'
+          className={`flex-1 ${
+            activeTab === 'video-editor'
+              ? 'p-0 overflow-hidden h-full flex flex-col'
+              : activeTab === 'dashboard'
+              ? 'p-4 sm:p-8 flex items-center justify-center overflow-y-auto'
+              : 'p-4 sm:p-6 pb-28 md:pb-28 overflow-y-auto'
           }`}
         >
           {activeTab === 'dashboard' && (
@@ -197,6 +200,13 @@ export function App() {
               <GoogleFlowStudio />
             </ErrorBoundary>
           )}
+
+          {/* AI Metadata Cleaner Studio: preserved across page navigation */}
+          <div style={{ display: activeTab === 'metadata-cleaner' ? 'contents' : 'none' }}>
+            <ErrorBoundary>
+              <MetadataCleanerStudio theme={theme} />
+            </ErrorBoundary>
+          </div>
 
           {activeTab === 'clone-voice' && (
             <ErrorBoundary>
@@ -315,12 +325,12 @@ export function App() {
         </main>
 
         {/* Mobile Navigation Bottom Bar */}
-        {activeTab !== 'dashboard' && (
+        {activeTab !== 'dashboard' && activeTab !== 'video-editor' && (
           <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
         )}
 
-        {/* Persistent Bottom Audio Player Bar - Never shows on Dashboard or for voice previews */}
-        {currentUrl && isBottomBarVisible && activeTab !== 'dashboard' && (
+        {/* Persistent Bottom Audio Player Bar - Never shows on Dashboard or Video Editor */}
+        {currentUrl && isBottomBarVisible && activeTab !== 'dashboard' && activeTab !== 'video-editor' && (
           <div
             className={`fixed bottom-14 md:bottom-0 right-0 z-40 p-3 sm:p-4 transition-all duration-300 ${
               sidebarCollapsed

@@ -59,16 +59,16 @@ async function runPhase4DocumentaryValidation() {
     // Click Documentary Studio card on Dashboard or Sidebar
     await page.evaluate(() => {
       const el = document.querySelector('[title="Open Documentary Studio"]') ||
-                 Array.from(document.querySelectorAll('button, [role="button"]'))
-                   .find(b => (b.getAttribute('title') || '').includes('Documentary') || (b.textContent || '').includes('Documentary Studio'));
+        Array.from(document.querySelectorAll('button, [role="button"]'))
+          .find(b => (b.getAttribute('title') || '').includes('Documentary') || (b.textContent || '').includes('Documentary Studio'));
       if (el) el.click();
     });
 
     await page.waitForFunction(() => {
-      const text = (document.body.innerText || '').toUpperCase();
-      return text.includes('DOCUMENTARY STUDIO') &&
-             text.includes('DOCUMENTARY SCENES') &&
-             text.includes('SEND TO VIDEO EDITOR');
+      const text = document.body.innerText || '';
+      return text.includes('Documentary Studio') &&
+        text.includes('Documentary Scenes') &&
+        text.includes('Send to Video Editor');
     }, { timeout: 15000 });
     console.log('✓ Documentary Studio workspace loaded successfully.');
 
@@ -288,8 +288,8 @@ async function runPhase4DocumentaryValidation() {
     // Ensure Documentary Studio is active
     await page.evaluate(() => {
       const el = document.querySelector('[title="Open Documentary Studio"]') ||
-                 Array.from(document.querySelectorAll('button, [role="button"]'))
-                   .find(b => (b.getAttribute('title') || '').includes('Documentary') || (b.textContent || '').includes('Documentary Studio'));
+        Array.from(document.querySelectorAll('button, [role="button"]'))
+          .find(b => (b.getAttribute('title') || '').includes('Documentary') || (b.textContent || '').includes('Documentary Studio'));
       if (el) el.click();
     });
     await new Promise((r) => setTimeout(r, 1500));
@@ -304,15 +304,15 @@ async function runPhase4DocumentaryValidation() {
     console.log('\n[4/7] Triggering Handoff: "Send to Video Editor"...');
     await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('button'));
-      const handoffBtn = btns.find((b) => (b.textContent || '').toUpperCase().includes('SEND TO VIDEO EDITOR'));
+      const handoffBtn = btns.find((b) => b.textContent && b.textContent.includes('Send to Video Editor'));
       if (handoffBtn) handoffBtn.click();
     });
 
     // Wait for Video Editor Studio interface to appear with multitrack timeline
     await page.waitForFunction(() => {
-      const upper = (document.body.innerText || '').toUpperCase();
-      return (upper.includes('EXPORT VIDEO') || upper.includes('EXPORT')) &&
-             (upper.includes('DOCUMENTARY CUT') || upper.includes('DOCUMENTARY B-ROLL') || upper.includes('MAIN VIDEO') || upper.includes('V1'));
+      const text = document.body.innerText || '';
+      return (text.includes('EXPORT VIDEO') || text.includes('Export')) &&
+        (text.includes('Titles & Motion Graphics') || text.includes('Documentary B-Roll') || text.includes('V1') || text.includes('Main Video'));
     }, { timeout: 20000 });
     console.log('✓ Successfully handed off project to Multitrack Video Editor!');
 
@@ -346,7 +346,7 @@ async function runPhase4DocumentaryValidation() {
     console.log('  Triggering FFmpeg export job...');
     await page.evaluate(() => {
       const modalBtns = Array.from(document.querySelectorAll('div.fixed button, button'));
-      const startBtn = modalBtns.find((b) => (b.textContent || '').toUpperCase().includes('START EXPORT'));
+      const startBtn = modalBtns.find((b) => b.textContent && b.textContent.includes('Start Export'));
       if (startBtn) startBtn.click();
     });
 
@@ -355,9 +355,9 @@ async function runPhase4DocumentaryValidation() {
     await page.waitForFunction(() => {
       const text = (document.body.innerText || '').toUpperCase();
       return text.includes('RENDERING COMPLETE') ||
-             text.includes('DOWNLOAD MP4') ||
-             text.includes('EXPORT COMPLETE') ||
-             text.includes('FAILED');
+        text.includes('DOWNLOAD MP4') ||
+        text.includes('EXPORT COMPLETE') ||
+        text.includes('FAILED');
     }, { timeout: 90000 });
 
     const exportText = await page.evaluate(() => document.body.innerText);

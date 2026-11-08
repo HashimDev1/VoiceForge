@@ -1,0 +1,97 @@
+/* VoiceForge Studio Pro Desktop Editor V2 — Design System & Color Tokens */
+
+:root {
+  --vf-bg-app: #0B0E13;
+  --vf-bg-panel: #15191F;
+  --vf-bg-panel-secondary: #1B2028;
+  --vf-bg-elevated: #242A33;
+  --vf-bg-hover: #303842;
+  --vf-bg-active: #38424E;
+  
+  --vf-border-primary: #303740;
+  --vf-border-subtle: #242A33;
+  --vf-border-focus: #40D5CB;
+
+  --vf-text-primary: #F0F3F7;
+  --vf-text-secondary: #A4AFBD;
+  --vf-text-muted: #747F90;
+
+  --vf-accent-primary: #40D5CB;
+  --vf-accent-primary-hover: #35BDB3;
+  --vf-accent-secondary: #8B79F1;
+  --vf-accent-secondary-hover: #7A67E6;
+
+  --vf-status-success: #48C994;
+  --vf-status-warning: #E6AC57;
+  --vf-status-danger: #F06B77;
+}
+
+/* Custom Scrollbar for High-Density Editor Panels */
+.vf-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.vf-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.vf-scrollbar::-webkit-scrollbar-thumb {
+  background: #303740;
+  border-radius: 4px;
+}
+.vf-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #4A5565;
+}
+
+/* High-density Tabular Numbers for Timecodes & Steppers */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Resizer Splitter hover and active states */
+.vf-splitter-h {
+  width: 4px;
+  cursor: col-resize;
+  background-color: #242A33;
+  transition: background-color 0.15s ease;
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+}
+.vf-splitter-h:hover,
+.vf-splitter-h.active {
+  background-color: #40D5CB;
+}
+
+.vf-splitter-v {
+  height: 4px;
+  cursor: row-resize;
+  background-color: #242A33;
+  transition: background-color 0.15s ease;
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+}
+.vf-splitter-v:hover,
+.vf-splitter-v.active {
+  background-color: #40D5CB;
+}
+
+/* Range input styling matching desktop NLE */
+input[type='range'].vf-slider {
+  accent-color: #40D5CB;
+}
+input[type='range'].vf-slider::-webkit-slider-runnable-track {
+  background: #242A33;
+  height: 4px;
+  border-radius: 2px;
+}
+input[type='range'].vf-slider::-webkit-slider-thumb {
+  background: #40D5CB;
+  border: 1px solid #ffffff;
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  margin-top: -4px;
+  cursor: pointer;
+}
+

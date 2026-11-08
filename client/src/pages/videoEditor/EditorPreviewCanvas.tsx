@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   Play,
   Pause,
@@ -9,10 +9,14 @@ import {
   Volume2,
   VolumeX,
   ShieldAlert,
+  ChevronDown,
+  SkipBack,
+  SkipForward,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
   Move,
-  Crop,
-  Layers,
-  Sparkles
+  RotateCw as RotateIcon
 } from 'lucide-react';
 import {
   EditorProject,
@@ -52,6 +56,7 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
 
   // References to active media elements for real-time playhead synchronization
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
@@ -63,7 +68,10 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
     origX: number;
     origY: number;
     origScale: number;
-    mode: 'move' | 'scale';
+    origRotation: number;
+    centerX: number;
+    centerY: number;
+    mode: 'move' | 'scale' | 'rotate';
   } | null>(null);
 
   // Check if any track is soloed
@@ -102,26 +110,30 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
   const getAspectRatioDimensions = (ratio: AspectRatio) => {
     switch (ratio) {
       case '9:16':
-        return { aspect: '9/16', maxH: '520px', maxW: '292px' };
+        return { aspect: '9/16', maxH: '100%', maxW: '320px', label: '9:16' };
       case '16:9':
-        return { aspect: '16/9', maxH: '480px', maxW: '853px' };
+        return { aspect: '16/9', maxH: '100%', maxW: '100%', label: '16:9' };
       case '1:1':
-        return { aspect: '1/1', maxH: '490px', maxW: '490px' };
+        return { aspect: '1/1', maxH: '100%', maxW: '460px', label: '1:1' };
       case '4:5':
-        return { aspect: '4/5', maxH: '520px', maxW: '416px' };
+        return { aspect: '4/5', maxH: '100%', maxW: '380px', label: '4:5' };
       default:
-        return { aspect: '9/16', maxH: '520px', maxW: '292px' };
+        return { aspect: '9/16', maxH: '100%', maxW: '320px', label: '9:16' };
     }
   };
 
   const dims = getAspectRatioDimensions(project.aspectRatio);
 
-  const formatTimecode = (sec: number) => {
-    const s = Math.max(0, sec);
-    const m = Math.floor(s / 60);
-    const remS = Math.floor(s % 60);
-    const ms = Math.floor((s % 1) * 100);
-    return `${String(m).padStart(2, '0')}:${String(remS).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+  const fps = project.fps || 30;
+
+  // Format timecode HH:MM:SS:FF like CapCut desktop
+  const formatTimecodeCapCut = (sec: number) => {
+    const s = Math.max(0, sec || 0);
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60);
+    const secs = Math.floor(s % 60);
+    const frames = Math.floor((s % 1) * fps);
+    return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
   };
 
   // Synchronize active HTMLVideoElements and HTMLAudioElements with the playhead
@@ -200,10 +212,18 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
   }, [playhead, isPlaying, isMuted, activeVisualClips, activeAudioClips, hasSoloTrack]);
 
   // On-screen bounding box interactive drag handling
-  const handlePointerDown = (e: React.PointerEvent, mode: 'move' | 'scale') => {
+  const handlePointerDown = (e: React.PointerEvent, mode: 'move' | 'scale' | 'rotate') => {
     if (!selectedClip) return;
     e.preventDefault();
     e.stopPropagation();
+
+    let centerX = 0;
+    let centerY = 0;
+    if (stageRef.current) {
+      const rect = stageRef.current.getBoundingClientRect();
+      centerX = rect.left + rect.width / 2;
+      centerY = rect.top + rect.height / 2;
+    }
 
     dragRef.current = {
       startX: e.clientX,
@@ -211,6 +231,9 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
       origX: selectedClip.transform?.x || 0,
       origY: selectedClip.transform?.y || 0,
       origScale: selectedClip.transform?.scale || 1,
+      origRotation: selectedClip.transform?.rotation || 0,
+      centerX,
+      centerY,
       mode
     };
 
@@ -219,7 +242,7 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragRef.current || !selectedClip) return;
-    const { startX, startY, origX, origY, origScale, mode } = dragRef.current;
+    const { startX, startY, origX, origY, origScale, origRotation, centerX, centerY, mode } = dragRef.current;
     const deltaX = e.clientX - startX;
     const deltaY = e.clientY - startY;
 
@@ -240,6 +263,19 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
           scale: nextScale
         }
       });
+    } else if (mode === 'rotate') {
+      const startAngle = Math.atan2(startY - centerY, startX - centerX) * (180 / Math.PI);
+      const currAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+      const deltaAngle = Math.round(currAngle - startAngle);
+      let newRot = (origRotation + deltaAngle) % 360;
+      if (newRot > 180) newRot -= 360;
+      if (newRot < -180) newRot += 360;
+      onUpdateClip(selectedClip.id, {
+        transform: {
+          ...selectedClip.transform,
+          rotation: newRot
+        }
+      });
     }
   };
 
@@ -255,37 +291,43 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
   // Find topmost active video for blurred background if project.background.type === 'blur'
   const primaryVideoClip = activeVisualClips.find((c) => c.type === 'video');
 
+  const stepFrame = useCallback((direction: -1 | 1) => {
+    const frameDuration = 1 / fps;
+    const target = Math.max(0, Math.min(project.duration, playhead + direction * frameDuration));
+    onSeek(Number(target.toFixed(3)));
+  }, [fps, playhead, project.duration, onSeek]);
+
   return (
     <div
       ref={containerRef}
-      className="glass-panel flex flex-col rounded-2xl border border-studio-border bg-white dark:bg-studio-900 p-4 text-slate-900 dark:text-white shadow-sm transition-colors"
+      className="flex flex-col h-full w-full bg-[#15191F] border border-[#242A33] overflow-hidden select-none"
     >
-      {/* Top Canvas Bar */}
-      <div className="mb-3 flex items-center justify-between border-b border-studio-border pb-2.5">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-            VIEWPORT
+      {/* 1. Header Bar: Player-Timeline 01 (CapCut Desktop style) */}
+      <div className="h-9 shrink-0 bg-[#15191F] border-b border-[#242A33] px-3 flex items-center justify-between text-xs text-[#F0F3F7]">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-semibold text-xs text-[#F0F3F7] tracking-tight">Player-Timeline 01</span>
+          <span className="text-[#747F90]">·</span>
+          <span className="px-1.5 py-0.5 rounded bg-[#242A33] text-[10px] font-mono text-[#A4AFBD] border border-[#303740]">
+            {dims.label}
           </span>
-          <span className="rounded-full bg-slate-100 dark:bg-studio-800 border border-studio-border px-2 py-0.5 text-[9px] font-mono font-bold text-slate-600 dark:text-slate-300">
-            {project.aspectRatio} · {project.fps} FPS · {formatTimecode(playhead)}
+          <span className="px-1.5 py-0.5 rounded bg-[#242A33] text-[10px] font-mono text-[#747F90] hidden sm:inline border border-[#303740]">
+            {fps} FPS
           </span>
           {activeVisualClips.length > 0 && (
-            <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
-              {activeVisualClips.length} active layer{activeVisualClips.length > 1 ? 's' : ''}
+            <span className="px-1.5 py-0.5 rounded bg-[#48C994]/15 text-[10px] font-mono font-medium text-[#48C994] border border-[#48C994]/30 hidden md:inline">
+              {activeVisualClips.length} Layer{activeVisualClips.length > 1 ? 's' : ''}
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {/* Mute Preview Toggle */}
           <button
             type="button"
             onClick={() => setIsMuted((m) => !m)}
             title={isMuted ? 'Unmute Preview Audio' : 'Mute Preview Audio'}
-            className={`p-1.5 rounded-lg border border-studio-border transition cursor-pointer ${
-              isMuted
-                ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-500 border-rose-400'
-                : 'bg-slate-50 dark:bg-studio-950 text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            className={`p-1 rounded hover:bg-[#242A33] transition-colors cursor-pointer ${
+              isMuted ? 'text-[#F06B77]' : 'text-[#A4AFBD] hover:text-white'
             }`}
           >
             {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
@@ -295,14 +337,12 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
           <button
             type="button"
             onClick={() => setShowSafeZones((s) => !s)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border transition cursor-pointer ${
-              showSafeZones
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
-                : 'border-studio-border bg-slate-50 dark:bg-studio-950 text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            title="Toggle Safe Margins"
+            className={`p-1 rounded hover:bg-[#242A33] transition-colors cursor-pointer ${
+              showSafeZones ? 'text-[#40D5CB] bg-[#242A33]' : 'text-[#A4AFBD] hover:text-white'
             }`}
           >
             <ShieldAlert className="h-3.5 w-3.5" />
-            <span>Safe Zones</span>
           </button>
 
           {/* Fullscreen Button */}
@@ -317,18 +357,20 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
                 setIsFullscreen(false);
               }
             }}
-            className="p-1.5 rounded-lg border border-studio-border bg-slate-50 dark:bg-studio-950 text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            className="p-1 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition-colors cursor-pointer"
           >
             {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </button>
         </div>
       </div>
 
-      {/* Center Video Viewport Area */}
-      <div className="relative flex flex-1 items-center justify-center min-h-[460px] bg-slate-100 dark:bg-studio-950 rounded-xl overflow-hidden p-4">
+      {/* 2. Center Video Viewport Area (Matte Dark Stage #0B0E13) */}
+      <div className="relative flex flex-1 items-center justify-center min-h-0 bg-[#0B0E13] overflow-hidden p-2">
         {/* Aspect Ratio Canvas Stage */}
         <div
-          className="relative bg-black rounded-xl overflow-hidden shadow-2xl flex items-center justify-center select-none"
+          ref={stageRef}
+          className="relative bg-black rounded shadow-2xl flex items-center justify-center select-none"
           style={{
             aspectRatio: dims.aspect,
             maxHeight: dims.maxH,
@@ -351,7 +393,6 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
 
           {/* Active Visual Layers */}
           {activeVisualClips.map((clip) => {
-            const isSel = selectedClip?.id === clip.id;
             const tf = clip.transform || {};
             const cg = clip.colorGrading || {};
 
@@ -495,7 +536,7 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
                               />
                             )}
 
-                            {/* Tagline / Category Tag (if present) */}
+                            {/* Tagline / Category Tag */}
                             {td.taglineText && (
                               <span
                                 className="inline-block px-2 py-0.5 mb-1 text-[11px] font-mono font-extrabold uppercase tracking-widest rounded bg-red-600 text-white"
@@ -598,13 +639,13 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
             return null;
           })}
 
-          {/* Interactive Bounding Box for Selected Clip */}
+          {/* Interactive Bounding Box for Selected Clip (CapCut Desktop style with corner + midpoint handles and rotation anchor) */}
           {selectedClip && activeVisualClips.some((c) => c.id === selectedClip.id) && (
             <div
               onPointerDown={(e) => handlePointerDown(e, 'move')}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
-              className="absolute z-30 cursor-move border-2 border-indigo-500 rounded-sm pointer-events-auto shadow-[0_0_15px_rgba(99,102,241,0.5)]"
+              className="absolute z-30 cursor-move border border-white pointer-events-auto shadow-[0_0_12px_rgba(0,0,0,0.6)]"
               style={{
                 width: '75%',
                 height: '75%',
@@ -612,26 +653,26 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
               }}
             >
               {/* Floating HUD info badge above box */}
-              <div className="absolute -top-7 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded bg-black/80 px-2 py-0.5 text-[9px] font-mono font-bold text-white whitespace-nowrap shadow backdrop-blur-sm pointer-events-none">
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded bg-[#15191F]/90 border border-[#303740] px-2 py-0.5 text-[9px] font-mono font-medium text-[#F0F3F7] whitespace-nowrap shadow backdrop-blur-sm pointer-events-none">
                 <span>Scale: {Math.round((selectedClip.transform?.scale || 1) * 100)}%</span>
-                <span>·</span>
+                <span className="text-[#747F90]">·</span>
                 <span>X: {selectedClip.transform?.x || 0}</span>
-                <span>·</span>
+                <span className="text-[#747F90]">·</span>
                 <span>Y: {selectedClip.transform?.y || 0}</span>
                 {selectedClip.transform?.rotation ? (
                   <>
-                    <span>·</span>
+                    <span className="text-[#747F90]">·</span>
                     <span>{selectedClip.transform.rotation}°</span>
                   </>
                 ) : null}
               </div>
 
-              {/* 4 Corner Resize Handles */}
+              {/* 4 Corner Resize Handles (white square with subtle border) */}
               {['tl', 'tr', 'bl', 'br'].map((pos) => (
                 <div
                   key={pos}
                   onPointerDown={(e) => handlePointerDown(e, 'scale')}
-                  className={`absolute h-3.5 w-3.5 rounded-full bg-white border-2 border-indigo-600 shadow cursor-nwse-resize ${
+                  className={`absolute h-2.5 w-2.5 bg-white border border-[#242A33] shadow cursor-nwse-resize ${
                     pos === 'tl'
                       ? '-top-1.5 -left-1.5'
                       : pos === 'tr'
@@ -642,17 +683,48 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
                   }`}
                 />
               ))}
+
+              {/* 4 Midpoint Handles */}
+              <div
+                onPointerDown={(e) => handlePointerDown(e, 'scale')}
+                className="absolute top-1/2 -left-1 -translate-y-1/2 h-2.5 w-1.5 bg-white border border-[#242A33] shadow cursor-ew-resize"
+              />
+              <div
+                onPointerDown={(e) => handlePointerDown(e, 'scale')}
+                className="absolute top-1/2 -right-1 -translate-y-1/2 h-2.5 w-1.5 bg-white border border-[#242A33] shadow cursor-ew-resize"
+              />
+              <div
+                onPointerDown={(e) => handlePointerDown(e, 'scale')}
+                className="absolute -top-1 left-1/2 -translate-x-1/2 h-1.5 w-2.5 bg-white border border-[#242A33] shadow cursor-ns-resize"
+              />
+              <div
+                onPointerDown={(e) => handlePointerDown(e, 'scale')}
+                className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-2.5 bg-white border border-[#242A33] shadow cursor-ns-resize"
+              />
+
+              {/* Bottom Rotation Stem & Handle (Matches CapCut Reference Image) */}
+              <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-auto">
+                <div className="w-px h-3 bg-white/70" />
+                <button
+                  type="button"
+                  onPointerDown={(e) => handlePointerDown(e, 'rotate')}
+                  title="Drag to rotate"
+                  className="w-5 h-5 rounded-full bg-[#1B2028] border border-white/80 shadow flex items-center justify-center text-white hover:bg-[#40D5CB] hover:text-[#0B0E13] transition-colors cursor-grab active:cursor-grabbing"
+                >
+                  <RotateIcon className="w-3 h-3" />
+                </button>
+              </div>
             </div>
           )}
 
           {/* Safe Zones Overlay for TikTok/Reels/Shorts */}
           {showSafeZones && (
-            <div className="pointer-events-none absolute inset-0 z-40 border-2 border-dashed border-cyan-400/40 p-4">
+            <div className="pointer-events-none absolute inset-0 z-40 border border-dashed border-[#40D5CB]/40 p-4">
               <div className="flex h-full w-full flex-col justify-between">
-                <div className="rounded bg-black/40 px-2 py-0.5 font-mono text-[9px] text-cyan-300 self-center">
+                <div className="rounded bg-[#0B0E13]/80 px-2 py-0.5 font-mono text-[9px] text-[#40D5CB] self-center border border-[#40D5CB]/30">
                   TOP SAFE ZONE
                 </div>
-                <div className="rounded bg-black/40 px-2 py-0.5 font-mono text-[9px] text-cyan-300 self-center">
+                <div className="rounded bg-[#0B0E13]/80 px-2 py-0.5 font-mono text-[9px] text-[#40D5CB] self-center border border-[#40D5CB]/30">
                   BOTTOM CAPTION SAFE ZONE
                 </div>
               </div>
@@ -661,47 +733,74 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
         </div>
       </div>
 
-      {/* Bottom Transport Deck */}
-      <div className="mt-3 flex items-center justify-between border-t border-studio-border pt-2.5">
-        <div className="flex items-center gap-1 font-mono text-xs font-bold">
-          <span className="text-indigo-600 dark:text-indigo-400">{formatTimecode(playhead)}</span>
-          <span className="text-slate-400">/</span>
-          <span className="text-slate-500">{formatTimecode(project.duration)}</span>
+      {/* 3. Bottom Transport Deck (Compact CapCut Desktop Player Bar) */}
+      <div className="h-10 shrink-0 bg-[#15191F] border-t border-[#242A33] px-3 flex items-center justify-between text-xs text-[#A4AFBD]">
+        {/* Left: Timecode and Total Duration */}
+        <div className="flex items-center gap-1.5 font-mono text-xs select-text">
+          <span className="font-semibold text-[#40D5CB]">{formatTimecodeCapCut(playhead)}</span>
+          <span className="text-[#747F90]">/</span>
+          <span className="text-[#747F90]">{formatTimecodeCapCut(project.duration)}</span>
         </div>
 
-        {/* Playback Controls */}
-        <div className="flex items-center gap-2">
+        {/* Center: Transport Playback Controls */}
+        <div className="flex items-center gap-1">
+          {/* Seek to Start */}
           <button
             type="button"
-            onClick={() => onSeek(Math.max(0, playhead - 1))}
-            title="Rewind 1s"
-            className="p-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white cursor-pointer"
+            onClick={() => onSeek(0)}
+            title="Go to Start (Home)"
+            className="p-1 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition-colors cursor-pointer"
           >
-            <RotateCcw className="h-4 w-4" />
+            <SkipBack className="h-3.5 w-3.5" />
           </button>
 
+          {/* Previous Frame */}
+          <button
+            type="button"
+            onClick={() => stepFrame(-1)}
+            title="Previous Frame (Left Arrow)"
+            className="p-1 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition-colors cursor-pointer"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          {/* Play / Pause Primary Button */}
           <button
             type="button"
             onClick={onTogglePlay}
             title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
-            className="flex items-center justify-center h-10 w-10 rounded-full bg-black dark:bg-white text-white dark:text-black shadow hover:scale-105 active:scale-95 transition cursor-pointer"
+            className="mx-1 flex items-center justify-center h-7 w-7 rounded-full bg-white text-[#0B0E13] hover:bg-[#40D5CB] hover:scale-105 active:scale-95 transition-all shadow cursor-pointer"
           >
-            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
+            {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5 fill-current" />}
           </button>
 
+          {/* Next Frame */}
           <button
             type="button"
-            onClick={() => onSeek(Math.min(project.duration, playhead + 1))}
-            title="Forward 1s"
-            className="p-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white cursor-pointer"
+            onClick={() => stepFrame(1)}
+            title="Next Frame (Right Arrow)"
+            className="p-1 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition-colors cursor-pointer"
           >
-            <RotateCw className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" />
+          </button>
+
+          {/* Seek to End */}
+          <button
+            type="button"
+            onClick={() => onSeek(project.duration)}
+            title="Go to End (End)"
+            className="p-1 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition-colors cursor-pointer"
+          >
+            <SkipForward className="h-3.5 w-3.5" />
           </button>
         </div>
 
-        {/* Quality indicator */}
-        <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
-          <span>Real-time Canvas</span>
+        {/* Right: Aspect ratio badge and resolution */}
+        <div className="flex items-center gap-2 text-[11px] font-mono text-[#747F90]">
+          <span className="hidden sm:inline">1080p</span>
+          <span className="px-1.5 py-0.5 rounded bg-[#242A33] text-[10px] text-[#A4AFBD] border border-[#303740]">
+            {project.aspectRatio}
+          </span>
         </div>
       </div>
     </div>

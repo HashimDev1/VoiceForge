@@ -18,7 +18,8 @@ import {
   Cpu,
   Film,
   Video,
-  Clapperboard
+  Clapperboard,
+  ShieldCheck
 } from 'lucide-react';
 import { ApiHealthResponse } from '../../../shared/src/types';
 
@@ -28,6 +29,7 @@ export type TabType =
   | 'video-editor'
   | 'captions'
   | 'google-flow'
+  | 'metadata-cleaner'
   | 'clone-voice'
   | 'open-source-tts'
   | 'voice-generator'
@@ -75,6 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'video-editor', label: 'Video Editor', icon: Video },
     { id: 'google-flow', label: 'Flow Studio', icon: Film },
     { id: 'captions', label: 'Caption Studio', icon: Subtitles },
+    { id: 'metadata-cleaner', label: 'AI Metadata Cleaner', icon: ShieldCheck },
     { id: 'clone-voice', label: 'Clone Voice', icon: Sparkles },
     { id: 'open-source-tts', label: 'Open-Source TTS', icon: Cpu },
     { id: 'voice-generator', label: 'Fish Audio Studio', icon: Mic },

@@ -16,7 +16,8 @@ import {
   Moon,
   Video,
   Subtitles,
-  Clapperboard
+  Clapperboard,
+  ShieldCheck
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -119,6 +120,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <Film className="w-6 h-6" />
           </div>
           <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+            <Sparkles className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      )
+    },
+
+    // 1.5. AI Metadata Cleaner
+    {
+      id: 'metadata-cleaner',
+      label: 'AI Metadata Cleaner',
+      badge: 'PRIVACY',
+      targetTab: 'metadata-cleaner',
+      renderIllustration: () => (
+        <div className="relative w-16 h-16 flex items-center justify-center">
+          <div className="w-13 h-13 rounded-2xl bg-black dark:bg-white text-white dark:text-black p-0.5 shadow-sm flex items-center justify-center">
+            <ShieldCheck className="w-6 h-6 text-cyan-500" />
+          </div>
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-cyan-500 text-white flex items-center justify-center shadow-xs">
             <Sparkles className="w-3.5 h-3.5" />
           </div>
         </div>

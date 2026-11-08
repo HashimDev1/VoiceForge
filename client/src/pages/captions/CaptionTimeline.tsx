@@ -28,6 +28,8 @@ interface CaptionTimelineProps {
   onMergeSegment: () => void;
   onTagKeyword: (word: string) => void;
   emphasisWords: string[];
+  maxWords?: number;
+  onRegroupAll?: (count: number) => void;
 }
 
 export const CaptionTimeline: React.FC<CaptionTimelineProps> = ({
@@ -43,7 +45,9 @@ export const CaptionTimeline: React.FC<CaptionTimelineProps> = ({
   onSplitSegment,
   onMergeSegment,
   onTagKeyword,
-  emphasisWords
+  emphasisWords,
+  maxWords = 3,
+  onRegroupAll
 }) => {
   const [zoom, setZoom] = useState(1);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -319,6 +323,18 @@ export const CaptionTimeline: React.FC<CaptionTimelineProps> = ({
 
             {/* Split / Merge / Delete Buttons */}
             <div className="flex items-center gap-1.5">
+              {onRegroupAll && (
+                <button
+                  type="button"
+                  onClick={() => onRegroupAll(maxWords)}
+                  title={`Auto-split narration into ${maxWords}-word clips`}
+                  className="flex items-center gap-1 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 shadow-sm cursor-pointer"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>Regroup ({maxWords} Words)</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={onSplitSegment}
@@ -365,6 +381,22 @@ export const CaptionTimeline: React.FC<CaptionTimelineProps> = ({
             className="w-full rounded-xl border border-studio-border bg-white dark:bg-studio-900 p-3 text-sm font-semibold text-slate-900 dark:text-white outline-none focus:border-indigo-500/60 shadow-sm"
             rows={2}
           />
+
+          {/* Word Count & Narration Chunking Hint */}
+          {selectedSegment.text.trim().split(/\s+/).filter(Boolean).length > maxWords && onRegroupAll && (
+            <div className="flex items-center justify-between text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 rounded-xl px-3 py-2 font-mono">
+              <span>
+                💡 Narration contains {selectedSegment.text.trim().split(/\s+/).filter(Boolean).length} words (Display mode: {maxWords} words on screen).
+              </span>
+              <button
+                type="button"
+                onClick={() => onRegroupAll(maxWords)}
+                className="font-bold underline hover:text-indigo-900 dark:hover:text-white cursor-pointer ml-2"
+              >
+                Split into {maxWords}-word clips →
+              </button>
+            </div>
+          )}
 
           {/* Word-Level Chips Engine */}
           {selectedSegment.words && selectedSegment.words.length > 0 && (

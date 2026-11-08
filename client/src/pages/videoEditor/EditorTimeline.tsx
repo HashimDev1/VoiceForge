@@ -17,7 +17,9 @@ import {
   Maximize2,
   Sparkles,
   Music,
-  Radio
+  Radio,
+  MousePointer,
+  RotateCcw
 } from 'lucide-react';
 import {
   EditorProject,
@@ -88,6 +90,8 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
   onPasteClips
 }) => {
   const timelineTracksRef = useRef<HTMLDivElement>(null);
+  const trackHeadersRef = useRef<HTMLDivElement>(null);
+
   const dragRef = useRef<{
     clipId: string;
     mode: 'move' | 'trim-start' | 'trim-end';
@@ -254,42 +258,36 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragRef.current) return;
-    const { clipId, mode, startX, startY, origStart, origDuration, trackId } = dragRef.current;
-    const deltaPx = e.clientX - startX;
-    const deltaSec = deltaPx / pxPerSecond;
+    const { clipId, mode, startX, origStart, origDuration, trackId } = dragRef.current;
+    const deltaX = e.clientX - startX;
+    const deltaTime = deltaX / pxPerSecond;
 
     if (mode === 'move') {
-      const nextStart = Math.max(0, origStart + deltaSec);
-
-      // Detect which track row is under the mouse cursor for vertical track drag
-      let targetTrackId = trackId;
-      const el = document.elementFromPoint(e.clientX, e.clientY);
-      const trackRowEl = el?.closest('[data-track-id]');
-      if (trackRowEl) {
-        const foundId = trackRowEl.getAttribute('data-track-id');
-        if (foundId) {
-          // Check track type compatibility
-          const movingClip = project.clips.find((c) => c.id === clipId);
-          const candidateTrack = project.tracks.find((t) => t.id === foundId);
-          if (movingClip && candidateTrack) {
-            // Audio clips stay in audio tracks, visual clips in visual tracks
-            if (
-              (movingClip.type === 'audio' && candidateTrack.type === 'audio') ||
-              (movingClip.type !== 'audio' && candidateTrack.type !== 'audio')
-            ) {
-              targetTrackId = foundId;
-            }
+      let newStart = Math.max(0, origStart + deltaTime);
+      if (snapEnabled) {
+        if (newStart < 0.1) newStart = 0;
+        for (const c of project.clips) {
+          if (c.id === clipId) continue;
+          if (Math.abs(newStart - (c.start + c.duration)) < 0.15) {
+            newStart = c.start + c.duration;
+            break;
+          }
+          if (Math.abs(newStart + origDuration - c.start) < 0.15) {
+            newStart = Math.max(0, c.start - origDuration);
+            break;
           }
         }
       }
-
-      onMoveClip(clipId, targetTrackId, nextStart);
+      onMoveClip(clipId, trackId, Number(newStart.toFixed(2)));
     } else if (mode === 'trim-start') {
-      const nextStart = Math.max(0, origStart + deltaSec);
-      onTrimClipStart(clipId, nextStart);
+      const candidateStart = origStart + deltaTime;
+      const candidateDuration = origDuration - deltaTime;
+      if (candidateDuration >= 0.2 && candidateStart >= 0) {
+        onTrimClipStart(clipId, Number(candidateStart.toFixed(2)));
+      }
     } else if (mode === 'trim-end') {
-      const nextEnd = Math.max(origStart + 0.2, origStart + origDuration + deltaSec);
-      onTrimClipEnd(clipId, nextEnd);
+      const candidateDuration = Math.max(0.2, origDuration + deltaTime);
+      onTrimClipEnd(clipId, Number((origStart + candidateDuration).toFixed(2)));
     }
   };
 
@@ -302,26 +300,34 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
     }
   };
 
+  // Synchronize vertical scroll between track headers and timeline lanes
+  const handleTimelineScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (trackHeadersRef.current) {
+      trackHeadersRef.current.scrollTop = e.currentTarget.scrollTop;
+    }
+  };
+
   const primarySelectedClipId = selectedClipIds[0] || null;
 
   return (
-    <section className="glass-panel flex flex-col rounded-2xl border border-studio-border bg-white dark:bg-studio-900 text-slate-900 dark:text-white shadow-sm transition-colors">
-      {/* Timeline Controls Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-studio-border px-5 py-3">
+    <section className="flex flex-col h-full w-full bg-[#15191F] border border-[#242A33] overflow-hidden select-none text-[#F0F3F7]">
+      {/* 1. Timeline Toolbar Deck (CapCut Desktop style: 36px) */}
+      <div className="h-9 shrink-0 bg-[#1B2028] border-b border-[#242A33] px-3 flex items-center justify-between text-xs">
         {/* Left Action Buttons */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {/* Select Tool */}
           <button
             type="button"
             onClick={() => setActiveTool('select')}
             title="Selection Tool (V)"
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            className={`flex items-center gap-1 h-7 px-2.5 rounded text-xs font-medium transition cursor-pointer ${
               activeTool === 'select'
-                ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm font-extrabold'
-                : 'border border-studio-border bg-slate-50 dark:bg-studio-950 text-slate-600 dark:text-slate-400'
+                ? 'bg-[#242A33] text-[#40D5CB] border border-[#303740]'
+                : 'text-[#A4AFBD] hover:text-white hover:bg-[#242A33]/50'
             }`}
           >
-            Select (V)
+            <MousePointer className="h-3 w-3" />
+            <span>Select (V)</span>
           </button>
 
           {/* Razor / Split Tool */}
@@ -329,24 +335,26 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
             type="button"
             onClick={() => setActiveTool('split')}
             title="Split Tool (C)"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            className={`flex items-center gap-1 h-7 px-2.5 rounded text-xs font-medium transition cursor-pointer ${
               activeTool === 'split'
-                ? 'bg-indigo-600 text-white shadow-sm font-extrabold'
-                : 'border border-studio-border bg-slate-50 dark:bg-studio-950 text-slate-600 dark:text-slate-400'
+                ? 'bg-[#242A33] text-[#40D5CB] border border-[#303740]'
+                : 'text-[#A4AFBD] hover:text-white hover:bg-[#242A33]/50'
             }`}
           >
-            <Scissors className="h-3.5 w-3.5" />
+            <Scissors className="h-3 w-3" />
             <span>Split Tool (C)</span>
           </button>
+
+          <div className="w-px h-4 bg-[#303740] mx-1" />
 
           {/* Quick Split at Playhead */}
           <button
             type="button"
             onClick={() => onSplitClip()}
             title="Split selected clip at playhead (S)"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-studio-800 transition cursor-pointer"
+            className="flex items-center gap-1 h-7 px-2 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition cursor-pointer"
           >
-            <Scissors className="h-3.5 w-3.5 text-indigo-500" />
+            <Scissors className="h-3.5 w-3.5 text-[#40D5CB]" />
             <span>Split (S)</span>
           </button>
 
@@ -354,11 +362,11 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
           <button
             type="button"
             onClick={() => onFreezeFrame(primarySelectedClipId || undefined)}
-            title="Insert Freeze Frame (3s still) at playhead"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-studio-800 transition cursor-pointer"
+            title="Insert Freeze Frame (3s still) at playhead (F)"
+            className="flex items-center gap-1 h-7 px-2 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition cursor-pointer"
           >
-            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-            <span>Freeze</span>
+            <Sparkles className="h-3.5 w-3.5 text-[#E6AC57]" />
+            <span>Freeze (F)</span>
           </button>
 
           {/* Duplicate Clip */}
@@ -369,9 +377,9 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                 if (primarySelectedClipId) onDuplicateClip(primarySelectedClipId);
               }}
               title="Duplicate selected clip (Ctrl+D)"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-studio-800 transition cursor-pointer"
+              className="flex items-center gap-1 h-7 px-2 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition cursor-pointer"
             >
-              <Copy className="h-3.5 w-3.5 text-emerald-500" />
+              <Copy className="h-3.5 w-3.5 text-[#48C994]" />
               <span>Duplicate</span>
             </button>
           )}
@@ -382,10 +390,10 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
               type="button"
               onClick={onDeleteSelected}
               title="Delete selected clip(s) (Del)"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/30 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition cursor-pointer"
+              className="flex items-center gap-1 h-7 px-2 rounded hover:bg-[#242A33] text-[#F06B77] hover:text-white transition cursor-pointer"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              <span>Delete ({selectedClipIds.length})</span>
+              <span>Delete</span>
             </button>
           )}
 
@@ -394,10 +402,10 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
             <button
               type="button"
               onClick={() => onRippleDelete(primarySelectedClipId)}
-              title="Ripple delete (shift subsequent clips backward)"
-              className="px-2.5 py-1.5 rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 transition cursor-pointer"
+              title="Ripple delete (shift subsequent clips backward, Shift+Del)"
+              className="h-7 px-2 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition cursor-pointer"
             >
-              Ripple Delete
+              Ripple Del
             </button>
           )}
         </div>
@@ -409,73 +417,78 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
             type="button"
             onClick={onToggleSnap}
             title={snapEnabled ? 'Magnetic snapping ON' : 'Magnetic snapping OFF'}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+            className={`flex items-center gap-1 h-7 px-2 rounded text-xs font-medium transition cursor-pointer ${
               snapEnabled
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
-                : 'border-studio-border bg-slate-50 dark:bg-studio-950 text-slate-500'
+                ? 'bg-[#242A33] text-[#40D5CB] border border-[#40D5CB]/40'
+                : 'text-[#747F90] hover:text-white hover:bg-[#242A33]/50'
             }`}
           >
             <Magnet className="h-3.5 w-3.5" />
             <span>Snap</span>
           </button>
 
+          <div className="w-px h-4 bg-[#303740] mx-0.5" />
+
           {/* Zoom controls */}
-          <div className="flex items-center gap-1 rounded-xl border border-studio-border bg-slate-100 dark:bg-studio-800 p-1">
+          <div className="flex items-center gap-1 bg-[#15191F] px-1 py-0.5 rounded border border-[#303740]">
             <button
               type="button"
               onClick={() => setZoom((z) => Math.max(0.4, Number((z - 0.2).toFixed(1))))}
               title="Zoom out"
-              className="p-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+              className="p-1 rounded text-[#747F90] hover:text-white hover:bg-[#242A33] cursor-pointer"
             >
-              <ZoomOut className="h-3.5 w-3.5" />
+              <ZoomOut className="h-3 w-3" />
             </button>
-            <span className="w-10 text-center font-mono text-[10px] font-bold text-slate-700 dark:text-slate-300">
+            <span className="w-8 text-center font-mono text-[10px] text-[#A4AFBD]">
               {zoom.toFixed(1)}×
             </span>
             <button
               type="button"
               onClick={() => setZoom((z) => Math.min(4.0, Number((z + 0.2).toFixed(1))))}
               title="Zoom in"
-              className="p-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+              className="p-1 rounded text-[#747F90] hover:text-white hover:bg-[#242A33] cursor-pointer"
             >
-              <ZoomIn className="h-3.5 w-3.5" />
+              <ZoomIn className="h-3 w-3" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main Multitrack Workspace Grid */}
-      <div className="flex min-w-0 flex-1 overflow-hidden">
+      {/* 2. Main Multitrack Workspace Grid */}
+      <div className="flex min-w-0 flex-1 overflow-hidden relative">
         {/* Left Track Headers Deck */}
-        <div className="w-48 sm:w-56 shrink-0 border-r border-studio-border bg-slate-50/70 dark:bg-studio-950/70">
+        <div className="w-44 sm:w-48 shrink-0 border-r border-[#242A33] bg-[#15191F] flex flex-col z-20">
           {/* Header spacer aligned with time ruler */}
-          <div className="h-7 border-b border-studio-border px-3 flex items-center justify-between font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          <div className="h-6 border-b border-[#242A33] bg-[#1B2028] px-2.5 flex items-center justify-between font-mono text-[9px] text-[#747F90] uppercase tracking-wider">
             <span>TRACKS ({project.tracks.length})</span>
-            <span className="text-[9px] text-indigo-500 font-bold">M / S / L / V</span>
+            <span className="text-[8px] text-[#40D5CB]">M · L · V</span>
           </div>
 
-          {/* Track Header Items */}
-          <div className="flex flex-col">
+          {/* Scrollable Track Header List (synchronized with tracks) */}
+          <div
+            ref={trackHeadersRef}
+            className="flex-1 overflow-hidden flex flex-col"
+          >
             {project.tracks.map((track) => (
               <div
                 key={track.id}
                 onClick={() => onSelectTrack(track.id)}
-                className={`h-16 border-b border-studio-border px-3 flex items-center justify-between transition cursor-pointer ${
-                  selectedTrackId === track.id ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : ''
+                className={`h-14 shrink-0 border-b border-[#242A33]/70 px-2.5 flex items-center justify-between transition cursor-pointer ${
+                  selectedTrackId === track.id ? 'bg-[#242A33]/70' : 'hover:bg-[#1B2028]/60'
                 }`}
               >
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-xs font-bold text-slate-900 dark:text-white">
+                <div className="min-w-0 flex-1 pr-1">
+                  <div className="truncate text-xs font-semibold text-[#F0F3F7]">
                     {track.name}
                   </div>
-                  <div className="text-[9px] font-mono font-bold text-slate-400 uppercase flex items-center gap-1">
+                  <div className="text-[9px] font-mono text-[#747F90] uppercase flex items-center gap-1">
                     <span>{track.type}</span>
-                    {track.solo && <span className="text-amber-500 font-extrabold">[SOLO]</span>}
+                    {track.solo && <span className="text-[#E6AC57] font-bold">[SOLO]</span>}
                   </div>
                 </div>
 
                 {/* Track Toggles: Mute, Solo, Lock, Hide */}
-                <div className="flex items-center gap-0.5 shrink-0 ml-1">
+                <div className="flex items-center gap-0.5 shrink-0">
                   {/* Mute */}
                   <button
                     type="button"
@@ -484,31 +497,12 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                       onToggleTrackMute(track.id);
                     }}
                     title={track.muted ? 'Unmute track' : 'Mute track'}
-                    className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-studio-800 ${
-                      track.muted ? 'text-rose-500 font-bold' : 'text-slate-400'
+                    className={`p-1 rounded hover:bg-[#242A33] ${
+                      track.muted ? 'text-[#F06B77]' : 'text-[#747F90] hover:text-white'
                     }`}
                   >
                     {track.muted ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
                   </button>
-
-                  {/* Solo */}
-                  {onToggleTrackSolo && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleTrackSolo(track.id);
-                      }}
-                      title={track.solo ? 'Disable Solo' : 'Solo Track'}
-                      className={`px-1 py-0.5 rounded text-[9px] font-mono font-bold ${
-                        track.solo
-                          ? 'bg-amber-500 text-black'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      S
-                    </button>
-                  )}
 
                   {/* Lock */}
                   <button
@@ -518,8 +512,8 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                       onToggleTrackLock(track.id);
                     }}
                     title={track.locked ? 'Unlock track' : 'Lock track'}
-                    className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-studio-800 ${
-                      track.locked ? 'text-amber-500' : 'text-slate-400'
+                    className={`p-1 rounded hover:bg-[#242A33] ${
+                      track.locked ? 'text-[#E6AC57]' : 'text-[#747F90] hover:text-white'
                     }`}
                   >
                     {track.locked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
@@ -533,8 +527,8 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                       onToggleTrackHidden(track.id);
                     }}
                     title={track.hidden ? 'Show track' : 'Hide track'}
-                    className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-studio-800 ${
-                      track.hidden ? 'text-slate-300' : 'text-slate-400'
+                    className={`p-1 rounded hover:bg-[#242A33] ${
+                      track.hidden ? 'text-[#747F90]' : 'text-[#A4AFBD] hover:text-white'
                     }`}
                   >
                     {track.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
@@ -548,26 +542,27 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
         {/* Right Scrollable Timeline Canvas */}
         <div
           ref={timelineTracksRef}
-          className="relative min-w-0 flex-1 overflow-x-auto overflow-y-hidden select-none bg-slate-100/50 dark:bg-studio-950/50"
+          onScroll={handleTimelineScroll}
+          className="relative min-w-0 flex-1 overflow-x-auto overflow-y-auto select-none bg-[#0B0E13] scrollbar-thin"
         >
-          <div style={{ width: `${totalWidthPx}px` }} className="relative flex flex-col">
+          <div style={{ width: `${totalWidthPx}px` }} className="relative flex flex-col min-h-full">
             {/* 1. Time Ruler Deck with Drag-Scrubbing */}
             <div
               onPointerDown={handleRulerPointerDown}
               onPointerMove={handleRulerPointerMove}
               onPointerUp={handleRulerPointerUp}
               title="Click or drag to scrub playhead"
-              className="relative h-7 border-b border-studio-border bg-slate-100 dark:bg-studio-950 cursor-ew-resize overflow-hidden select-none"
+              className="sticky top-0 z-30 h-6 border-b border-[#242A33] bg-[#1B2028] cursor-ew-resize overflow-hidden select-none"
             >
               {ticks.map((t) => {
                 const left = t * pxPerSecond;
                 return (
                   <div
                     key={t}
-                    className="absolute top-0 bottom-0 border-l border-slate-300 dark:border-studio-800 pl-1 pointer-events-none"
+                    className="absolute top-0 bottom-0 border-l border-[#303740] pl-1 pointer-events-none"
                     style={{ left: `${left}px` }}
                   >
-                    <span className="font-mono text-[9px] font-bold text-slate-400 select-none">
+                    <span className="font-mono text-[9px] text-[#747F90] select-none">
                       {Math.floor(t / 60)}:{String(Math.floor(t % 60)).padStart(2, '0')}s
                     </span>
                   </div>
@@ -587,17 +582,17 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                   <div
                     key={track.id}
                     data-track-id={track.id}
-                    className={`relative h-16 border-b border-studio-border/60 transition-colors ${
+                    className={`relative h-14 shrink-0 border-b border-[#242A33]/70 transition-colors ${
                       track.locked
-                        ? 'bg-slate-200/40 dark:bg-studio-900/40 opacity-70'
-                        : 'hover:bg-slate-50/40 dark:hover:bg-studio-900/20'
+                        ? 'bg-[#15191F]/80 opacity-70'
+                        : 'bg-[#15191F]/40 hover:bg-[#1B2028]/30'
                     }`}
                   >
                     {/* Horizontal second grid lines */}
                     {ticks.map((t) => (
                       <div
                         key={t}
-                        className="absolute top-0 bottom-0 border-l border-slate-200/50 dark:border-studio-800/30 pointer-events-none"
+                        className="absolute top-0 bottom-0 border-l border-[#242A33]/40 pointer-events-none"
                         style={{ left: `${t * pxPerSecond}px` }}
                       />
                     ))}
@@ -619,33 +614,33 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                             left: `${left}px`,
                             width: `${width}px`
                           }}
-                          className={`group absolute top-1.5 bottom-1.5 rounded-lg overflow-hidden border shadow-xs transition-all cursor-move select-none flex flex-col justify-between p-1.5 ${
+                          className={`group absolute top-1 bottom-1 rounded overflow-hidden border shadow-xs transition-all cursor-move select-none flex flex-col justify-between p-1.5 ${
                             isSel
-                              ? 'ring-2 ring-indigo-500 shadow-md border-indigo-400 z-20'
-                              : 'border-studio-border z-10'
+                              ? 'ring-2 ring-[#40D5CB] border-white z-20'
+                              : 'border-[#303740] z-10'
                           } ${
                             clip.type === 'video'
-                              ? 'bg-indigo-950/80 text-indigo-100 border-indigo-700/60'
+                              ? 'bg-[#1B2838] text-white border-[#2A475E]'
                               : clip.type === 'audio'
-                              ? 'bg-emerald-950/80 text-emerald-100 border-emerald-700/60'
+                              ? 'bg-[#163328] text-white border-[#235843]'
                               : clip.type === 'text' || clip.type === 'caption'
-                              ? 'bg-amber-950/80 text-amber-100 border-amber-700/60'
-                              : 'bg-cyan-950/80 text-cyan-100 border-cyan-700/60'
+                              ? 'bg-[#342247] text-white border-[#533475]'
+                              : 'bg-[#382A1B] text-white border-[#61492A]'
                           }`}
                         >
                           {/* Top clip meta header */}
                           <div className="flex items-center justify-between gap-1 pointer-events-none">
-                            <span className="truncate font-sans text-[11px] font-extrabold tracking-tight">
+                            <span className="truncate font-sans text-[11px] font-semibold tracking-tight text-white">
                               {clip.name}
                             </span>
-                            <span className="shrink-0 font-mono text-[9px] opacity-75">
+                            <span className="shrink-0 font-mono text-[9px] text-[#A4AFBD]">
                               {clip.duration.toFixed(1)}s
                             </span>
                           </div>
 
                           {/* Audio Waveform visualization for audio/video clips */}
                           {(clip.type === 'audio' || clip.type === 'video') && (
-                            <div className="h-3 w-full flex items-center gap-0.5 opacity-60 overflow-hidden pointer-events-none">
+                            <div className="h-2.5 w-full flex items-center gap-0.5 opacity-70 overflow-hidden pointer-events-none">
                               {Array.from({ length: Math.min(60, Math.floor(width / 5)) }).map((_, idx) => {
                                 const pseudoH = 20 + Math.sin(idx * 0.8 + clip.start) * 40 + Math.cos(idx * 1.5) * 30;
                                 return (
@@ -653,7 +648,7 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                                     key={idx}
                                     style={{ height: `${Math.max(15, Math.min(100, pseudoH))}%` }}
                                     className={`w-0.5 rounded-full ${
-                                      clip.type === 'audio' ? 'bg-emerald-400' : 'bg-indigo-400'
+                                      clip.type === 'audio' ? 'bg-[#48C994]' : 'bg-[#40D5CB]'
                                     }`}
                                   />
                                 );
@@ -671,7 +666,7 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                                     key={kf.id}
                                     style={{ left: `${kfPercent}%` }}
                                     title={`Keyframe: ${kf.property} at ${kf.time.toFixed(2)}s`}
-                                    className="absolute h-2 w-2 -translate-x-1 rotate-45 bg-amber-400 border border-black shadow-xs"
+                                    className="absolute h-2 w-2 -translate-x-1 rotate-45 bg-[#40D5CB] border border-[#0B0E13] shadow-xs"
                                   />
                                 );
                               })}
@@ -680,7 +675,7 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
 
                           {/* Transitions Badge */}
                           {clip.transitionIn && clip.transitionIn.type !== 'none' && (
-                            <div className="absolute top-1 left-1 rounded bg-black/60 px-1 text-[8px] font-mono text-cyan-300 pointer-events-none">
+                            <div className="absolute top-1 left-1 rounded bg-black/60 px-1 text-[8px] font-mono text-[#40D5CB] pointer-events-none">
                               {clip.transitionIn.type}
                             </div>
                           )}
@@ -688,17 +683,17 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                           {/* Left Trim Handle */}
                           <div
                             onPointerDown={(e) => handlePointerDown(e, clip, 'trim-start')}
-                            className="absolute top-0 bottom-0 left-0 w-2.5 bg-white/20 hover:bg-indigo-400 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-l-lg flex items-center justify-center"
+                            className="absolute top-0 bottom-0 left-0 w-2.5 bg-white/20 hover:bg-[#40D5CB] cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-l flex items-center justify-center"
                           >
-                            <div className="w-0.5 h-4 bg-white/70 rounded-full" />
+                            <div className="w-0.5 h-3 bg-white rounded-full" />
                           </div>
 
                           {/* Right Trim Handle */}
                           <div
                             onPointerDown={(e) => handlePointerDown(e, clip, 'trim-end')}
-                            className="absolute top-0 bottom-0 right-0 w-2.5 bg-white/20 hover:bg-indigo-400 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-r-lg flex items-center justify-center"
+                            className="absolute top-0 bottom-0 right-0 w-2.5 bg-white/20 hover:bg-[#40D5CB] cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-r flex items-center justify-center"
                           >
-                            <div className="w-0.5 h-4 bg-white/70 rounded-full" />
+                            <div className="w-0.5 h-3 bg-white rounded-full" />
                           </div>
                         </div>
                       );
@@ -713,10 +708,10 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
               style={{ left: `${projectDur * pxPerSecond}px` }}
               className="absolute top-0 bottom-0 z-20 pointer-events-none flex flex-col"
             >
-              <div className="h-7 px-1.5 flex items-center bg-slate-800/90 text-[9px] font-mono font-bold text-slate-200 border-l-2 border-indigo-500 shadow-sm rounded-r">
+              <div className="h-6 px-1.5 flex items-center bg-[#1B2028] text-[9px] font-mono font-medium text-[#A4AFBD] border-l-2 border-[#40D5CB] shadow-sm">
                 END ({formatTimecode(projectDur)})
               </div>
-              <div className="w-0.5 flex-1 border-r border-dashed border-slate-400/60 dark:border-studio-700/80" />
+              <div className="w-0.5 flex-1 border-r border-dashed border-[#747F90]/50" />
             </div>
 
             {/* Out-of-bounds dimmed area beyond project duration */}
@@ -726,7 +721,7 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                   left: `${projectDur * pxPerSecond}px`,
                   width: `${totalWidthPx - projectDur * pxPerSecond}px`
                 }}
-                className="absolute top-0 bottom-0 pointer-events-none opacity-20 dark:opacity-30 bg-[repeating-linear-gradient(45deg,#000,#000_10px,transparent_10px,transparent_20px)]"
+                className="absolute top-0 bottom-0 pointer-events-none opacity-20 bg-[repeating-linear-gradient(45deg,#000,#000_10px,transparent_10px,transparent_20px)]"
               />
             )}
 
@@ -737,7 +732,7 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
             >
               {/* Floating Tooltip Pill showing timecode when scrubbing or hovering */}
               {(isScrubbing || isNeedleHovered) && (
-                <div className="absolute -top-6 whitespace-nowrap rounded-md bg-indigo-600 px-1.5 py-0.5 text-[10px] font-mono font-bold text-white shadow-lg pointer-events-none z-50">
+                <div className="absolute -top-6 whitespace-nowrap rounded bg-[#40D5CB] px-1.5 py-0.5 text-[9px] font-mono font-bold text-[#0B0E13] shadow-lg pointer-events-none z-50">
                   {formatTimecode(playhead)}
                 </div>
               )}
@@ -750,22 +745,22 @@ export const EditorTimeline: React.FC<EditorTimelineProps> = ({
                 onMouseEnter={() => setIsNeedleHovered(true)}
                 onMouseLeave={() => setIsNeedleHovered(false)}
                 title={`Playhead: ${formatTimecode(playhead)} (Drag to scrub)`}
-                className="pointer-events-auto group relative flex h-7 w-7 items-center justify-center cursor-ew-resize z-40"
+                className="pointer-events-auto group relative flex h-6 w-6 items-center justify-center cursor-ew-resize z-40"
               >
                 {/* Visual Head Badge */}
                 <div
-                  className={`w-3.5 h-4.5 bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-300 border-2 border-white rounded-t-xs shadow-md flex items-center justify-center transition-transform ${
+                  className={`w-3 h-4 bg-[#40D5CB] hover:bg-[#5CE5DC] active:bg-[#34B3AA] border border-white rounded-t-xs shadow-md flex items-center justify-center transition-transform ${
                     isScrubbing ? 'scale-125' : 'group-hover:scale-110'
                   }`}
                 >
-                  <div className="w-0.5 h-2 bg-white/90 rounded-full" />
+                  <div className="w-0.5 h-1.5 bg-[#0B0E13] rounded-full" />
                 </div>
                 {/* Downward chevron pointer directly over the line */}
-                <div className="absolute top-[18px] w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] border-t-indigo-500 pointer-events-none" />
+                <div className="absolute top-[15px] w-0 h-0 border-l-[3.5px] border-l-transparent border-r-[3.5px] border-r-transparent border-t-[4px] border-t-[#40D5CB] pointer-events-none" />
               </div>
 
-              {/* Red/Indigo Scrubber Needle Line extending down across all tracks */}
-              <div className="w-0.5 flex-1 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] pointer-events-none" />
+              {/* Cyan Scrubber Needle Line extending down across all tracks */}
+              <div className="w-0.5 flex-1 bg-[#40D5CB] shadow-[0_0_8px_rgba(64,213,203,0.8)] pointer-events-none" />
             </div>
           </div>
         </div>

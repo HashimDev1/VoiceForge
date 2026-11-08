@@ -163,6 +163,79 @@ function computeCaptionShadowAndStroke(
   };
 }
 
+// Helper to window words according to settings.maxWords (e.g. 3 words on screen at a time)
+function getActiveWordsWindow(
+  segment: CaptionSegment,
+  playhead: number,
+  maxWords: number
+): { displayWords: CaptionWord[]; activeWordIndex: number } {
+  let allWords: CaptionWord[] =
+    segment.words && segment.words.length > 0
+      ? segment.words.filter((w) => w.word && w.word.trim())
+      : [];
+
+  if (allWords.length === 0 && segment.text && segment.text.trim()) {
+    const tokens = segment.text.trim().split(/\s+/).filter(Boolean);
+    const span = Math.max(0.01, segment.end - segment.start);
+    allWords = tokens.map((w, idx) => ({
+      word: w,
+      start: segment.start + (span * idx) / Math.max(1, tokens.length),
+      end: segment.start + (span * (idx + 1)) / Math.max(1, tokens.length)
+    }));
+  }
+
+  if (allWords.length === 0) {
+    return { displayWords: [], activeWordIndex: -1 };
+  }
+
+  // If complete sentence mode (>= 16 words), show all words in the segment
+  if (maxWords >= 16 || allWords.length <= maxWords) {
+    const activeIdx = allWords.findIndex(
+      (w) => playhead >= w.start && playhead <= w.end
+    );
+    return { displayWords: allWords, activeWordIndex: activeIdx };
+  }
+
+  // Chunk all words into groups of maxWords (e.g. 3 words)
+  const limit = Math.max(1, Math.min(25, Math.round(maxWords)));
+  const groups: CaptionWord[][] = [];
+  let curGroup: CaptionWord[] = [];
+  const sentenceEnd = /[.!?]["'’“”؟۔]*$/;
+
+  for (const word of allWords) {
+    if (curGroup.length >= limit) {
+      groups.push(curGroup);
+      curGroup = [];
+    }
+    curGroup.push(word);
+    if (sentenceEnd.test(word.word) && curGroup.length >= 2) {
+      groups.push(curGroup);
+      curGroup = [];
+    }
+  }
+  if (curGroup.length) groups.push(curGroup);
+
+  // Find which group is currently spoken at playhead
+  let targetGroup = groups[0];
+  for (const grp of groups) {
+    const grpStart = grp[0].start;
+    const grpEnd = grp[grp.length - 1].end;
+    if (playhead >= grpStart && playhead <= grpEnd) {
+      targetGroup = grp;
+      break;
+    }
+    if (playhead >= grpStart) {
+      targetGroup = grp;
+    }
+  }
+
+  const activeIdx = targetGroup.findIndex(
+    (w) => playhead >= w.start && playhead <= w.end
+  );
+
+  return { displayWords: targetGroup, activeWordIndex: activeIdx };
+}
+
 export const CaptionStage: React.FC<CaptionStageProps> = ({
   videoRef,
   videoSrc,
@@ -210,19 +283,44 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
     return () => ro.disconnect();
   }, [settings.aspectRatio]);
 
-  // Sync isPlaying state with video
+  // Sync isPlaying state with video and run smooth 60fps playhead loop
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
+
+    let animId: number | null = null;
+    const loop = () => {
+      if (el && !el.paused) {
+        onSeek(el.currentTime);
+        animId = requestAnimationFrame(loop);
+      }
+    };
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+      if (animId) cancelAnimationFrame(animId);
+      animId = requestAnimationFrame(loop);
+    };
+    const handlePause = () => {
+      setIsPlaying(false);
+      if (animId) cancelAnimationFrame(animId);
+      onSeek(el.currentTime);
+    };
+    const handleEnded = () => {
+      setIsPlaying(false);
+      if (animId) cancelAnimationFrame(animId);
+    };
+
     el.addEventListener('play', handlePlay);
     el.addEventListener('pause', handlePause);
+    el.addEventListener('ended', handleEnded);
     return () => {
+      if (animId) cancelAnimationFrame(animId);
       el.removeEventListener('play', handlePlay);
       el.removeEventListener('pause', handlePause);
+      el.removeEventListener('ended', handleEnded);
     };
-  }, [videoRef, videoSrc]);
+  }, [videoRef, videoSrc, onSeek]);
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -371,9 +469,8 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
   // Smart Active Segment Resolution:
   // 1. Exact timestamp match
   // 2. Bridge brief speech pauses (up to 0.85s) so captions don't flicker/vanish between words
-  // 3. Fallback to selected segment in timeline
-  // 4. Fallback to first segment at video start (playhead near 0)
-  // 5. Fallback to nearest segment within 1.5s when scrubbing/paused
+  // 3. Fallback to selected segment in timeline (when paused)
+  // 4. Fallback to nearest segment within 1.5s when scrubbing/paused
   const activeSegment = React.useMemo(() => {
     if (!segments || segments.length === 0) return null;
 
@@ -395,13 +492,26 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
     });
     if (bridged) return bridged;
 
+    // When video is actively PLAYING: strictly track timestamps without locking to old clip or start of video
+    if (isPlaying) {
+      // If we just finished a segment recently (within 0.85s), bridge it
+      const lastEnded = segments
+        .filter((s) => s.end <= playhead)
+        .sort((a, b) => b.end - a.end)[0];
+      if (lastEnded && playhead - lastEnded.end <= 0.85) {
+        return lastEnded;
+      }
+      return null;
+    }
+
+    // When PAUSED / SCRUBBING:
     // 3. If a segment is explicitly selected in timeline/editor, show it!
     if (selectedSegmentId) {
       const selected = segments.find((seg) => seg.id === selectedSegmentId);
       if (selected) return selected;
     }
 
-    // 4. Near start of video (first 0.3s), display the first caption so the canvas is never empty
+    // 4. Near start of video (first 0.3s), display the first caption so canvas isn't empty
     if (playhead < (segments[0].start || 0) + 0.35) {
       return segments[0];
     }
@@ -424,7 +534,13 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
     }
 
     return segments[0] || null;
-  }, [segments, playhead, selectedSegmentId]);
+  }, [segments, playhead, selectedSegmentId, isPlaying]);
+
+  // Active Spoken Words Window (respecting settings.maxWords, e.g. 3 words on screen at a time)
+  const { displayWords, activeWordIndex } = React.useMemo(() => {
+    if (!activeSegment) return { displayWords: [], activeWordIndex: -1 };
+    return getActiveWordsWindow(activeSegment, playhead, settings.maxWords);
+  }, [activeSegment, playhead, settings.maxWords]);
 
   const isRtl = settings.preset.startsWith('urdu_');
 
@@ -573,6 +689,7 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
             playsInline
             muted={isMuted}
             onClick={togglePlay}
+            onTimeUpdate={(e) => onSeek(e.currentTarget.currentTime)}
             className="h-full w-full object-contain cursor-pointer"
           />
 
@@ -783,10 +900,10 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
                   </>
                 )}
 
-                {/* Spoken Word Chips */}
-                {activeSegment.words && activeSegment.words.length > 0 ? (
-                  activeSegment.words.map((w, i) => {
-                    const isActiveWord = playhead >= w.start && playhead <= w.end;
+                {/* Spoken Word Chips (Strict Word Window matching settings.maxWords, e.g. 3 Words) */}
+                {displayWords && displayWords.length > 0 ? (
+                  displayWords.map((w, i) => {
+                    const isActiveWord = i === activeWordIndex;
                     const cleanUpper = w.word
                       .toUpperCase()
                       .replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
@@ -811,11 +928,11 @@ export const CaptionStage: React.FC<CaptionStageProps> = ({
 
                     return (
                       <span
-                        key={`${activeSegment.id}-word-${i}`}
+                        key={`${activeSegment.id}-word-${w.start}-${i}`}
                         style={{
                           display: 'inline-block',
                           verticalAlign: 'middle',
-                          margin: '0',
+                          margin: '0 0.16em',
                           color: wordColor,
                           WebkitTextStroke: webkitTextStroke,
                           textShadow,

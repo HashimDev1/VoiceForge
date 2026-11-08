@@ -270,7 +270,16 @@ export function assDocument(
   const events: string[] = [];
 
   for (const caption of captions) {
-    const words = (caption.words || []).filter((w) => w.word.trim() && w.end > w.start);
+    let words = (caption.words || []).filter((w) => w.word.trim() && w.end > w.start);
+    if (!words.length && caption.text && caption.text.trim()) {
+      const tokens = caption.text.trim().split(/\s+/).filter(Boolean);
+      const span = Math.max(0.01, caption.end - caption.start);
+      words = tokens.map((word, idx) => ({
+        word,
+        start: caption.start + (span * idx) / Math.max(1, tokens.length),
+        end: caption.start + (span * (idx + 1)) / Math.max(1, tokens.length)
+      }));
+    }
     if (!words.length) {
       const textToRender = upper ? caption.text.toUpperCase() : caption.text;
       events.push(

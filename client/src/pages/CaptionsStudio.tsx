@@ -162,13 +162,20 @@ function regroupWords(items: CaptionSegment[], maxWords: number): CaptionSegment
   }
   if (current.length) groups.push(current);
 
-  return groups.map((grp, idx) => ({
-    id: `caption-group-${idx}-${grp[0].start}`,
-    start: grp[0].start,
-    end: grp[grp.length - 1].end,
-    text: grp.map((w) => w.word).join(' '),
-    words: grp
-  }));
+  return groups.map((grp, idx) => {
+    const nextGrp = groups[idx + 1];
+    const rawEnd = grp[grp.length - 1].end;
+    const seamlessEnd = nextGrp
+      ? Math.min(nextGrp[0].start, rawEnd + 0.35)
+      : rawEnd;
+    return {
+      id: `caption-group-${idx}-${grp[0].start.toFixed(2)}`,
+      start: grp[0].start,
+      end: Math.max(grp[0].start + 0.1, seamlessEnd),
+      text: grp.map((w) => w.word.trim()).join(' '),
+      words: grp
+    };
+  });
 }
 
 export const CaptionsStudio: React.FC = () => {
@@ -332,7 +339,7 @@ export const CaptionsStudio: React.FC = () => {
       el.removeEventListener('timeupdate', handleTimeUpdate);
       el.removeEventListener('loadedmetadata', handleLoadedMetadata);
     };
-  }, [segments, selectedSegmentId]);
+  }, [segments, selectedSegmentId, file, localVideoUrl, renderResult]);
 
   // Update Settings property
   const updateSettings = useCallback(
@@ -340,15 +347,15 @@ export const CaptionsStudio: React.FC = () => {
       pushUndoSnapshot();
       setSettings((prev) => {
         const next = { ...prev, [key]: val };
-        // If changing maxWords and we already have transcribed segments, regroup them!
-        if (key === 'maxWords' && transcribed) {
+        // If changing maxWords (e.g. 3 Words), regroup all segments into that word count immediately!
+        if (key === 'maxWords' && segments.length > 0) {
           setSegments((cur) => regroupWords(cur, Number(val)));
         }
         return next;
       });
       setLastSavedText(`Saved ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
     },
-    [pushUndoSnapshot, transcribed]
+    [pushUndoSnapshot, segments]
   );
 
   // Apply Preset
@@ -409,8 +416,9 @@ export const CaptionsStudio: React.FC = () => {
   // Add Segment
   const handleAddSegment = useCallback(() => {
     pushUndoSnapshot();
-    const start = Math.max(0, Math.min(playhead, duration || playhead));
-    const end = Math.min(duration || start + 2.5, start + 2.5);
+    const start = segments.length === 0 ? 0 : Math.max(0, Math.min(playhead, duration || playhead));
+    const defaultSpan = Math.max(2.5, Math.min(duration || 3.5, 3.5));
+    const end = Math.min(duration || start + defaultSpan, start + defaultSpan);
     const mid = start + (end - start) / 2;
     const newId = `caption-${Date.now()}`;
     const newSeg: CaptionSegment = {
@@ -425,7 +433,7 @@ export const CaptionsStudio: React.FC = () => {
     };
     setSegments((items) => [...items, newSeg].sort((a, b) => a.start - b.start));
     setSelectedSegmentId(newId);
-  }, [playhead, duration, pushUndoSnapshot]);
+  }, [playhead, duration, segments.length, pushUndoSnapshot]);
 
   // Delete Segment
   const handleDeleteSegment = useCallback(
@@ -914,7 +922,7 @@ export const CaptionsStudio: React.FC = () => {
       {/* ==========================================
           BOTTOM PANEL: AUDIO WAVEFORM & TIMELINE TRACK
           ========================================== */}
-      {transcribed && segments.length > 0 && (
+      {(Boolean(file) || segments.length > 0) && (
         <CaptionTimeline
           segments={segments}
           duration={duration}
@@ -932,6 +940,12 @@ export const CaptionsStudio: React.FC = () => {
           onMergeSegment={handleMergeSegment}
           onTagKeyword={handleTagKeyword}
           emphasisWords={settings.emphasisWords}
+          maxWords={settings.maxWords}
+          onRegroupAll={(count) => {
+            pushUndoSnapshot();
+            setSegments((cur) => regroupWords(cur, count));
+            setLastSavedText(`Regrouped into ${count}-word captions`);
+          }}
         />
       )}
 
