@@ -8,7 +8,11 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: GROQ_API_KEY
+        sync: false
       - key: FISH_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
         sync: false
       - key: MAX_CONCURRENT_TTS
         value: 2

@@ -28,8 +28,8 @@ RUN npm --prefix server run build
 # Production Runner Stage
 FROM node:20-alpine AS runner
 
-# Install system ffmpeg in runner container
-RUN apk add --no-cache ffmpeg
+# Install system ffmpeg and python3 in runner container
+RUN apk add --no-cache ffmpeg python3 py3-pip
 
 WORKDIR /app
 ENV NODE_ENV=production

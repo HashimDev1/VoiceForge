@@ -646,6 +646,7 @@ export const CaptionsStudio: React.FC = () => {
     presetId: string;
     wordHighlight: boolean;
     uppercase: boolean;
+    customTranscript?: string;
   }) => {
     const matchedPreset =
       CAPTION_PRESETS.find((p) => p.id === options.presetId) || CAPTION_PRESETS[0];
@@ -659,6 +660,30 @@ export const CaptionsStudio: React.FC = () => {
       uppercase: options.uppercase
     };
     setSettings(updatedSettings);
+
+    // If direct script / dialogue text was provided:
+    if (options.customTranscript && options.customTranscript.trim()) {
+      const tokens = options.customTranscript.trim().split(/\s+/).filter(Boolean);
+      const totalDur = Math.max(1, duration || tokens.length * 0.4);
+      const span = totalDur / Math.max(1, tokens.length);
+      const words = tokens.map((w, idx) => ({
+        word: w,
+        start: idx * span,
+        end: (idx + 1) * span
+      }));
+      const rawSeg = [{
+        id: 'user_script_seg',
+        start: 0,
+        end: totalDur,
+        text: options.customTranscript.trim(),
+        words
+      }];
+      setSegments(regroupWords(rawSeg, options.maxWords));
+      setTranscribed(true);
+      setIsAutoCaptionsOpen(false);
+      setLastSavedText(`Generated ${options.maxWords}-word captions from text`);
+      return;
+    }
 
     // If already transcribed and language is the same, regroup existing words instantly!
     if (transcribed && segments.length > 0 && options.language === settings.language) {

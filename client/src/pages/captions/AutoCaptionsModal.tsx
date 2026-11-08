@@ -8,7 +8,8 @@ import {
   Check,
   Type,
   Zap,
-  Loader2
+  Loader2,
+  FileText
 } from 'lucide-react';
 import { CAPTION_PRESETS } from '@shared/captionPresets';
 
@@ -21,6 +22,7 @@ interface AutoCaptionsModalProps {
     presetId: string;
     wordHighlight: boolean;
     uppercase: boolean;
+    customTranscript?: string;
   }) => void;
   isGenerating: boolean;
   generatingStage: string;
@@ -80,6 +82,8 @@ export const AutoCaptionsModal: React.FC<AutoCaptionsModalProps> = ({
   const [presetId, setPresetId] = useState(initialPresetId);
   const [wordHighlight, setWordHighlight] = useState(true);
   const [uppercase, setUppercase] = useState(true);
+  const [customTranscript, setCustomTranscript] = useState('');
+  const [showCustomTranscript, setShowCustomTranscript] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -99,6 +103,7 @@ export const AutoCaptionsModal: React.FC<AutoCaptionsModalProps> = ({
       presetId,
       wordHighlight,
       uppercase,
+      customTranscript: showCustomTranscript ? customTranscript : undefined
     });
   };
 
@@ -275,6 +280,38 @@ export const AutoCaptionsModal: React.FC<AutoCaptionsModalProps> = ({
                 ALL CAPS (Reels & Shorts style)
               </span>
             </label>
+          </div>
+
+          {/* Optional: Paste Transcript / Script Accordion */}
+          <div className="pt-2 border-t border-studio-border">
+            <button
+              type="button"
+              onClick={() => setShowCustomTranscript(!showCustomTranscript)}
+              className="flex items-center justify-between w-full text-left text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+            >
+              <span className="flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Or paste your script / dialogue text directly (Optional)</span>
+              </span>
+              <span className="text-[10px] font-mono text-indigo-500">
+                {showCustomTranscript ? 'Hide' : '+ Paste Text'}
+              </span>
+            </button>
+
+            {showCustomTranscript && (
+              <div className="mt-2 space-y-1">
+                <textarea
+                  value={customTranscript}
+                  onChange={(e) => setCustomTranscript(e.target.value)}
+                  placeholder="Paste dialogue or narration text here. Words will be auto-divided into 3-word animated chunks across the video timeline..."
+                  rows={3}
+                  className="w-full rounded-xl border border-studio-border bg-slate-50 dark:bg-studio-950 p-2.5 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-500 resize-none"
+                />
+                <p className="text-[10px] text-slate-400">
+                  Ideal for videos with low speech volume or background music.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Footer Submit Button */}

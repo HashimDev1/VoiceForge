@@ -24,22 +24,34 @@ export interface SpeechRecognitionResult {
 
 export class SpeechRecognitionService {
   /**
-   * Discovers the working Python executable that has faster-whisper installed.
+   * Discovers the working Python executable across Windows and Linux/Docker environments.
    */
   public static getPythonPath(): string {
-    const candidates = [
-      'python',
-      'C:\\Users\\Muhammad Hashim\\AppData\\Local\\Programs\\Python\\Python312\\python.exe',
-      'C:\\Users\\Muhammad Hashim\\AppData\\Local\\Programs\\Python\\Python314\\python.exe',
-      'py'
-    ];
+    if (process.env.PYTHON_PATH && fs.existsSync(process.env.PYTHON_PATH)) {
+      return process.env.PYTHON_PATH;
+    }
+
+    const isWin = process.platform === 'win32';
+    const candidates = isWin
+      ? [
+          'python',
+          'py',
+          'C:\\Users\\Muhammad Hashim\\AppData\\Local\\Programs\\Python\\Python312\\python.exe',
+          'C:\\Users\\Muhammad Hashim\\AppData\\Local\\Programs\\Python\\Python314\\python.exe'
+        ]
+      : [
+          'python3',
+          '/usr/bin/python3',
+          '/usr/local/bin/python3',
+          'python'
+        ];
 
     for (const c of candidates) {
-      if (c === 'python' || c === 'py' || fs.existsSync(c)) {
+      if (fs.existsSync(c)) {
         return c;
       }
     }
-    return 'python';
+    return isWin ? 'python' : 'python3';
   }
 
   /**
@@ -48,7 +60,7 @@ export class SpeechRecognitionService {
    * 
    * Priority:
    * 1. High-accuracy Local faster-whisper engine (Free, Offline, genuine timestamps & word alignment)
-   * 2. Groq Whisper API (whisper-large-v3-turbo, if configured)
+   * 2. Groq Whisper API (whisper-large-v3-turbo, free cloud Whisper)
    * 3. OpenAI Whisper API (whisper-1, if configured)
    * 4. Fish Audio ASR (if configured and credits available)
    */
@@ -72,6 +84,8 @@ export class SpeechRecognitionService {
       ? TranslationEngineService.normalizeLangCode(targetOrSourceLanguage)
       : undefined;
 
+    let localEngineError: string | null = null;
+
     // 1. Try High-Accuracy Local faster-whisper Engine (Offline, Zero cost, exact timestamps)
     try {
       logger.info(`[ASR] Attempting local speech-to-text transcription via faster-whisper engine...`);
@@ -93,7 +107,8 @@ export class SpeechRecognitionService {
         }
       }
     } catch (localErr: any) {
-      logger.warn('[ASR] Local faster-whisper engine failed, checking cloud providers:', localErr.message || localErr);
+      localEngineError = localErr.message || String(localErr);
+      logger.warn('[ASR] Local faster-whisper engine failed, checking cloud providers:', localEngineError);
     }
 
     // 2. Try Groq Whisper API (Fastest Cloud Whisper API)
@@ -102,7 +117,7 @@ export class SpeechRecognitionService {
       try {
         logger.info(`[ASR] Attempting transcription via Groq Whisper API...`);
         const result = await this.transcribeWithGroq(audioBuffer, filename, mimeType, langCode, groqKey);
-        if (result && result.text) {
+        if (result && (result.text || (result.segments && result.segments.length > 0))) {
           logger.info(`[ASR] Successfully transcribed ${result.text.length} chars via Groq Whisper (${result.segments?.length || 0} segments).`);
           return { ...result, provider: 'groq' };
         }
@@ -117,7 +132,7 @@ export class SpeechRecognitionService {
       try {
         logger.info(`[ASR] Attempting transcription via OpenAI Whisper API...`);
         const result = await this.transcribeWithOpenAI(audioBuffer, filename, mimeType, langCode, openaiKey);
-        if (result && result.text) {
+        if (result && (result.text || (result.segments && result.segments.length > 0))) {
           logger.info(`[ASR] Successfully transcribed ${result.text.length} chars via OpenAI Whisper.`);
           return { ...result, provider: 'openai' };
         }
@@ -132,14 +147,20 @@ export class SpeechRecognitionService {
       try {
         logger.info(`[ASR] Attempting transcription via Fish Audio ASR...`);
         const result = await FishAudioService.transcribeAudio(audioBuffer, filename, targetOrSourceLanguage);
-        if (result && result.text) {
+        if (result && (result.text || (result.segments && result.segments.length > 0))) {
           logger.info(`[ASR] Successfully transcribed via Fish Audio ASR.`);
+          const rawSegs = Array.isArray(result.segments) && result.segments.length > 0
+            ? result.segments
+            : result.text
+              ? [{ id: 'seg_1', start: 0, end: result.duration || 5, text: result.text }]
+              : [];
+
           return {
-            text: result.text,
+            text: result.text || '',
             duration: result.duration,
             language: result.language || 'English',
             language_code: result.language_code || 'en',
-            segments: (result.segments || []).map((s: any, idx: number) => ({
+            segments: rawSegs.map((s: any, idx: number) => ({
               id: `seg_${idx + 1}`,
               start: Number(s.start || s.start_time || 0),
               end: Number(s.end || s.end_time || 0),
@@ -153,8 +174,16 @@ export class SpeechRecognitionService {
       }
     }
 
-    // 5. If truly no speech detected or invalid audio, report honest failure
-    logger.warn('[ASR] All transcription providers failed or audio contains no discernible speech.');
+    // 5. Build clear diagnostic error message for live/cloud deployments
+    let detailedError = 'No recognizable speech detected in this media file.';
+    if (localEngineError) {
+      const hasCloudKeys = Boolean(groqKey || openaiKey || fishKey);
+      if (!hasCloudKeys) {
+        detailedError = `Live server has no Speech Recognition engine configured. Local Python faster-whisper failed (${localEngineError}). To enable speech-to-text in production, please set GROQ_API_KEY (free at console.groq.com) or FISH_API_KEY in your environment variables.`;
+      }
+    }
+
+    logger.warn('[ASR] All transcription providers failed:', detailedError);
     return {
       text: '',
       provider: 'fallback',
@@ -162,7 +191,7 @@ export class SpeechRecognitionService {
       language_code: langCode || 'en',
       language_probability: 0.0,
       segments: [],
-      error: 'No recognizable speech detected in this media file.'
+      error: detailedError
     };
   }
 
@@ -244,10 +273,12 @@ export class SpeechRecognitionService {
   ): Promise<Omit<SpeechRecognitionResult, 'provider'>> {
     const formData = new FormData();
     const audioBlob = new Blob([new Uint8Array(audioBuffer)], { type: mimeType });
-    formData.append('file', audioBlob, filename || 'audio.mp3');
+    formData.append('file', audioBlob, filename || 'audio.wav');
     formData.append('model', 'whisper-large-v3-turbo');
     formData.append('response_format', 'verbose_json');
     formData.append('temperature', '0');
+    formData.append('timestamp_granularities[]', 'word');
+    formData.append('timestamp_granularities[]', 'segment');
 
     if (langCode && langCode.length === 2) {
       formData.append('language', langCode);
@@ -281,6 +312,16 @@ export class SpeechRecognitionService {
           }))
         : []
     })).filter((s: TranscriptionSegment) => s.text.length > 0);
+
+    if (segments.length === 0 && (data.text || '').trim()) {
+      segments.push({
+        id: 'seg_1',
+        start: 0,
+        end: typeof data.duration === 'number' ? data.duration : 5,
+        text: data.text.trim(),
+        words: []
+      });
+    }
 
     const detectedLang = data.language || langCode || 'en';
     const isHindiUrdu = ['hi', 'ur', 'hindi', 'urdu'].includes(detectedLang.toLowerCase());

@@ -81,6 +81,10 @@ export class CaptionService {
       : requestedLanguage === 'hi_roman' ? 'hi' : requestedLanguage;
     const transcription = await SpeechRecognitionService.transcribeAudio(audio, filename, romanLanguage);
 
+    if (transcription.error && (!transcription.segments || transcription.segments.length === 0) && !transcription.text) {
+      throw new Error(transcription.error);
+    }
+
     const words: TranscriptionWord[] = [];
     for (const segment of transcription.segments || []) {
       if (segment.words?.length) {
@@ -99,9 +103,23 @@ export class CaptionService {
       });
     }
 
+    // Fallback if segments was empty but raw text was returned by cloud ASR
+    if (words.length === 0 && transcription.text && transcription.text.trim()) {
+      const tokens = transcription.text.trim().split(/\s+/).filter(Boolean);
+      const totalDur = Math.max(1, transcription.duration || tokens.length * 0.4);
+      const span = totalDur / Math.max(1, tokens.length);
+      tokens.forEach((word, index) => {
+        words.push({
+          word,
+          start: index * span,
+          end: (index + 1) * span
+        });
+      });
+    }
+
     const duration = transcription.duration || (transcription.segments || []).reduce(
       (latest, segment) => Math.max(latest, segment.end), 0
-    );
+    ) || (words.length ? words[words.length - 1].end : 0);
     let segments = this.groupWordsIntoSegments(words, maxWords);
 
     if (options.script === 'urdu_roman' || requestedLanguage === 'ur_roman' || requestedLanguage === 'hi_roman') {
