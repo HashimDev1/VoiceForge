@@ -32,6 +32,7 @@ import {
   evaluateMotionGraphicAtTime,
   EvaluatedMotionGraphic
 } from '../../../../shared/src/motionGraphicsEngine';
+import { unlockAudio } from '../../lib/audioUnlocker';
 
 interface EditorPreviewCanvasProps {
   project: EditorProject;
@@ -56,11 +57,43 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const [viewportDims, setViewportDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (!viewportRef.current) return;
+    const updateSize = () => {
+      if (viewportRef.current) {
+        const { clientWidth, clientHeight } = viewportRef.current;
+        if (clientWidth > 0 && clientHeight > 0) {
+          setViewportDims({ width: clientWidth, height: clientHeight });
+        }
+      }
+    };
+    updateSize();
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          setViewportDims({ width, height });
+        }
+      }
+    });
+    ro.observe(viewportRef.current);
+    window.addEventListener('resize', updateSize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
+  }, []);
 
   // References to active media elements for real-time playhead synchronization
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const prevIsPlayingRef = useRef(false);
+  // Set of media clip IDs currently instructed to play to eliminate continuous seek/abort loops
+  const playingMediaIdsRef = useRef<Set<string>>(new Set());
 
   const dragRef = useRef<{
     startX: number;
@@ -110,19 +143,49 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
   const getAspectRatioDimensions = (ratio: AspectRatio) => {
     switch (ratio) {
       case '9:16':
-        return { aspect: '9/16', maxH: '100%', maxW: '320px', label: '9:16' };
+        return { aspect: '9/16', num: 9 / 16, label: '9:16' };
       case '16:9':
-        return { aspect: '16/9', maxH: '100%', maxW: '100%', label: '16:9' };
+        return { aspect: '16/9', num: 16 / 9, label: '16:9' };
       case '1:1':
-        return { aspect: '1/1', maxH: '100%', maxW: '460px', label: '1:1' };
+        return { aspect: '1/1', num: 1, label: '1:1' };
       case '4:5':
-        return { aspect: '4/5', maxH: '100%', maxW: '380px', label: '4:5' };
+        return { aspect: '4/5', num: 4 / 5, label: '4:5' };
       default:
-        return { aspect: '9/16', maxH: '100%', maxW: '320px', label: '9:16' };
+        return { aspect: '16/9', num: 16 / 9, label: '16:9' };
     }
   };
 
   const dims = getAspectRatioDimensions(project.aspectRatio);
+
+  let stageStyle: React.CSSProperties = {
+    aspectRatio: dims.aspect,
+    maxWidth: '100%',
+    maxHeight: '100%',
+    backgroundColor: project.background?.type === 'color' ? project.background.color || '#000000' : '#000000'
+  };
+
+  if (viewportDims.width > 0 && viewportDims.height > 0) {
+    const pad = 24;
+    const maxW = Math.max(100, viewportDims.width - pad);
+    const maxH = Math.max(100, viewportDims.height - pad);
+    let targetW = maxW;
+    let targetH = targetW / dims.num;
+    if (targetH > maxH) {
+      targetH = maxH;
+      targetW = targetH * dims.num;
+    }
+    stageStyle = {
+      ...stageStyle,
+      width: `${Math.round(targetW)}px`,
+      height: `${Math.round(targetH)}px`
+    };
+  } else {
+    stageStyle = {
+      ...stageStyle,
+      width: dims.aspect === '16/9' ? '100%' : 'auto',
+      height: dims.aspect === '9/16' ? '100%' : 'auto'
+    };
+  }
 
   const fps = project.fps || 30;
 
@@ -136,8 +199,65 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
   };
 
-  // Synchronize active HTMLVideoElements and HTMLAudioElements with the playhead
+  // Synchronize active HTMLVideoElements and HTMLAudioElements with the playhead smoothly
   useEffect(() => {
+    const isPlayingJustChanged = prevIsPlayingRef.current !== isPlaying;
+    prevIsPlayingRef.current = isPlaying;
+
+    if (!isPlaying) {
+      // Clear playback tracking
+      playingMediaIdsRef.current.clear();
+
+      // Pause and align active visual video clips
+      activeVisualClips.forEach((clip) => {
+        if (clip.type === 'video') {
+          const vEl = videoRefs.current.get(clip.id);
+          if (vEl) {
+            if (!vEl.paused) {
+              try { vEl.pause(); } catch {}
+            }
+            const speed = Math.max(0.25, clip.speed?.speed || 1);
+            const localOffset = playhead - clip.start;
+            let targetTime = (clip.sourceStart || 0) + localOffset * speed;
+            if (clip.speed?.reverse) {
+              targetTime = (clip.sourceStart || 0) + (clip.duration - localOffset) * speed;
+            }
+            if (clip.speed?.isFreezeFrame) {
+              targetTime = clip.sourceStart || 0;
+            }
+            if (Math.abs(vEl.currentTime - targetTime) > 0.04) {
+              try { vEl.currentTime = targetTime; } catch {}
+            }
+          }
+        }
+      });
+
+      // Pause and align all audio clips
+      project.clips.forEach((clip) => {
+        if (clip.type === 'audio') {
+          const aEl = audioRefs.current.get(clip.id);
+          if (aEl) {
+            if (!aEl.paused) {
+              try { aEl.pause(); } catch {}
+            }
+            const speed = Math.max(0.25, clip.speed?.speed || 1);
+            const localOffset = playhead - clip.start;
+            const targetTime = (clip.sourceStart || 0) + localOffset * speed;
+            if (Math.abs(aEl.currentTime - targetTime) > 0.04) {
+              try { aEl.currentTime = targetTime; } catch {}
+            }
+          }
+        }
+      });
+
+      return;
+    }
+
+    // -------------------------------------------------------------
+    // PLAYING STATE (isPlaying === true)
+    // -------------------------------------------------------------
+
+    // 1. Synchronize Video elements (visual clips)
     activeVisualClips.forEach((clip) => {
       if (clip.type === 'video') {
         const vEl = videoRefs.current.get(clip.id);
@@ -152,64 +272,104 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
             targetTime = clip.sourceStart || 0;
           }
 
-          if (Math.abs(vEl.currentTime - targetTime) > 0.15) {
-            try {
-              vEl.currentTime = targetTime;
-            } catch {}
-          }
+          // Evaluate video audio settings (volume, mute, fade, keyframes)
+          const evalTransform = evaluateClipKeyframes(clip, playhead);
+          const track = trackMap.get(clip.trackId);
+          const trackMuted = track?.muted || isMuted;
+          const soloSilenced = hasSoloTrack && !track?.solo;
+          const clipMuted = Boolean(clip.audio?.muted);
+          const isVideoMuted = trackMuted || soloSilenced || clipMuted;
+          const finalVol = isVideoMuted ? 0 : Math.max(0, Math.min(1, (evalTransform.volume ?? 100) / 100));
 
-          if (isPlaying) {
+          vEl.muted = isVideoMuted;
+          vEl.volume = finalVol;
+
+          const isAlreadyPlaying = playingMediaIdsRef.current.has(clip.id);
+
+          if (!isAlreadyPlaying || isPlayingJustChanged) {
+            playingMediaIdsRef.current.add(clip.id);
             vEl.playbackRate = clip.speed?.isFreezeFrame ? 0 : speed;
+            try { vEl.currentTime = targetTime; } catch {}
             vEl.play().catch(() => {});
           } else {
-            vEl.pause();
+            // Smooth playback: check drift
+            const drift = Math.abs(vEl.currentTime - targetTime);
+            if (drift > 0.45 && !vEl.seeking) {
+              // Large drift (user scrubbed or skipped ahead): hard re-sync
+              try { vEl.currentTime = targetTime; } catch {}
+            } else if (drift > 0.05 && !clip.speed?.isFreezeFrame) {
+              // Smooth micro-nudge playbackRate to close drift gap without buffer interruption
+              vEl.playbackRate = speed * (targetTime > vEl.currentTime ? 1.04 : 0.96);
+            } else if (!clip.speed?.isFreezeFrame) {
+              vEl.playbackRate = speed;
+            }
           }
         }
       }
     });
 
-    // Handle audio tracks and audio playback
-    activeAudioClips.forEach((clip) => {
-      const aEl = audioRefs.current.get(clip.id);
-      if (aEl) {
-        const speed = Math.max(0.25, clip.speed?.speed || 1);
-        const localOffset = playhead - clip.start;
-        const targetTime = (clip.sourceStart || 0) + localOffset * speed;
+    // 2. Synchronize Audio elements (all audio track clips)
+    project.clips.forEach((clip) => {
+      if (clip.type === 'audio') {
+        const aEl = audioRefs.current.get(clip.id);
+        if (aEl) {
+          const isActive = playhead >= clip.start && playhead <= clip.start + clip.duration;
+          const speed = Math.max(0.25, clip.speed?.speed || 1);
+          const localOffset = playhead - clip.start;
+          const targetTime = (clip.sourceStart || 0) + localOffset * speed;
 
-        if (Math.abs(aEl.currentTime - targetTime) > 0.15) {
-          try {
-            aEl.currentTime = targetTime;
-          } catch {}
-        }
+          if (!isActive) {
+            if (playingMediaIdsRef.current.has(clip.id)) {
+              playingMediaIdsRef.current.delete(clip.id);
+              try { aEl.pause(); } catch {}
+            }
+          } else {
+            const evalTransform = evaluateClipKeyframes(clip, playhead);
+            const track = trackMap.get(clip.trackId);
+            const trackMuted = track?.muted || isMuted;
+            const soloSilenced = hasSoloTrack && !track?.solo;
+            const clipMuted = Boolean(clip.audio?.muted);
+            const isAudioMuted = trackMuted || soloSilenced || clipMuted;
+            const finalVol = isAudioMuted ? 0 : Math.max(0, Math.min(1, (evalTransform.volume ?? 100) / 100));
 
-        const evalTransform = evaluateClipKeyframes(clip, playhead);
-        const track = trackMap.get(clip.trackId);
-        const trackMuted = track?.muted || isMuted;
-        const soloSilenced = hasSoloTrack && !track?.solo;
-        const finalVol = trackMuted || soloSilenced ? 0 : Math.max(0, Math.min(1, evalTransform.volume / 100));
+            aEl.muted = isAudioMuted;
+            aEl.volume = finalVol;
 
-        aEl.volume = finalVol;
-        if (isPlaying) {
-          aEl.playbackRate = speed;
-          aEl.play().catch(() => {});
-        } else {
-          aEl.pause();
+            const isAlreadyPlaying = playingMediaIdsRef.current.has(clip.id);
+
+            if (!isAlreadyPlaying || isPlayingJustChanged) {
+              playingMediaIdsRef.current.add(clip.id);
+              aEl.playbackRate = speed;
+              try { aEl.currentTime = targetTime; } catch {}
+              aEl.play().catch(() => {});
+            } else {
+              // Smooth audio playback: check drift
+              const drift = Math.abs(aEl.currentTime - targetTime);
+              if (drift > 0.45 && !aEl.seeking) {
+                // Large drift (scrub or jump): hard seek
+                try { aEl.currentTime = targetTime; } catch {}
+              } else if (drift > 0.05) {
+                // Micro-nudge playbackRate to keep audio sample-accurate without buffer drops or clicks
+                aEl.playbackRate = speed * (targetTime > aEl.currentTime ? 1.04 : 0.96);
+              } else {
+                aEl.playbackRate = speed;
+              }
+            }
+          }
         }
       }
     });
 
-    // Pause any clips that have exited active window
+    // 3. Pause visual video clips that are no longer active
     videoRefs.current.forEach((el, id) => {
       if (!activeVisualClips.some((c) => c.id === id)) {
-        el.pause();
+        if (playingMediaIdsRef.current.has(id)) {
+          playingMediaIdsRef.current.delete(id);
+          try { el.pause(); } catch {}
+        }
       }
     });
-    audioRefs.current.forEach((el, id) => {
-      if (!activeAudioClips.some((c) => c.id === id)) {
-        el.pause();
-      }
-    });
-  }, [playhead, isPlaying, isMuted, activeVisualClips, activeAudioClips, hasSoloTrack]);
+  }, [playhead, isPlaying, isMuted, activeVisualClips, project.clips, hasSoloTrack]);
 
   // On-screen bounding box interactive drag handling
   const handlePointerDown = (e: React.PointerEvent, mode: 'move' | 'scale' | 'rotate') => {
@@ -300,34 +460,22 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full w-full bg-[#15191F] border border-[#242A33] overflow-hidden select-none"
+      className="flex flex-col h-full w-full bg-[#181B20] overflow-hidden select-none"
     >
-      {/* 1. Header Bar: Player-Timeline 01 (CapCut Desktop style) */}
-      <div className="h-9 shrink-0 bg-[#15191F] border-b border-[#242A33] px-3 flex items-center justify-between text-xs text-[#F0F3F7]">
+      {/* 1. Header Bar: Player-Timeline 01 (CapCut exact layout) */}
+      <div className="h-10 shrink-0 bg-[#181B20] border-b border-[#262A34] px-3 flex items-center justify-between text-xs text-slate-300">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-semibold text-xs text-[#F0F3F7] tracking-tight">Player-Timeline 01</span>
-          <span className="text-[#747F90]">·</span>
-          <span className="px-1.5 py-0.5 rounded bg-[#242A33] text-[10px] font-mono text-[#A4AFBD] border border-[#303740]">
-            {dims.label}
-          </span>
-          <span className="px-1.5 py-0.5 rounded bg-[#242A33] text-[10px] font-mono text-[#747F90] hidden sm:inline border border-[#303740]">
-            {fps} FPS
-          </span>
-          {activeVisualClips.length > 0 && (
-            <span className="px-1.5 py-0.5 rounded bg-[#48C994]/15 text-[10px] font-mono font-medium text-[#48C994] border border-[#48C994]/30 hidden md:inline">
-              {activeVisualClips.length} Layer{activeVisualClips.length > 1 ? 's' : ''}
-            </span>
-          )}
+          <span className="font-sans font-semibold text-xs text-slate-200 tracking-tight">Player-Timeline 01</span>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {/* Mute Preview Toggle */}
           <button
             type="button"
             onClick={() => setIsMuted((m) => !m)}
             title={isMuted ? 'Unmute Preview Audio' : 'Mute Preview Audio'}
-            className={`p-1 rounded hover:bg-[#242A33] transition-colors cursor-pointer ${
-              isMuted ? 'text-[#F06B77]' : 'text-[#A4AFBD] hover:text-white'
+            className={`p-1 rounded hover:bg-[#282D38] transition cursor-pointer ${
+              isMuted ? 'text-rose-400' : 'text-slate-400 hover:text-white'
             }`}
           >
             {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
@@ -338,47 +486,36 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
             type="button"
             onClick={() => setShowSafeZones((s) => !s)}
             title="Toggle Safe Margins"
-            className={`p-1 rounded hover:bg-[#242A33] transition-colors cursor-pointer ${
-              showSafeZones ? 'text-[#40D5CB] bg-[#242A33]' : 'text-[#A4AFBD] hover:text-white'
+            className={`p-1 rounded transition cursor-pointer ${
+              showSafeZones
+                ? 'text-[#13E2CA] bg-[#1E2C33]'
+                : 'text-slate-400 hover:text-white hover:bg-[#282D38]'
             }`}
           >
             <ShieldAlert className="h-3.5 w-3.5" />
           </button>
 
-          {/* Fullscreen Button */}
+          {/* Hamburger Menu Icon */}
           <button
             type="button"
-            onClick={() => {
-              if (!document.fullscreenElement) {
-                containerRef.current?.requestFullscreen();
-                setIsFullscreen(true);
-              } else {
-                document.exitFullscreen();
-                setIsFullscreen(false);
-              }
-            }}
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-            className="p-1 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition-colors cursor-pointer"
+            title="Player Options"
+            className="p-1 rounded hover:bg-[#282D38] text-slate-400 hover:text-white transition cursor-pointer"
           >
-            {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            <span className="text-base leading-none font-bold">≡</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Center Video Viewport Area (Matte Dark Stage #0B0E13) */}
-      <div className="relative flex flex-1 items-center justify-center min-h-0 bg-[#0B0E13] overflow-hidden p-2">
+      {/* 2. Center Video Viewport Area (Matte Dark Stage) */}
+      <div
+        ref={viewportRef}
+        className="relative flex flex-1 items-center justify-center min-h-0 min-w-0 bg-[#0E1013] overflow-hidden p-3"
+      >
         {/* Aspect Ratio Canvas Stage */}
         <div
           ref={stageRef}
-          className="relative bg-black rounded shadow-2xl flex items-center justify-center select-none"
-          style={{
-            aspectRatio: dims.aspect,
-            maxHeight: dims.maxH,
-            maxWidth: dims.maxW,
-            width: '100%',
-            height: '100%',
-            backgroundColor: project.background?.type === 'color' ? project.background.color || '#000000' : '#000000'
-          }}
+          className="relative bg-black rounded shadow-2xl flex items-center justify-center select-none overflow-hidden shrink-0"
+          style={stageStyle}
         >
           {/* Background Layer: Blurred Duplicate Video Background (CapCut style) */}
           {project.background?.type === 'blur' && primaryVideoClip?.url && (
@@ -450,7 +587,12 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
                     src={clip.url}
                     className={`h-full w-full ${tf.fitMode === 'fill' ? 'object-cover' : 'object-contain'}`}
                     playsInline
-                    muted
+                    muted={
+                      isMuted ||
+                      trackMap.get(clip.trackId)?.muted ||
+                      (hasSoloTrack && !trackMap.get(clip.trackId)?.solo) ||
+                      Boolean(clip.audio?.muted)
+                    }
                   />
                 ) : clip.type === 'image' && clip.url ? (
                   <img
@@ -621,23 +763,27 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
             );
           })}
 
-          {/* Hidden Audio Elements for Multitrack Audio Mixing */}
-          {activeAudioClips.map((clip) => {
-            if (clip.type === 'audio' && clip.url) {
-              return (
-                <audio
-                  key={clip.id}
-                  ref={(el) => {
-                    if (el) audioRefs.current.set(clip.id, el);
-                    else audioRefs.current.delete(clip.id);
-                  }}
-                  src={clip.url}
-                  preload="auto"
-                />
-              );
-            }
-            return null;
-          })}
+          {/* Hidden Persistent Audio Elements for Multitrack Audio Mixing */}
+          {project.clips
+            .filter((c) => c.type === 'audio' && c.url)
+            .map((clip) => (
+              <audio
+                key={clip.id}
+                ref={(el) => {
+                  if (el) audioRefs.current.set(clip.id, el);
+                  else audioRefs.current.delete(clip.id);
+                }}
+                src={clip.url}
+                preload="auto"
+                playsInline
+                muted={
+                  isMuted ||
+                  trackMap.get(clip.trackId)?.muted ||
+                  (hasSoloTrack && !trackMap.get(clip.trackId)?.solo) ||
+                  Boolean(clip.audio?.muted)
+                }
+              />
+            ))}
 
           {/* Interactive Bounding Box for Selected Clip (CapCut Desktop style with corner + midpoint handles and rotation anchor) */}
           {selectedClip && activeVisualClips.some((c) => c.id === selectedClip.id) && (
@@ -653,26 +799,26 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
               }}
             >
               {/* Floating HUD info badge above box */}
-              <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded bg-[#15191F]/90 border border-[#303740] px-2 py-0.5 text-[9px] font-mono font-medium text-[#F0F3F7] whitespace-nowrap shadow backdrop-blur-sm pointer-events-none">
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-slate-900/90 border border-slate-700 px-2.5 py-0.5 text-[9px] font-mono font-bold text-white whitespace-nowrap shadow backdrop-blur-sm pointer-events-none">
                 <span>Scale: {Math.round((selectedClip.transform?.scale || 1) * 100)}%</span>
-                <span className="text-[#747F90]">·</span>
+                <span className="text-slate-500">·</span>
                 <span>X: {selectedClip.transform?.x || 0}</span>
-                <span className="text-[#747F90]">·</span>
+                <span className="text-slate-500">·</span>
                 <span>Y: {selectedClip.transform?.y || 0}</span>
                 {selectedClip.transform?.rotation ? (
                   <>
-                    <span className="text-[#747F90]">·</span>
+                    <span className="text-slate-500">·</span>
                     <span>{selectedClip.transform.rotation}°</span>
                   </>
                 ) : null}
               </div>
 
-              {/* 4 Corner Resize Handles (white square with subtle border) */}
+              {/* 4 Corner Resize Handles */}
               {['tl', 'tr', 'bl', 'br'].map((pos) => (
                 <div
                   key={pos}
                   onPointerDown={(e) => handlePointerDown(e, 'scale')}
-                  className={`absolute h-2.5 w-2.5 bg-white border border-[#242A33] shadow cursor-nwse-resize ${
+                  className={`absolute h-2.5 w-2.5 bg-white border border-slate-900 shadow cursor-nwse-resize rounded-xs ${
                     pos === 'tl'
                       ? '-top-1.5 -left-1.5'
                       : pos === 'tr'
@@ -687,44 +833,42 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
               {/* 4 Midpoint Handles */}
               <div
                 onPointerDown={(e) => handlePointerDown(e, 'scale')}
-                className="absolute top-1/2 -left-1 -translate-y-1/2 h-2.5 w-1.5 bg-white border border-[#242A33] shadow cursor-ew-resize"
+                className="absolute top-1/2 -left-1 -translate-y-1/2 h-2.5 w-1.5 bg-white border border-slate-900 shadow cursor-ew-resize rounded-xs"
               />
               <div
                 onPointerDown={(e) => handlePointerDown(e, 'scale')}
-                className="absolute top-1/2 -right-1 -translate-y-1/2 h-2.5 w-1.5 bg-white border border-[#242A33] shadow cursor-ew-resize"
+                className="absolute top-1/2 -right-1 -translate-y-1/2 h-2.5 w-1.5 bg-white border border-slate-900 shadow cursor-ew-resize rounded-xs"
               />
               <div
                 onPointerDown={(e) => handlePointerDown(e, 'scale')}
-                className="absolute -top-1 left-1/2 -translate-x-1/2 h-1.5 w-2.5 bg-white border border-[#242A33] shadow cursor-ns-resize"
+                className="absolute -top-1 left-1/2 -translate-x-1/2 h-1.5 w-2.5 bg-white border border-slate-900 shadow cursor-ns-resize rounded-xs"
               />
               <div
                 onPointerDown={(e) => handlePointerDown(e, 'scale')}
-                className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-2.5 bg-white border border-[#242A33] shadow cursor-ns-resize"
+                className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-2.5 bg-white border border-slate-900 shadow cursor-ns-resize rounded-xs"
               />
 
-              {/* Bottom Rotation Stem & Handle (Matches CapCut Reference Image) */}
-              <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-auto">
-                <div className="w-px h-3 bg-white/70" />
+              {/* Bottom Rotation Stem & Semi-Circular Arch Handle (CapCut exact style) */}
+              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-auto">
+                <div className="w-px h-2.5 bg-white" />
                 <button
                   type="button"
                   onPointerDown={(e) => handlePointerDown(e, 'rotate')}
                   title="Drag to rotate"
-                  className="w-5 h-5 rounded-full bg-[#1B2028] border border-white/80 shadow flex items-center justify-center text-white hover:bg-[#40D5CB] hover:text-[#0B0E13] transition-colors cursor-grab active:cursor-grabbing"
-                >
-                  <RotateIcon className="w-3 h-3" />
-                </button>
+                  className="w-5 h-3 border-t-2 border-l-2 border-r-2 border-white hover:border-[#13E2CA] rounded-t-full flex items-center justify-center cursor-grab active:cursor-grabbing transition"
+                />
               </div>
             </div>
           )}
 
           {/* Safe Zones Overlay for TikTok/Reels/Shorts */}
           {showSafeZones && (
-            <div className="pointer-events-none absolute inset-0 z-40 border border-dashed border-[#40D5CB]/40 p-4">
+            <div className="pointer-events-none absolute inset-0 z-40 border border-dashed border-[#13E2CA]/40 p-4">
               <div className="flex h-full w-full flex-col justify-between">
-                <div className="rounded bg-[#0B0E13]/80 px-2 py-0.5 font-mono text-[9px] text-[#40D5CB] self-center border border-[#40D5CB]/30">
+                <div className="rounded-full bg-black/80 px-2.5 py-0.5 font-mono text-[9px] font-bold text-[#13E2CA] self-center border border-[#13E2CA]/30">
                   TOP SAFE ZONE
                 </div>
-                <div className="rounded bg-[#0B0E13]/80 px-2 py-0.5 font-mono text-[9px] text-[#40D5CB] self-center border border-[#40D5CB]/30">
+                <div className="rounded-full bg-black/80 px-2.5 py-0.5 font-mono text-[9px] font-bold text-[#13E2CA] self-center border border-[#13E2CA]/30">
                   BOTTOM CAPTION SAFE ZONE
                 </div>
               </div>
@@ -733,25 +877,25 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
         </div>
       </div>
 
-      {/* 3. Bottom Transport Deck (Compact CapCut Desktop Player Bar) */}
-      <div className="h-10 shrink-0 bg-[#15191F] border-t border-[#242A33] px-3 flex items-center justify-between text-xs text-[#A4AFBD]">
-        {/* Left: Timecode and Total Duration */}
+      {/* 3. Bottom Transport Deck (Exact CapCut Layout) */}
+      <div className="h-10 shrink-0 bg-[#181B20] border-t border-[#262A34] px-4 flex items-center justify-between text-xs text-slate-300">
+        {/* Left: Bright Cyan/Teal Timecode and Total Duration */}
         <div className="flex items-center gap-1.5 font-mono text-xs select-text">
-          <span className="font-semibold text-[#40D5CB]">{formatTimecodeCapCut(playhead)}</span>
-          <span className="text-[#747F90]">/</span>
-          <span className="text-[#747F90]">{formatTimecodeCapCut(project.duration)}</span>
+          <span className="font-bold text-[#13E2CA] tracking-wider">{formatTimecodeCapCut(playhead)}</span>
+          <span className="text-slate-500">/</span>
+          <span className="text-slate-400 font-medium tracking-wider">{formatTimecodeCapCut(project.duration)}</span>
         </div>
 
         {/* Center: Transport Playback Controls */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           {/* Seek to Start */}
           <button
             type="button"
             onClick={() => onSeek(0)}
             title="Go to Start (Home)"
-            className="p-1 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition-colors cursor-pointer"
+            className="p-1 rounded hover:bg-[#282D38] text-slate-400 hover:text-white transition cursor-pointer"
           >
-            <SkipBack className="h-3.5 w-3.5" />
+            <SkipBack className="h-3 w-3" />
           </button>
 
           {/* Previous Frame */}
@@ -759,19 +903,22 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
             type="button"
             onClick={() => stepFrame(-1)}
             title="Previous Frame (Left Arrow)"
-            className="p-1 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition-colors cursor-pointer"
+            className="p-1 rounded hover:bg-[#282D38] text-slate-400 hover:text-white transition cursor-pointer"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3.5 w-3.5" />
           </button>
 
-          {/* Play / Pause Primary Button */}
+          {/* Play / Pause Primary Button (CapCut Solid White Circle) */}
           <button
             type="button"
-            onClick={onTogglePlay}
+            onClick={() => {
+              unlockAudio();
+              onTogglePlay();
+            }}
             title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
-            className="mx-1 flex items-center justify-center h-7 w-7 rounded-full bg-white text-[#0B0E13] hover:bg-[#40D5CB] hover:scale-105 active:scale-95 transition-all shadow cursor-pointer"
+            className="mx-1 flex items-center justify-center h-7 w-7 rounded-full bg-white text-black hover:bg-slate-200 active:scale-95 transition cursor-pointer shadow-md"
           >
-            {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5 fill-current" />}
+            {isPlaying ? <Pause className="h-3.5 w-3.5 fill-black stroke-black" /> : <Play className="h-3.5 w-3.5 ml-0.5 fill-black stroke-black" />}
           </button>
 
           {/* Next Frame */}
@@ -779,9 +926,9 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
             type="button"
             onClick={() => stepFrame(1)}
             title="Next Frame (Right Arrow)"
-            className="p-1 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition-colors cursor-pointer"
+            className="p-1 rounded hover:bg-[#282D38] text-slate-400 hover:text-white transition cursor-pointer"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3.5 w-3.5" />
           </button>
 
           {/* Seek to End */}
@@ -789,18 +936,34 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
             type="button"
             onClick={() => onSeek(project.duration)}
             title="Go to End (End)"
-            className="p-1 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white transition-colors cursor-pointer"
+            className="p-1 rounded hover:bg-[#282D38] text-slate-400 hover:text-white transition cursor-pointer"
           >
-            <SkipForward className="h-3.5 w-3.5" />
+            <SkipForward className="h-3 w-3" />
           </button>
         </div>
 
-        {/* Right: Aspect ratio badge and resolution */}
-        <div className="flex items-center gap-2 text-[11px] font-mono text-[#747F90]">
-          <span className="hidden sm:inline">1080p</span>
-          <span className="px-1.5 py-0.5 rounded bg-[#242A33] text-[10px] text-[#A4AFBD] border border-[#303740]">
+        {/* Right: Quality, Aspect Ratio & Fullscreen */}
+        <div className="flex items-center gap-2 text-[11px] font-sans text-slate-400">
+          <span className="hidden sm:inline font-medium hover:text-white cursor-pointer">Full ▾</span>
+          <span className="px-2 py-0.5 rounded bg-[#222631] text-[10px] font-mono text-slate-300 border border-[#2D3340]">
             {project.aspectRatio}
           </span>
+          <button
+            type="button"
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                containerRef.current?.requestFullscreen();
+                setIsFullscreen(true);
+              } else {
+                document.exitFullscreen();
+                setIsFullscreen(false);
+              }
+            }}
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            className="p-1 rounded hover:bg-[#282D38] text-slate-400 hover:text-white transition cursor-pointer"
+          >
+            {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+          </button>
         </div>
       </div>
     </div>

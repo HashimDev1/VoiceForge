@@ -10,6 +10,7 @@ import { CaptionGenerationOptions, CaptionService } from './captionService';
 import { CaptionPresetId, CAPTION_PRESETS, CaptionAnimation, hexToAssColor, assToHexColor } from '../../../shared/src/captionPresets';
 import { TranscriptionSegment } from '../../../shared/src/types';
 import { TranscriptExportHelper } from '../utils/transcriptExportHelper';
+import { CaptionError, sanitizeDiagnosticText } from '../utils/captionDiagnostics';
 
 const execFileAsync = util.promisify(execFile);
 
@@ -50,6 +51,9 @@ export interface CaptionTranscriptionResult {
   language: string;
   detected_language: string;
   provider: string;
+  timing_mode?: 'word' | 'estimated';
+  estimated_timing?: boolean;
+  chunk_count?: number;
   total_duration: number;
   total_segments: number;
   segments: TranscriptionSegment[];
@@ -360,25 +364,13 @@ ${events.join('\n')}
 `;
 }
 
-function escapeFilterPath(p: string): string {
-  return p.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'");
+export function escapeFilterPath(p: string): string {
+  return FFmpegHelper.escapeSubtitlesFilterValue(p);
 }
 
 export class CaptionVideoService {
   public static async getVideoSize(inputPath: string): Promise<{ width: number; height: number }> {
-    try {
-      const ffprobe = await FFmpegHelper.getFfprobePath();
-      const { stdout } = await execFileAsync(
-        ffprobe,
-        ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0', inputPath],
-        { maxBuffer: 1024 * 1024 }
-      );
-      const [width, height] = stdout.trim().split('x').map(Number);
-      if (Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
-        return { width, height };
-      }
-    } catch { }
-    return { width: 1080, height: 1920 };
+    return FFmpegHelper.getVideoDimensions(inputPath);
   }
 
   public static async transcribeInput(
@@ -386,32 +378,97 @@ export class CaptionVideoService {
     originalName: string,
     options: CaptionRenderOptions
   ): Promise<CaptionTranscriptionResult> {
+    const diag = options.diagnostics;
+    diag?.setStage('media_probe');
+
+    const caps = await FFmpegHelper.checkCapabilities();
+    if (diag) {
+      diag.ffmpegAvailable = caps.ffmpegAvailable;
+    }
+
+    if (!caps.ffmpegAvailable) {
+      throw new CaptionError(
+        'FFMPEG_ERROR',
+        500,
+        'media_probe',
+        'FFmpeg is not available on this server to extract speech audio from video.',
+        { causeDetail: `ffmpegPath=${caps.ffmpegPath} unavailable` }
+      );
+    }
+
+    const probe = await FFmpegHelper.probeMedia(inputPath);
+    if (diag && probe.durationSec > 0) {
+      diag.mediaDuration = probe.durationSec;
+    }
+
+    if (!probe.hasAudio) {
+      throw new CaptionError(
+        'NO_AUDIO_TRACK',
+        422,
+        'media_probe',
+        'The uploaded video does not contain an audio track. Please upload a video with spoken dialogue.'
+      );
+    }
+
     const temp = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'voiceforge-caption-asr-'));
-    const audio = path.join(temp, 'audio.wav');
     try {
-      const ffmpeg = await FFmpegHelper.getFfmpegPath();
-      await execFileAsync(
-        ffmpeg,
-        ['-y', '-i', inputPath, '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', audio],
-        { maxBuffer: 30 * 1024 * 1024 }
-      );
-
-      const audioStat = await fs.promises.stat(audio).catch(() => null);
-      if (!audioStat || audioStat.size < 500) {
-        throw new Error('The uploaded video does not contain an audio track. Please upload a video with speech audio.');
+      diag?.setStage('audio_extraction');
+      let extracted: { outputPath: string; format: 'mp3' | 'wav'; sizeBytes: number };
+      try {
+        extracted = await FFmpegHelper.extractSpeechAudio(
+          inputPath,
+          path.join(temp, 'speech_audio.mp3'),
+          { format: 'mp3', sampleRate: 16000, bitrateKbps: 48 }
+        );
+      } catch (ffErr: any) {
+        const detail = sanitizeDiagnosticText(ffErr?.stderr || ffErr?.message || String(ffErr));
+        if (ffErr?.killed || /timed?\s*out/i.test(detail)) {
+          throw new CaptionError(
+            'SERVER_TIMEOUT',
+            504,
+            'audio_extraction',
+            'Audio extraction timed out while processing this video.',
+            { retriable: true, causeDetail: detail }
+          );
+        }
+        throw new CaptionError(
+          'FFMPEG_ERROR',
+          500,
+          'audio_extraction',
+          'FFmpeg failed to extract the audio stream from the uploaded video.',
+          { causeDetail: detail }
+        );
       }
 
-      const generated = await CaptionService.generateFromAudio(
-        await fs.promises.readFile(audio),
-        'source-audio.wav',
-        options
+      if (!extracted || extracted.sizeBytes < 256) {
+        throw new CaptionError(
+          'NO_AUDIO_TRACK',
+          422,
+          'audio_extraction',
+          'The uploaded video does not contain an audible audio track. Please upload a video with speech.'
+        );
+      }
+
+      const generated = await CaptionService.generateFromAudioFile(
+        extracted.outputPath,
+        path.basename(extracted.outputPath),
+        {
+          ...options,
+          knownDurationSec: probe.durationSec > 0 ? probe.durationSec : undefined
+        }
       );
+
       if (!generated.segments.length) {
-        throw new Error('No speech was detected in this video. Please ensure the video contains audible speech or set a free GROQ_API_KEY / FISH_API_KEY in your server environment.');
+        throw new CaptionError(
+          'NO_SPEECH_DETECTED',
+          422,
+          'asr_transcription',
+          'No recognizable speech was detected in this video.'
+        );
       }
 
-      const { width, height } = await this.getVideoSize(inputPath);
-      const ass = assDocument(generated.segments, options, width, height);
+      diag?.setStage('ass_generation');
+      const ass = assDocument(generated.segments, options, probe.width, probe.height);
       return {
         ...generated,
         language: options.language || generated.language,
@@ -419,7 +476,7 @@ export class CaptionVideoService {
         vtt: TranscriptExportHelper.toVtt(generated.segments, originalName)
       };
     } finally {
-      await fs.promises.rm(temp, { recursive: true, force: true }).catch(() => { });
+      await fs.promises.rm(temp, { recursive: true, force: true }).catch(() => {});
     }
   }
 
@@ -436,55 +493,196 @@ export class CaptionVideoService {
     segments: TranscriptionSegment[],
     options: CaptionRenderOptions = {}
   ): Promise<{ filename: string; videoUrl: string; ass: string }> {
+    const diag = options.diagnostics;
+    diag?.setStage('upload_validation');
+
+    if (!Array.isArray(segments) || segments.length === 0) {
+      throw new CaptionError(
+        'UPLOAD_ERROR',
+        422,
+        'upload_validation',
+        'Caption segments are required before rendering.'
+      );
+    }
+    if (segments.length > 20000) {
+      throw new CaptionError(
+        'UPLOAD_ERROR',
+        422,
+        'upload_validation',
+        'Too many caption segments provided for a single export.'
+      );
+    }
+    for (const s of segments) {
+      if (
+        !Number.isFinite(s.start) ||
+        !Number.isFinite(s.end) ||
+        s.start < 0 ||
+        s.end <= s.start ||
+        typeof s.text !== 'string'
+      ) {
+        throw new CaptionError(
+          'UPLOAD_ERROR',
+          422,
+          'upload_validation',
+          'Each caption segment requires valid text and start/end timestamps.'
+        );
+      }
+    }
+
+    diag?.setStage('media_probe');
+    const caps = await FFmpegHelper.checkCapabilities();
+    if (diag) {
+      diag.ffmpegAvailable = caps.ffmpegAvailable;
+      diag.segmentCount = segments.length;
+    }
+
+    if (!caps.ffmpegAvailable) {
+      throw new CaptionError(
+        'FFMPEG_ERROR',
+        500,
+        'subtitle_burn_in',
+        'FFmpeg executable is unavailable on this server.',
+        { causeDetail: `ffmpegPath=${caps.ffmpegPath} missing` }
+      );
+    }
+
+    if (!caps.subtitlesFilter) {
+      throw new CaptionError(
+        'SUBTITLE_RENDER_ERROR',
+        500,
+        'subtitle_burn_in',
+        'Server FFmpeg build lacks the libass subtitles filter required to burn styled captions.',
+        { causeDetail: `subtitlesFilter=false, libass=${caps.libass}` }
+      );
+    }
+
+    const probe = await FFmpegHelper.probeMedia(inputPath);
+    if (diag && probe.durationSec > 0) {
+      diag.mediaDuration = probe.durationSec;
+    }
+    if (!probe.hasVideo) {
+      throw new CaptionError(
+        'UPLOAD_ERROR',
+        422,
+        'media_probe',
+        'Uploaded file does not contain a valid video stream.'
+      );
+    }
+
     const temp = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'voiceforge-caption-render-'));
-    const assPath = path.join(temp, 'captions.ass');
+    const assFilename = 'captions.ass';
+    const assPath = path.join(temp, assFilename);
     const out = path.join(temp, 'captioned.mp4');
     let saved = '';
-    try {
-      if (!Array.isArray(segments) || segments.length === 0) {
-        throw new Error('Caption segments are required before rendering.');
-      }
-      if (segments.length > 20000) throw new Error('Too many caption segments.');
-      for (const s of segments) {
-        if (!Number.isFinite(s.start) || !Number.isFinite(s.end) || s.start < 0 || s.end <= s.start || typeof s.text !== 'string') {
-          throw new Error('Each caption needs valid text and start/end times.');
-        }
-      }
 
-      const { width, height } = await this.getVideoSize(inputPath);
-      const ass = assDocument(segments, options, width, height);
+    try {
+      diag?.setStage('ass_generation');
+      const ass = assDocument(segments, options, probe.width, probe.height);
       await fs.promises.writeFile(assPath, ass, 'utf8');
 
-      const ffmpeg = await FFmpegHelper.getFfmpegPath();
-      await execFileAsync(
-        ffmpeg,
-        [
-          '-y',
-          '-i', inputPath,
-          '-vf', `subtitles=filename='${escapeFilterPath(assPath)}'`,
-          '-map', '0:v:0',
-          '-map', '0:a?',
-          '-c:v', 'libx264',
-          '-preset', 'veryfast',
-          '-crf', '20',
-          '-c:a', 'aac',
-          '-b:a', '192k',
-          '-movflags', '+faststart',
-          out
-        ],
-        { maxBuffer: 30 * 1024 * 1024 }
-      );
+      const assStat = await fs.promises.stat(assPath).catch(() => null);
+      if (!assStat || assStat.size === 0) {
+        throw new CaptionError(
+          'SUBTITLE_RENDER_ERROR',
+          500,
+          'ass_generation',
+          'Failed to write generated ASS subtitle file to temporary storage.'
+        );
+      }
+
+      diag?.setStage('subtitle_burn_in');
+      const execEnv = await FFmpegHelper.getSubtitleExecutionEnv();
+
+      // Run FFmpeg with cwd=temp and relative 'captions.ass' so drive letters, spaces,
+      // and special OS temp-path characters never corrupt libavfilter option parsing.
+      let vfFilter = `subtitles=filename='${assFilename}'`;
+      if (process.platform !== 'win32' && caps.availableFontDirs.length > 0) {
+        const escapedFontDir = FFmpegHelper.escapeSubtitlesFilterValue(caps.availableFontDirs[0]);
+        vfFilter += `:fontsdir='${escapedFontDir}'`;
+      }
+
+      const renderTimeoutMs = Math.max(180000, Math.round((probe.durationSec || 30) * 10000));
+
+      try {
+        await execFileAsync(
+          caps.ffmpegPath,
+          [
+            '-y',
+            '-i', path.resolve(inputPath),
+            '-vf', vfFilter,
+            '-map', '0:v:0',
+            '-map', '0:a?',
+            '-c:v', 'libx264',
+            '-preset', 'veryfast',
+            '-crf', '20',
+            '-c:a', 'aac',
+            '-b:a', '192k',
+            '-movflags', '+faststart',
+            path.resolve(out)
+          ],
+          {
+            cwd: temp,
+            env: execEnv,
+            maxBuffer: 30 * 1024 * 1024,
+            timeout: renderTimeoutMs
+          }
+        );
+      } catch (ffErr: any) {
+        const stderrText = sanitizeDiagnosticText(ffErr?.stderr || ffErr?.message || String(ffErr), 320);
+        if (ffErr?.killed || /timed?\s*out/i.test(stderrText)) {
+          throw new CaptionError(
+            'SERVER_TIMEOUT',
+            504,
+            'subtitle_burn_in',
+            'Video subtitle export timed out on the server. Try a shorter video clip.',
+            { retriable: true, causeDetail: stderrText }
+          );
+        }
+        const isSubtitleErr = /subtitles|libass|fontconfig|ass|filtergraph/i.test(stderrText);
+        throw new CaptionError(
+          isSubtitleErr ? 'SUBTITLE_RENDER_ERROR' : 'FFMPEG_ERROR',
+          500,
+          'subtitle_burn_in',
+          isSubtitleErr
+            ? 'Failed to render styled ASS subtitles onto the video.'
+            : 'FFmpeg failed while encoding the captioned MP4 video.',
+          { causeDetail: stderrText }
+        );
+      }
+
+      const outStat = await fs.promises.stat(out).catch(() => null);
+      if (!outStat || outStat.size < 512) {
+        throw new CaptionError(
+          'SUBTITLE_RENDER_ERROR',
+          500,
+          'subtitle_burn_in',
+          'Exported captioned video file was empty or incomplete.'
+        );
+      }
 
       await fs.promises.mkdir(config.storageDir, { recursive: true });
       const filename = `captioned_${Date.now()}_${randomUUID().slice(0, 8)}.mp4`;
       saved = path.join(config.storageDir, filename);
       await fs.promises.copyFile(out, saved);
+
+      const savedStat = await fs.promises.stat(saved).catch(() => null);
+      if (!savedStat || savedStat.size !== outStat.size) {
+        throw new CaptionError(
+          'FFMPEG_ERROR',
+          500,
+          'subtitle_burn_in',
+          'Failed to persist rendered video file in server storage.'
+        );
+      }
+
       return { filename, videoUrl: `/api/captions/videos/${filename}`, ass };
     } catch (error) {
-      if (saved && fs.existsSync(saved)) await fs.promises.unlink(saved).catch(() => { });
+      if (saved && fs.existsSync(saved)) {
+        await fs.promises.unlink(saved).catch(() => {});
+      }
       throw error;
     } finally {
-      await fs.promises.rm(temp, { recursive: true, force: true }).catch(() => { });
+      await fs.promises.rm(temp, { recursive: true, force: true }).catch(() => {});
     }
   }
 

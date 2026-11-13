@@ -1,32 +1,39 @@
-/* VoiceForge Studio Pro Desktop Editor V2 — Design System & Color Tokens */
+/* CapCut Desktop NLE Design System & Color Tokens */
 
-:root {
-  --vf-bg-app: #0B0E13;
-  --vf-bg-panel: #15191F;
-  --vf-bg-panel-secondary: #1B2028;
-  --vf-bg-elevated: #242A33;
-  --vf-bg-hover: #303842;
-  --vf-bg-active: #38424E;
-  
-  --vf-border-primary: #303740;
-  --vf-border-subtle: #242A33;
-  --vf-border-focus: #40D5CB;
+:root, html.dark, html.light {
+  --vf-bg-app: #121418;
+  --vf-bg-panel: #181B20;
+  --vf-bg-panel-secondary: #14171C;
+  --vf-bg-elevated: #222631;
+  --vf-bg-hover: #282D38;
+  --vf-bg-active: #2D3340;
 
-  --vf-text-primary: #F0F3F7;
-  --vf-text-secondary: #A4AFBD;
-  --vf-text-muted: #747F90;
+  --vf-border-primary: #262A34;
+  --vf-border-subtle: #1E222B;
+  --vf-border-focus: #13E2CA;
 
-  --vf-accent-primary: #40D5CB;
-  --vf-accent-primary-hover: #35BDB3;
-  --vf-accent-secondary: #8B79F1;
-  --vf-accent-secondary-hover: #7A67E6;
+  --vf-text-primary: #E4E7EC;
+  --vf-text-secondary: #8D95A5;
+  --vf-text-muted: #5E6573;
 
-  --vf-status-success: #48C994;
-  --vf-status-warning: #E6AC57;
-  --vf-status-danger: #F06B77;
+  /* CapCut Signature Vibrant Neon Cyan/Teal */
+  --vf-accent-primary: #13E2CA;
+  --vf-accent-primary-hover: #00F2DC;
+  --vf-accent-secondary: #0EA5E9;
+  --vf-accent-secondary-hover: #38BDF8;
+
+  /* CapCut Track Colors */
+  --vf-track-video: #0D4B4A;
+  --vf-track-video-border: #13E2CA;
+  --vf-track-audio: #152A54;
+  --vf-track-audio-wave: #38BDF8;
+
+  --vf-status-success: #13E2CA;
+  --vf-status-warning: #F59E0B;
+  --vf-status-danger: #EF4444;
 }
 
-/* Custom Scrollbar for High-Density Editor Panels */
+/* Custom Scrollbar for CapCut High-Density Editor Panels */
 .vf-scrollbar::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -35,11 +42,11 @@
   background: transparent;
 }
 .vf-scrollbar::-webkit-scrollbar-thumb {
-  background: #303740;
+  background: rgba(141, 149, 165, 0.25);
   border-radius: 4px;
 }
 .vf-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #4A5565;
+  background: rgba(141, 149, 165, 0.45);
 }
 
 /* High-density Tabular Numbers for Timecodes & Steppers */
@@ -47,11 +54,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Resizer Splitter hover and active states */
+/* CapCut Resizer Splitter hover and active states */
 .vf-splitter-h {
   width: 4px;
   cursor: col-resize;
-  background-color: #242A33;
+  background-color: #1E222B;
   transition: background-color 0.15s ease;
   position: relative;
   z-index: 20;
@@ -59,13 +66,13 @@
 }
 .vf-splitter-h:hover,
 .vf-splitter-h.active {
-  background-color: #40D5CB;
+  background-color: #13E2CA;
 }
 
 .vf-splitter-v {
   height: 4px;
   cursor: row-resize;
-  background-color: #242A33;
+  background-color: #1E222B;
   transition: background-color 0.15s ease;
   position: relative;
   z-index: 20;
@@ -73,25 +80,25 @@
 }
 .vf-splitter-v:hover,
 .vf-splitter-v.active {
-  background-color: #40D5CB;
+  background-color: #13E2CA;
 }
 
-/* Range input styling matching desktop NLE */
+/* Range input styling matching CapCut Desktop NLE */
 input[type='range'].vf-slider {
-  accent-color: #40D5CB;
+  accent-color: #13E2CA;
 }
 input[type='range'].vf-slider::-webkit-slider-runnable-track {
-  background: #242A33;
+  background: #2D3340;
   height: 4px;
   border-radius: 2px;
 }
 input[type='range'].vf-slider::-webkit-slider-thumb {
-  background: #40D5CB;
+  background: #13E2CA;
   border: 1px solid #ffffff;
   height: 12px;
   width: 12px;
   border-radius: 50%;
   margin-top: -4px;
   cursor: pointer;
+  box-shadow: 0 0 6px rgba(19, 226, 202, 0.5);
 }
-

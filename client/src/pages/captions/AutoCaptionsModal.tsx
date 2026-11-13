@@ -59,12 +59,12 @@ const WORD_COUNT_PRESETS = [
 ];
 
 const TOP_LOOKS = [
-  { id: 'doc_clean', name: 'Documentary White', color: '#FFFFFF', highlight: '#38BDF8' },
-  { id: 'tiktok_yellow', name: 'TikTok Bold Yellow', color: '#FDE047', highlight: '#FFFFFF' },
-  { id: 'hormozi_bold', name: 'Hormozi Punch', color: '#22C55E', highlight: '#FDE047' },
-  { id: 'cyber_glow', name: 'Neon Cyber Glow', color: '#06B6D4', highlight: '#EC4899' },
-  { id: 'beast_pop', name: 'MrBeast Pop', color: '#F97316', highlight: '#FACC15' },
-  { id: 'cinema_gold', name: 'Cinema Gold', color: '#EAB308', highlight: '#FFFFFF' },
+  { id: 'doc_white', name: 'Documentary White', color: '#FFFFFF', highlight: '#38BDF8' },
+  { id: 'bold_yellow', name: 'TikTok Bold Yellow', color: '#FDE047', highlight: '#FFFFFF' },
+  { id: 'hormozi_pill', name: 'Hormozi Punch', color: '#22C55E', highlight: '#FDE047' },
+  { id: 'cyberpunk_hud', name: 'Neon Cyber Glow', color: '#06B6D4', highlight: '#EC4899' },
+  { id: 'mrbeast_punch', name: 'MrBeast Pop', color: '#F97316', highlight: '#FACC15' },
+  { id: 'cinematic_gold', name: 'Cinema Gold', color: '#EAB308', highlight: '#FFFFFF' },
 ];
 
 export const AutoCaptionsModal: React.FC<AutoCaptionsModalProps> = ({
@@ -75,7 +75,7 @@ export const AutoCaptionsModal: React.FC<AutoCaptionsModalProps> = ({
   generatingStage,
   initialLanguage = '',
   initialMaxWords = 3,
-  initialPresetId = 'doc_clean',
+  initialPresetId = 'doc_white',
 }) => {
   const [language, setLanguage] = useState(initialLanguage);
   const [maxWords, setMaxWords] = useState(initialMaxWords);

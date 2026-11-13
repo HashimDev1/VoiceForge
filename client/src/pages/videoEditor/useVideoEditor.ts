@@ -23,6 +23,27 @@ import {
   DEFAULT_AUDIO_SETTINGS,
   ASPECT_RATIOS
 } from '../../../../shared/src/videoEditorDefaults';
+import {
+  BulkMediaItem,
+  BulkArrangementProposal,
+  BulkInsertionPlacement,
+  BulkVideoShortfallBehavior
+} from '../../../../shared/src/bulkTimelineTypes';
+import {
+  generateTimelineClipsFromQueue,
+  insertClipsIntoProject,
+  bulkSetClipsDuration,
+  bulkScaleClipsDuration,
+  bulkSetClipsTransform,
+  bulkSetClipsFitMode,
+  bulkApplyClipsTransition,
+  bulkSetClipsColorGrading,
+  bulkMuteClipsAudio,
+  bulkRippleDeleteClips,
+  bulkReverseClipsOrder,
+  bulkShuffleClipsOrder,
+  snapToFrame
+} from '../../../../shared/src/bulkTimelineEngine';
 import { videoEditorApi } from '../../services/videoEditorApi';
 
 export function useVideoEditor(initialProject?: EditorProject) {
@@ -334,7 +355,7 @@ export function useVideoEditor(initialProject?: EditorProject) {
   const addClipToTrack = useCallback((trackId: string, asset: MediaAsset, startSec?: number) => {
     pushHistory(projectRef.current);
     const targetTrack = projectRef.current.tracks.find((t) => t.id === trackId);
-    const clipType = targetTrack ? targetTrack.type : (asset.type as TrackType);
+    const clipType: TrackType = asset.type === 'audio' ? 'audio' : asset.type === 'image' ? 'image' : (targetTrack ? targetTrack.type : 'video');
     const clipDuration = Math.max(1, asset.duration || 5);
     const start = startSec !== undefined ? startSec : playheadRef.current;
 
@@ -944,6 +965,299 @@ export function useVideoEditor(initialProject?: EditorProject) {
     }));
   }, []);
 
+  // ==========================================
+  // SMART BULK TIMELINE ARRANGEMENT
+  // ==========================================
+  const bulkArrangeOnTimeline = useCallback(
+    (
+      proposal: BulkArrangementProposal & {
+        imagePanZoom?: boolean;
+        videoShortfall?: BulkVideoShortfallBehavior;
+        autoMuteVideoAudio?: boolean;
+        defaultTransition?: any;
+        transitionDuration?: number;
+      }
+    ) => {
+      pushHistory(projectRef.current);
+      const fps = projectRef.current.fps || 30;
+
+      // 1. Determine target track ID
+      let targetTrack = projectRef.current.tracks.find((t) => t.id === proposal.targetTrackId);
+      if (!targetTrack) {
+        targetTrack =
+          projectRef.current.tracks.find((t) => t.type === 'video') || projectRef.current.tracks[0];
+      }
+
+      // 2. Generate clips
+      const newClips = generateTimelineClipsFromQueue(proposal.items, {
+        targetTrackId: targetTrack ? targetTrack.id : 'track-v1',
+        fps,
+        imagePanZoom: proposal.imagePanZoom,
+        videoShortfall: proposal.videoShortfall,
+        autoMuteVideoAudio: proposal.autoMuteVideoAudio,
+        defaultTransition: proposal.defaultTransition,
+        transitionDuration: proposal.transitionDuration
+      });
+
+      // 3. Insert into project
+      let updatedProj = insertClipsIntoProject(
+        projectRef.current,
+        newClips,
+        proposal.placement,
+        targetTrack ? targetTrack.id : undefined,
+        playheadRef.current,
+        fps
+      );
+
+      // 4. If voiceover audio asset is provided, attach to audio track
+      if (proposal.voiceoverAsset) {
+        let audioTrack = updatedProj.tracks.find((t) => t.id === 'track-a1' || t.type === 'audio');
+        if (!audioTrack) {
+          audioTrack = {
+            id: `track-a1_${Date.now()}`,
+            name: 'Voiceover & Audio',
+            type: 'audio',
+            locked: false,
+            muted: false,
+            hidden: false,
+            order: 3
+          };
+          updatedProj.tracks.push(audioTrack);
+        }
+
+        const voStart = proposal.placement === 'playhead' ? snapToFrame(playheadRef.current, fps) : 0;
+        const voClip: TimelineClip = {
+          id: `vo_bulk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          trackId: audioTrack.id,
+          assetId: proposal.voiceoverAsset.id,
+          name: proposal.voiceoverAsset.name,
+          type: 'audio',
+          start: voStart,
+          duration: proposal.voiceoverAsset.duration || proposal.totalDuration,
+          sourceStart: 0,
+          sourceDuration: proposal.voiceoverAsset.duration || proposal.totalDuration,
+          url: proposal.voiceoverAsset.url,
+          transform: { ...DEFAULT_TRANSFORM },
+          speed: { ...DEFAULT_SPEED },
+          colorGrading: { ...DEFAULT_COLOR_GRADING },
+          audio: { ...DEFAULT_AUDIO_SETTINGS, volume: 100 },
+          effects: [],
+          keyframes: []
+        };
+        updatedProj.clips.push(voClip);
+        updatedProj.duration = calculateTimelineDuration(updatedProj.clips);
+      }
+
+      setProject(updatedProj);
+      setSelectedClipIds(newClips.map((c) => c.id));
+      setLastSavedText(`Arranged ${proposal.items.length} clips on timeline`);
+    },
+    [pushHistory]
+  );
+
+  // Bulk Edit Actions
+  const bulkSetDuration = useCallback(
+    (clipIds: string[], duration: number, ripple: boolean = true) => {
+      pushHistory(projectRef.current);
+      const fps = projectRef.current.fps || 30;
+      setProject((prev) => {
+        const nextClips = bulkSetClipsDuration(prev.clips, clipIds, duration, ripple, fps);
+        return {
+          ...prev,
+          clips: nextClips,
+          duration: calculateTimelineDuration(nextClips)
+        };
+      });
+      setLastSavedText(`Updated duration for ${clipIds.length} clips`);
+    },
+    [pushHistory]
+  );
+
+  const bulkScaleDuration = useCallback(
+    (clipIds: string[], scaleFactor: number, ripple: boolean = true) => {
+      pushHistory(projectRef.current);
+      const fps = projectRef.current.fps || 30;
+      setProject((prev) => {
+        const nextClips = bulkScaleClipsDuration(prev.clips, clipIds, scaleFactor, ripple, fps);
+        return {
+          ...prev,
+          clips: nextClips,
+          duration: calculateTimelineDuration(nextClips)
+        };
+      });
+      setLastSavedText(`Scaled duration for ${clipIds.length} clips`);
+    },
+    [pushHistory]
+  );
+
+  const bulkSetFitMode = useCallback(
+    (clipIds: string[], fit: 'cover' | 'contain' | 'fill') => {
+      pushHistory(projectRef.current);
+      setProject((prev) => ({
+        ...prev,
+        clips: bulkSetClipsFitMode(prev.clips, clipIds, fit)
+      }));
+      setLastSavedText(`Set fit to ${fit} for ${clipIds.length} clips`);
+    },
+    [pushHistory]
+  );
+
+  const bulkSetTransform = useCallback(
+    (clipIds: string[], patch: Partial<ClipTransform>) => {
+      pushHistory(projectRef.current);
+      setProject((prev) => ({
+        ...prev,
+        clips: bulkSetClipsTransform(prev.clips, clipIds, patch)
+      }));
+    },
+    [pushHistory]
+  );
+
+  const bulkApplyTransition = useCallback(
+    (clipIds: string[], transitionType: any, duration: number = 0.5) => {
+      pushHistory(projectRef.current);
+      const fps = projectRef.current.fps || 30;
+      setProject((prev) => ({
+        ...prev,
+        clips: bulkApplyClipsTransition(prev.clips, clipIds, transitionType, duration, fps)
+      }));
+      setLastSavedText(`Applied ${transitionType} to ${clipIds.length} clips`);
+    },
+    [pushHistory]
+  );
+
+  const bulkSetColorGrading = useCallback(
+    (clipIds: string[], patch: any) => {
+      pushHistory(projectRef.current);
+      setProject((prev) => ({
+        ...prev,
+        clips: bulkSetClipsColorGrading(prev.clips, clipIds, patch)
+      }));
+    },
+    [pushHistory]
+  );
+
+  const bulkMuteAudio = useCallback(
+    (clipIds: string[], muted: boolean) => {
+      pushHistory(projectRef.current);
+      setProject((prev) => ({
+        ...prev,
+        clips: bulkMuteClipsAudio(prev.clips, clipIds, muted)
+      }));
+      setLastSavedText(`${muted ? 'Muted' : 'Unmuted'} ${clipIds.length} clips`);
+    },
+    [pushHistory]
+  );
+
+  const bulkRippleDeleteSelected = useCallback(() => {
+    if (selectedClipIds.length === 0) return;
+    pushHistory(projectRef.current);
+    const fps = projectRef.current.fps || 30;
+    setProject((prev) => {
+      const nextClips = bulkRippleDeleteClips(prev.clips, selectedClipIds, fps);
+      return {
+        ...prev,
+        clips: nextClips,
+        duration: calculateTimelineDuration(nextClips)
+      };
+    });
+    setSelectedClipIds([]);
+    setLastSavedText(`Ripple deleted ${selectedClipIds.length} clips`);
+  }, [selectedClipIds, pushHistory]);
+
+  const bulkReverseSelected = useCallback(() => {
+    if (selectedClipIds.length < 2) return;
+    pushHistory(projectRef.current);
+    const fps = projectRef.current.fps || 30;
+    setProject((prev) => ({
+      ...prev,
+      clips: bulkReverseClipsOrder(prev.clips, selectedClipIds, fps)
+    }));
+    setLastSavedText(`Reversed order of ${selectedClipIds.length} clips`);
+  }, [selectedClipIds, pushHistory]);
+
+  const bulkShuffleSelected = useCallback(() => {
+    if (selectedClipIds.length < 2) return;
+    pushHistory(projectRef.current);
+    const fps = projectRef.current.fps || 30;
+    setProject((prev) => ({
+      ...prev,
+      clips: bulkShuffleClipsOrder(prev.clips, selectedClipIds, fps)
+    }));
+    setLastSavedText(`Shuffled ${selectedClipIds.length} clips`);
+  }, [selectedClipIds, pushHistory]);
+
+  // Separate Audio / Extract Audio from Video Clip (CapCut Desktop feature)
+  const separateAudioFromClip = useCallback((clipId: string) => {
+    const clip = projectRef.current.clips.find((c) => c.id === clipId);
+    if (!clip || clip.type !== 'video' || !clip.url) return;
+
+    pushHistory(projectRef.current);
+
+    // 1. Mute original video clip
+    const updatedClips = projectRef.current.clips.map((c) => {
+      if (c.id === clipId) {
+        return {
+          ...c,
+          audio: {
+            ...c.audio,
+            muted: true,
+            volume: 0
+          }
+        };
+      }
+      return c;
+    });
+
+    // 2. Identify or allocate dedicated audio track
+    let audioTrack = projectRef.current.tracks.find((t) => t.id === 'track-a1' || t.type === 'audio');
+    let tracks = [...projectRef.current.tracks];
+    if (!audioTrack) {
+      audioTrack = {
+        id: `track-a1_${Date.now()}`,
+        name: 'Voiceover & Audio (A1)',
+        type: 'audio',
+        locked: false,
+        muted: false,
+        hidden: false,
+        order: 3
+      };
+      tracks.push(audioTrack);
+    }
+
+    // 3. Create synchronized audio clip with matching source offset & duration
+    const separatedClip: TimelineClip = {
+      id: `audio_sep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      trackId: audioTrack.id,
+      assetId: clip.assetId,
+      name: `${clip.name} (Audio)`,
+      type: 'audio',
+      start: clip.start,
+      duration: clip.duration,
+      sourceStart: clip.sourceStart,
+      sourceDuration: clip.sourceDuration,
+      url: clip.url,
+      transform: { ...DEFAULT_TRANSFORM },
+      speed: { ...clip.speed },
+      colorGrading: { ...DEFAULT_COLOR_GRADING },
+      audio: { ...DEFAULT_AUDIO_SETTINGS, volume: 100, muted: false },
+      effects: [],
+      keyframes: []
+    };
+
+    updatedClips.push(separatedClip);
+
+    setProject((prev) => ({
+      ...prev,
+      tracks,
+      clips: updatedClips,
+      duration: calculateTimelineDuration(updatedClips)
+    }));
+
+    setSelectedClipIds([separatedClip.id]);
+    setLastSavedText(`Separated audio track from ${clip.name}`);
+  }, [pushHistory]);
+
   return {
     project,
     setProject,
@@ -1008,6 +1322,18 @@ export function useVideoEditor(initialProject?: EditorProject) {
     toggleTrackMute,
     toggleTrackSolo,
     toggleTrackLock,
-    toggleTrackHidden
+    toggleTrackHidden,
+    bulkArrangeOnTimeline,
+    bulkSetDuration,
+    bulkScaleDuration,
+    bulkSetFitMode,
+    bulkSetTransform,
+    bulkApplyTransition,
+    bulkSetColorGrading,
+    bulkMuteAudio,
+    bulkRippleDeleteSelected,
+    bulkReverseSelected,
+    bulkShuffleSelected,
+    separateAudioFromClip
   };
 }

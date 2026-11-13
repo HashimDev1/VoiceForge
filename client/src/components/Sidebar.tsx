@@ -25,10 +25,8 @@ import { ApiHealthResponse } from '../../../shared/src/types';
 
 export type TabType =
   | 'dashboard'
-  | 'documentary-studio'
   | 'video-editor'
   | 'captions'
-  | 'google-flow'
   | 'metadata-cleaner'
   | 'clone-voice'
   | 'open-source-tts'
@@ -73,9 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleTheme
 }) => {
   const serviceItems: NavItem[] = [
-    { id: 'documentary-studio', label: 'Documentary Studio', icon: Clapperboard },
     { id: 'video-editor', label: 'Video Editor', icon: Video },
-    { id: 'google-flow', label: 'Flow Studio', icon: Film },
     { id: 'captions', label: 'Caption Studio', icon: Subtitles },
     { id: 'metadata-cleaner', label: 'AI Metadata Cleaner', icon: ShieldCheck },
     { id: 'clone-voice', label: 'Clone Voice', icon: Sparkles },

@@ -368,11 +368,25 @@ export interface SpeechSegment {
 // Voiceover Transcription Studio Types
 // ==========================================
 
+export type CaptionErrorCode =
+  | 'UPLOAD_ERROR'
+  | 'NO_AUDIO_TRACK'
+  | 'NO_SPEECH_DETECTED'
+  | 'MISSING_CREDENTIALS'
+  | 'INVALID_API_KEY'
+  | 'RATE_LIMITED'
+  | 'AUDIO_TOO_LARGE'
+  | 'PROVIDER_UNAVAILABLE'
+  | 'SERVER_TIMEOUT'
+  | 'FFMPEG_ERROR'
+  | 'SUBTITLE_RENDER_ERROR';
+
 export interface TranscriptionWord {
   word: string;
   start: number;
   end: number;
   confidence?: number;
+  estimated?: boolean;
 }
 
 export interface TranscriptionSegment {
@@ -382,6 +396,7 @@ export interface TranscriptionSegment {
   text: string;
   speaker?: string;
   words?: TranscriptionWord[];
+  estimated?: boolean;
   alignmentStatus?: AlignmentStatus;
   referenceMatch?: string;
 }
@@ -445,143 +460,3 @@ export interface TranscriptionProject {
 
 export type TranscriptionExportFormat = 'txt' | 'srt' | 'vtt' | 'json';
 
-// ==========================================
-// Google Flow Multi-Account Studio Types
-// ==========================================
-
-export type FlowAccountStatus = 'ready' | 'in_use' | 'needs_auth' | 'cooldown' | 'error' | 'disabled';
-export type FlowCreditStatus = 'active' | 'unknown' | 'exhausted';
-export type FlowSessionStatus = 'connected' | 'not_configured' | 'expired' | 'invalid';
-
-export interface FlowSessionData {
-  cookies?: string;
-  authToken?: string;
-  status: FlowSessionStatus;
-  userEmail?: string;
-  tier?: string;
-  creditsLabel?: string;
-  lastVerified?: string;
-  notes?: string;
-}
-
-export interface FlowSaveSessionPayload {
-  cookies?: string;
-  authToken?: string;
-  userEmail?: string;
-  tier?: string;
-  notes?: string;
-}
-
-export interface FlowBulkImportSessionsPayload {
-  sessions: Array<{
-    slotNumber?: number;
-    accountId?: string;
-    name?: string;
-    cookies?: string;
-    authToken?: string;
-    userEmail?: string;
-    tier?: string;
-  }>;
-}
-
-export interface FlowAccount {
-  id: string; // e.g. "acc_1" to "acc_10"
-  slotNumber: number; // 1 to 10
-  name: string; // Friendly name: e.g. "Google AI Pro 1"
-  profileDirectory: string; // e.g. "Default", "Profile 2", etc.
-  customUserDataDir?: string; // Optional custom user data directory
-  status: FlowAccountStatus;
-  lastChecked?: string; // ISO date string
-  lastUsed?: string; // ISO date string
-  notes?: string;
-  creditBalanceStatus: FlowCreditStatus;
-  creditBalanceLabel: string; // "Pro Active" or "Unknown" (never fabricated)
-  priority: number; // 1 (highest) to 10
-  dailyJobsCount: number;
-  activeJobId?: string;
-  sessionData?: FlowSessionData;
-}
-
-export type FlowJobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'needs_attention';
-export type FlowSelectionMode = 'auto' | 'manual';
-
-export interface FlowJobSettings {
-  aspectRatio: '16:9' | '9:16' | '1:1';
-  motionIntensity?: number; // 1 to 10
-  cameraMovement?: 'static' | 'pan_left' | 'pan_right' | 'zoom_in' | 'zoom_out' | 'cinematic';
-  stylePreset?: string; // "Cinematic", "Photorealistic", "Anime", "3D Animation", "Hyper-detail"
-  durationSeconds?: number;
-  negativePrompt?: string;
-  seed?: number;
-}
-
-export interface FlowJob {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-  completedAt?: string;
-  prompt: string;
-  mediaType?: 'image' | 'video';
-  sceneNumber?: string;
-  batchId?: string;
-  imageUrl?: string;
-  settings: FlowJobSettings;
-  selectionMode: FlowSelectionMode;
-  accountId?: string;
-  accountName?: string;
-  status: FlowJobStatus;
-  progressPercent: number;
-  stageMessage?: string;
-  errorDetails?: string;
-  manualActionRequired?: string;
-  retryCount: number;
-  maxRetries: number;
-  videoUrl?: string; // Relative URL to stream video from server
-  thumbnailUrl?: string;
-  outputFilePath?: string;
-  durationFormatted?: string;
-  fileSizeBytes?: number;
-}
-
-export interface FlowCreateJobPayload {
-  prompt: string;
-  mediaType?: 'image' | 'video';
-  sceneNumber?: string;
-  batchId?: string;
-  imageUrl?: string;
-  settings?: Partial<FlowJobSettings>;
-  selectionMode?: FlowSelectionMode;
-  accountId?: string;
-}
-
-export interface FlowStudioOverview {
-  accounts: FlowAccount[];
-  jobs: FlowJob[];
-  stats: {
-    totalAccounts: number;
-    activeAccounts: number;
-    totalJobs: number;
-    runningJobs: number;
-    pendingJobs: number;
-    completedJobs: number;
-    needsAttentionJobs: number;
-  };
-  chrome: {
-    detected: boolean;
-    path?: string;
-    availableProfiles: string[];
-    userDataPath?: string;
-  };
-}
-
-export interface FlowImageItem {
-  id: string;
-  title: string;
-  prompt: string;
-  filename: string;
-  imageUrl?: string;
-  aspectRatio: string;
-  modelUsed: string;
-  accountName?: string;
-  createdAt: string;
-}

@@ -7,6 +7,7 @@
     "gender": "Male",
     "description": "Cloned neural character voice (am_puck (34%), am_eric (33%), am_michael (33%))",
     "category": "Storytelling",
+    "previewAudioUrl": "/api/audio/file/preview_os_1794177471556_2de8fs.mp3",
     "provider": "open-source-tts",
     "isCustom": true,
     "isCloned": true,

@@ -35,6 +35,15 @@ import { CaptionInspector } from './captions/CaptionInspector';
 import { CaptionTimeline } from './captions/CaptionTimeline';
 import { AiStyleModal } from './captions/AiStyleModal';
 import { AutoCaptionsModal } from './captions/AutoCaptionsModal';
+import {
+  CaptionUiErrorState,
+  parseCaptionApiError,
+  parseCaptionNetworkError,
+  resolveCaptionErrorPresentation
+} from './captions/captionErrorHandling';
+
+const ALLOWED_VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.m4v', '.webm', '.mkv']);
+const MAX_VIDEO_UPLOAD_BYTES = 500 * 1024 * 1024;
 
 const STORAGE_SAVED_PRESETS = 'voiceforge_caption_saved_presets_v2';
 const STORAGE_PROJECT_STATE = 'voiceforge_caption_studio_autosave_v2';
@@ -199,7 +208,8 @@ export const CaptionsStudio: React.FC = () => {
   // Processing & Results
   const [isBusy, setIsBusy] = useState(false);
   const [busyStage, setBusyStage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [uiError, setUiError] = useState<CaptionUiErrorState | null>(null);
+  const [lastFailedAction, setLastFailedAction] = useState<'transcribe' | 'render' | null>(null);
   const [renderResult, setRenderResult] = useState<CaptionRenderResult | null>(null);
 
   // AI Style Recommendation
@@ -592,6 +602,46 @@ export const CaptionsStudio: React.FC = () => {
     setSavedPresets((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  const validateAndSelectVideoFile = useCallback((candidate: File) => {
+    const extMatch = candidate.name.toLowerCase().match(/\.[^.]+$/);
+    const ext = extMatch ? extMatch[0] : '';
+    if (!ALLOWED_VIDEO_EXTENSIONS.has(ext)) {
+      setUiError(
+        resolveCaptionErrorPresentation(
+          'UPLOAD_ERROR',
+          `Unsupported file format "${ext || 'unknown'}". Upload an MP4, MOV, M4V, WEBM, or MKV video.`
+        )
+      );
+      return;
+    }
+    if (candidate.size === 0) {
+      setUiError(
+        resolveCaptionErrorPresentation(
+          'UPLOAD_ERROR',
+          'Selected video file is empty (0 bytes).'
+        )
+      );
+      return;
+    }
+    if (candidate.size > MAX_VIDEO_UPLOAD_BYTES) {
+      setUiError(
+        resolveCaptionErrorPresentation(
+          'AUDIO_TOO_LARGE',
+          `Selected video is ${(candidate.size / (1024 * 1024)).toFixed(1)} MB, exceeding the 500 MB upload limit.`
+        )
+      );
+      return;
+    }
+
+    setFile(candidate);
+    setSegments([]);
+    setTranscribed(false);
+    setRenderResult(null);
+    setUiError(null);
+    setLastFailedAction(null);
+    setIsAutoCaptionsOpen(true);
+  }, []);
+
   // Transcribe Video API
   const handleTranscribe = async (customSettings?: CaptionStudioSettings) => {
     if (!file) {
@@ -601,7 +651,8 @@ export const CaptionsStudio: React.FC = () => {
     const activeSettings = customSettings || settings;
     setIsBusy(true);
     setBusyStage('Transcribing audio via Speech Recognition...');
-    setErrorMessage('');
+    setUiError(null);
+    setLastFailedAction(null);
     setRenderResult(null);
 
     try {
@@ -614,9 +665,47 @@ export const CaptionsStudio: React.FC = () => {
         body: form
       });
 
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to transcribe video speech.');
+      const rawText = await response.text();
+      if (!response.ok) {
+        setLastFailedAction('transcribe');
+        setUiError(
+          parseCaptionApiError(
+            response.status,
+            rawText,
+            'transcribe',
+            response.headers.get('X-Request-Id')
+          )
+        );
+        return;
+      }
+
+      let data: any = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        setLastFailedAction('transcribe');
+        setUiError(
+          parseCaptionApiError(
+            502,
+            rawText,
+            'transcribe',
+            response.headers.get('X-Request-Id')
+          )
+        );
+        return;
+      }
+
+      if (!data?.success) {
+        setLastFailedAction('transcribe');
+        setUiError(
+          parseCaptionApiError(
+            response.status,
+            rawText,
+            'transcribe',
+            response.headers.get('X-Request-Id')
+          )
+        );
+        return;
       }
 
       const receivedSegments: CaptionSegment[] = data.segments || [];
@@ -632,7 +721,8 @@ export const CaptionsStudio: React.FC = () => {
       );
       setAiAnalysis(aiRec);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Video transcription failed.');
+      setLastFailedAction('transcribe');
+      setUiError(parseCaptionNetworkError(err, 'transcribe'));
     } finally {
       setIsBusy(false);
       setBusyStage('');
@@ -680,6 +770,7 @@ export const CaptionsStudio: React.FC = () => {
       }];
       setSegments(regroupWords(rawSeg, options.maxWords));
       setTranscribed(true);
+      setUiError(null);
       setIsAutoCaptionsOpen(false);
       setLastSavedText(`Generated ${options.maxWords}-word captions from text`);
       return;
@@ -688,6 +779,7 @@ export const CaptionsStudio: React.FC = () => {
     // If already transcribed and language is the same, regroup existing words instantly!
     if (transcribed && segments.length > 0 && options.language === settings.language) {
       setSegments((cur) => regroupWords(cur, options.maxWords));
+      setUiError(null);
       setIsAutoCaptionsOpen(false);
       setLastSavedText(`Regrouped into ${options.maxWords}-word captions`);
       return;
@@ -707,7 +799,8 @@ export const CaptionsStudio: React.FC = () => {
     if (!file || segments.length === 0) return;
     setIsBusy(true);
     setBusyStage('Rendering burned-in subtitles via FFmpeg engine...');
-    setErrorMessage('');
+    setUiError(null);
+    setLastFailedAction(null);
 
     try {
       const form = new FormData();
@@ -720,14 +813,53 @@ export const CaptionsStudio: React.FC = () => {
         body: form
       });
 
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to render captioned video.');
+      const rawText = await response.text();
+      if (!response.ok) {
+        setLastFailedAction('render');
+        setUiError(
+          parseCaptionApiError(
+            response.status,
+            rawText,
+            'render',
+            response.headers.get('X-Request-Id')
+          )
+        );
+        return;
+      }
+
+      let data: any = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        setLastFailedAction('render');
+        setUiError(
+          parseCaptionApiError(
+            502,
+            rawText,
+            'render',
+            response.headers.get('X-Request-Id')
+          )
+        );
+        return;
+      }
+
+      if (!data?.success) {
+        setLastFailedAction('render');
+        setUiError(
+          parseCaptionApiError(
+            response.status,
+            rawText,
+            'render',
+            response.headers.get('X-Request-Id')
+          )
+        );
+        return;
       }
 
       setRenderResult(data);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Video render failed.');
+      setLastFailedAction('render');
+      setUiError(parseCaptionNetworkError(err, 'render'));
     } finally {
       setIsBusy(false);
       setBusyStage('');
@@ -801,21 +933,77 @@ export const CaptionsStudio: React.FC = () => {
           setSegments([]);
           setTranscribed(false);
           setRenderResult(null);
+          setUiError(null);
+          setLastFailedAction(null);
         }}
       />
 
-      {/* Error Alert Display */}
-      {errorMessage && (
-        <div className="flex items-center gap-3 rounded-2xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm font-semibold text-rose-700 dark:text-rose-300 shadow-sm">
-          <AlertCircle className="h-5 w-5 shrink-0 text-rose-500" />
-          <div className="flex-1">{errorMessage}</div>
-          <button
-            type="button"
-            onClick={() => setErrorMessage('')}
-            className="rounded p-1 hover:bg-rose-200 dark:hover:bg-rose-900/40"
-          >
-            ×
-          </button>
+      {/* Structured Error Alert Display */}
+      {uiError && (
+        <div
+          role="alert"
+          data-error-code={uiError.code}
+          className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/30 p-4 text-rose-800 dark:text-rose-200 shadow-sm"
+        >
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <AlertCircle className="h-5 w-5 mt-0.5 shrink-0 text-rose-500" />
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-bold text-rose-900 dark:text-rose-100">
+                  {uiError.title}
+                </span>
+                <span className="rounded-md bg-rose-200/70 dark:bg-rose-900/60 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-rose-800 dark:text-rose-200">
+                  {uiError.code}
+                </span>
+                {uiError.requestId && (
+                  <span className="font-mono text-[10px] text-rose-600/80 dark:text-rose-300/70">
+                    Ref: {uiError.requestId.slice(0, 8)}
+                  </span>
+                )}
+              </div>
+              <div className="text-xs font-semibold text-rose-700 dark:text-rose-300">
+                {uiError.message}
+              </div>
+              <div className="text-xs text-rose-600/90 dark:text-rose-300/80">
+                {uiError.hint}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {uiError.canRetry && file && !isBusy && (
+              <button
+                type="button"
+                onClick={() =>
+                  lastFailedAction === 'render'
+                    ? handleRenderVideo()
+                    : handleTranscribe()
+                }
+                className="flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition cursor-pointer"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Retry</span>
+              </button>
+            )}
+            {uiError.canPasteScript && file && !isBusy && (
+              <button
+                type="button"
+                onClick={() => setIsAutoCaptionsOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-studio-900 px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-200 hover:bg-rose-100/60 dark:hover:bg-studio-800 transition cursor-pointer"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span>Auto Captions / Paste Script</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setUiError(null)}
+              className="rounded p-1 text-base leading-none hover:bg-rose-200 dark:hover:bg-rose-900/40 cursor-pointer"
+              aria-label="Dismiss error"
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
 
@@ -932,13 +1120,9 @@ export const CaptionsStudio: React.FC = () => {
             onChange={(e) => {
               const selectedFile = e.target.files?.[0];
               if (selectedFile) {
-                setFile(selectedFile);
-                setSegments([]);
-                setTranscribed(false);
-                setRenderResult(null);
-                setErrorMessage('');
-                setIsAutoCaptionsOpen(true);
+                validateAndSelectVideoFile(selectedFile);
               }
+              e.target.value = '';
             }}
           />
 
@@ -955,12 +1139,7 @@ export const CaptionsStudio: React.FC = () => {
                 e.stopPropagation();
                 const droppedFile = e.dataTransfer.files?.[0];
                 if (droppedFile) {
-                  setFile(droppedFile);
-                  setSegments([]);
-                  setTranscribed(false);
-                  setRenderResult(null);
-                  setErrorMessage('');
-                  setIsAutoCaptionsOpen(true);
+                  validateAndSelectVideoFile(droppedFile);
                 }
               }}
               className="glass-panel group flex min-h-[540px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-studio-border bg-white dark:bg-studio-900 p-8 text-center transition-all hover:border-indigo-500/60 hover:bg-slate-50 dark:hover:bg-studio-800/60 shadow-sm"
@@ -1006,6 +1185,8 @@ export const CaptionsStudio: React.FC = () => {
                 setSegments([]);
                 setTranscribed(false);
                 setRenderResult(null);
+                setUiError(null);
+                setLastFailedAction(null);
               }}
             />
           )}

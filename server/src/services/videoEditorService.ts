@@ -384,6 +384,32 @@ export class VideoEditorService {
     };
   }
 
+  /**
+   * Check if a media file contains an active audio stream
+   */
+  public static async fileHasAudioStream(filePath: string): Promise<boolean> {
+    try {
+      const ext = path.extname(filePath).toLowerCase();
+      if (['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.wma'].includes(ext)) {
+        return true;
+      }
+      if (['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.svg'].includes(ext)) {
+        return false;
+      }
+      const ffprobe = await FFmpegHelper.getFfprobePath();
+      const { stdout } = await execFileAsync(ffprobe, [
+        '-v', 'error',
+        '-select_streams', 'a',
+        '-show_entries', 'stream=codec_type',
+        '-of', 'csv=p=0',
+        filePath
+      ]);
+      return stdout.trim().length > 0;
+    } catch {
+      return false;
+    }
+  }
+
   // ==========================================
   // MULTITRACK FFMPEG COMPOSITOR & EXPORT
   // ==========================================
@@ -521,6 +547,7 @@ export class VideoEditorService {
         const track = trackMap.get(c.trackId);
         if (track?.muted) return false;
         if (hasSoloTrack && !track?.solo) return false;
+        if (c.audio?.muted) return false;
         return c.type === 'audio' || c.type === 'video';
       });
 
@@ -699,6 +726,12 @@ export class VideoEditorService {
           }
 
           if (localAudioPath && fs.existsSync(localAudioPath)) {
+            // Verify media file actually contains an audio stream before mixing
+            const hasAudio = await VideoEditorService.fileHasAudioStream(localAudioPath);
+            if (!hasAudio) {
+              continue;
+            }
+
             inputArgs.push('-i', localAudioPath);
             const aIndex = inputIndex;
             inputIndex++;
@@ -711,12 +744,14 @@ export class VideoEditorService {
             let aChain = `[${aIndex}:a]atrim=start=${aSourceStart}:duration=${aDuration},asetpts=PTS-STARTPTS,volume=${vol}`;
 
             // Fade in / Fade out
-            if (aClip.audio?.fadeInDuration && aClip.audio.fadeInDuration > 0) {
-              aChain += `,afade=t=in:ss=0:d=${aClip.audio.fadeInDuration}`;
+            const fadeIn = aClip.audio?.fadeInDuration ?? (aClip.audio as any)?.fadeIn ?? 0;
+            const fadeOut = aClip.audio?.fadeOutDuration ?? (aClip.audio as any)?.fadeOut ?? 0;
+            if (fadeIn > 0) {
+              aChain += `,afade=t=in:ss=0:d=${fadeIn}`;
             }
-            if (aClip.audio?.fadeOutDuration && aClip.audio.fadeOutDuration > 0) {
-              const startFade = Math.max(0, aDuration - aClip.audio.fadeOutDuration);
-              aChain += `,afade=t=out:st=${startFade}:d=${aClip.audio.fadeOutDuration}`;
+            if (fadeOut > 0) {
+              const startFade = Math.max(0, aDuration - fadeOut);
+              aChain += `,afade=t=out:st=${startFade}:d=${fadeOut}`;
             }
 
             if (delayMs > 0) {

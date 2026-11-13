@@ -18,8 +18,7 @@
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["../shared/src/*"],
-      "@/*": ["./src/*"],
-      "flow-sdk": ["./src/lib/flowSdk.ts"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src", "../shared/src"]

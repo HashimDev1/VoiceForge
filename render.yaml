@@ -8,6 +8,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: ASR_PROVIDER_PRIORITY
+        value: groq,openai,fish_audio,local
       - key: GROQ_API_KEY
         sync: false
       - key: FISH_API_KEY

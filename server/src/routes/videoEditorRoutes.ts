@@ -109,6 +109,39 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
   }
 });
 
+router.post('/upload-bulk', upload.array('files', 200), async (req: Request, res: Response) => {
+  try {
+    const files = (req.files as Express.Multer.File[]) || [];
+    if (files.length === 0) {
+      return res.status(400).json({ success: false, error: 'No media files were uploaded.' });
+    }
+
+    // Concurrently probe uploaded media files up to 200 items with safety
+    const assets = [];
+    const errors: string[] = [];
+
+    for (const file of files) {
+      try {
+        const probed = await VideoEditorService.probeMedia(file.path, file.originalname);
+        assets.push(probed);
+      } catch (err: any) {
+        logger.warn(`Failed probing bulk file ${file.originalname}:`, err);
+        errors.push(`Failed probing ${file.originalname}: ${err.message}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      assets,
+      uploadedCount: assets.length,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (err: any) {
+    logger.error('Bulk media upload error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/assets/:filename', (req: Request, res: Response) => {
   const filePath = path.join(VideoEditorService.getAssetsDir(), req.params.filename);
   if (!fs.existsSync(filePath)) {

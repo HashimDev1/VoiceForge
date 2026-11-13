@@ -12,10 +12,8 @@ import { Projects } from './pages/Projects';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
 import { CloneVoiceStudio } from './pages/CloneVoiceStudio';
-import { GoogleFlowStudio } from './pages/GoogleFlowStudio';
 import { CaptionsStudio } from './pages/CaptionsStudio';
 import { VideoEditorStudio } from './pages/VideoEditorStudio';
-import { DocumentaryStudio } from './pages/DocumentaryStudio';
 import { MetadataCleanerStudio } from './pages/MetadataCleanerStudio';
 import { VoiceCloneModal } from './components/VoiceCloneModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -27,7 +25,6 @@ export function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
-  const [handedOffEditorProject, setHandedOffEditorProject] = useState<any>(null);
 
   // Theme state: default to dark (VoiceForge professional dark studio theme)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -108,9 +105,12 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-studio-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-300">
-      {/* Sidebar Navigation (Desktop + Mobile Drawer) - Hidden on Dashboard */}
-      {activeTab !== 'dashboard' && (
+    <div
+      className={`bg-studio-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-300 ${activeTab === 'video-editor' ? 'h-screen overflow-hidden' : 'min-h-screen'
+        }`}
+    >
+      {/* Sidebar Navigation (Desktop + Mobile Drawer) - Hidden on Dashboard & CapCut Fullscreen Video Editor */}
+      {activeTab !== 'dashboard' && activeTab !== 'video-editor' && (
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -128,13 +128,12 @@ export function App() {
 
       {/* Main Viewport Container */}
       <div
-        className={`transition-all duration-300 flex-1 flex flex-col ${
-          activeTab === 'dashboard'
+        className={`transition-all duration-300 flex-1 flex flex-col ${activeTab === 'dashboard' || activeTab === 'video-editor'
             ? 'pl-0'
             : sidebarCollapsed
-            ? 'md:pl-20'
-            : 'md:pl-64'
-        } ${activeTab === 'video-editor' ? 'h-screen overflow-hidden' : ''}`}
+              ? 'md:pl-20'
+              : 'md:pl-64'
+          } ${activeTab === 'video-editor' ? 'h-screen overflow-hidden' : ''}`}
       >
         {/* Top Navbar Header - Only displayed on the Script Studio page */}
         {activeTab === 'script-studio' && (
@@ -151,13 +150,12 @@ export function App() {
 
         {/* Main Tab Viewport */}
         <main
-          className={`flex-1 ${
-            activeTab === 'video-editor'
+          className={`flex-1 ${activeTab === 'video-editor'
               ? 'p-0 overflow-hidden h-full flex flex-col'
               : activeTab === 'dashboard'
-              ? 'p-4 sm:p-8 flex items-center justify-center overflow-y-auto'
-              : 'p-4 sm:p-6 pb-28 md:pb-28 overflow-y-auto'
-          }`}
+                ? 'p-3 sm:px-6 sm:py-4 flex items-center justify-center overflow-y-auto lg:overflow-hidden'
+                : 'p-4 sm:p-6 pb-28 md:pb-28 overflow-y-auto'
+            }`}
         >
           {activeTab === 'dashboard' && (
             <Dashboard
@@ -171,34 +169,17 @@ export function App() {
             />
           )}
 
-          {activeTab === 'documentary-studio' && (
-            <ErrorBoundary>
-              <DocumentaryStudio
-                onOpenVideoEditor={(editorProject) => {
-                  setHandedOffEditorProject(editorProject);
-                  setActiveTab('video-editor');
-                }}
-              />
-            </ErrorBoundary>
-          )}
-
           {activeTab === 'video-editor' && (
             <ErrorBoundary>
               <VideoEditorStudio
-                initialProject={handedOffEditorProject}
                 onOpenCaptionStudio={() => setActiveTab('captions')}
+                onExitEditor={() => setActiveTab('dashboard')}
               />
             </ErrorBoundary>
           )}
 
           {activeTab === 'captions' && (
             <ErrorBoundary><CaptionsStudio /></ErrorBoundary>
-          )}
-
-          {activeTab === 'google-flow' && (
-            <ErrorBoundary>
-              <GoogleFlowStudio />
-            </ErrorBoundary>
           )}
 
           {/* AI Metadata Cleaner Studio: preserved across page navigation */}
@@ -332,11 +313,10 @@ export function App() {
         {/* Persistent Bottom Audio Player Bar - Never shows on Dashboard or Video Editor */}
         {currentUrl && isBottomBarVisible && activeTab !== 'dashboard' && activeTab !== 'video-editor' && (
           <div
-            className={`fixed bottom-14 md:bottom-0 right-0 z-40 p-3 sm:p-4 transition-all duration-300 ${
-              sidebarCollapsed
+            className={`fixed bottom-14 md:bottom-0 right-0 z-40 p-3 sm:p-4 transition-all duration-300 ${sidebarCollapsed
                 ? 'md:left-20'
                 : 'md:left-64'
-            } left-0`}
+              } left-0`}
           >
             <AudioPlayer
               audioUrl={currentUrl}

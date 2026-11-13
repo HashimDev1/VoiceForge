@@ -28,12 +28,13 @@ RUN npm --prefix server run build
 # Production Runner Stage
 FROM node:20-alpine AS runner
 
-# Install system ffmpeg and python3 in runner container
-RUN apk add --no-cache ffmpeg python3 py3-pip
+# Install system ffmpeg + fontconfig/DejaVu fonts for libass ASS subtitle burn-in
+RUN apk add --no-cache ffmpeg fontconfig ttf-dejavu
 
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=5000
+ENV ASR_PROVIDER_PRIORITY=groq,openai,fish_audio,local
 
 # Install production dependencies for server
 COPY package.json ./

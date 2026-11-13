@@ -15,16 +15,10 @@ import audioRoutes from './routes/audioRoutes';
 import asrRoutes from './routes/asrRoutes';
 import captionRoutes from './routes/captionRoutes';
 import translationRoutes from './routes/translationRoutes';
-import flowRoutes from './routes/flowRoutes';
 import videoEditorRoutes from './routes/videoEditorRoutes';
-import documentaryRoutes from './routes/documentaryRoutes';
 import { ProjectService } from './services/projectService';
 import { VoiceTranslationStorageService } from './services/voiceTranslationStorageService';
-import { FlowStorageService } from './services/flowStorageService';
-import { FlowSchedulerService } from './services/flowSchedulerService';
-import { FlowAccountService } from './services/flowAccountService';
 import { VideoEditorService } from './services/videoEditorService';
-import { DocumentaryService } from './services/documentaryService';
 
 const app = express();
 
@@ -34,16 +28,12 @@ app.set('trust proxy', 1);
 // Storage Initialization
 ProjectService.initStorage();
 VoiceTranslationStorageService.initStorage();
-FlowStorageService.initStorage();
 VideoEditorService.initStorage();
-DocumentaryService.initStorage();
-FlowAccountService.initAccounts().catch((err) => logger.warn('Flow accounts init:', err));
-FlowSchedulerService.init().catch((err) => logger.warn('Flow scheduler init:', err));
 
 // Periodic temporary storage cleanup (every 6 hours)
 setInterval(() => {
   ProjectService.cleanupOldFiles(24).catch((err) => logger.error('Cleanup error:', err));
-}, 6 * 60 * 60 * 1000);
+}, 6 * 60 * 60 * 1000).unref();
 
 // Security Middleware
 app.use(
@@ -81,9 +71,15 @@ app.use('/api', audioRoutes);
 app.use('/api', asrRoutes);
 app.use('/api/captions', captionRoutes);
 app.use('/api/translation', translationRoutes);
-app.use('/api/flow', flowRoutes);
 app.use('/api/editor', videoEditorRoutes);
-app.use('/api/documentary', documentaryRoutes);
+
+// Always return JSON 404 for unmatched /api/* routes (never Express HTML <!DOCTYPE html>)
+app.use('/api', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `API endpoint not found: ${req.method} ${req.originalUrl}. If you recently updated the code, restart the backend server.`
+  });
+});
 
 // Static frontend serving (for production or unified single-port hosting)
 const clientDistPath = [
@@ -95,15 +91,12 @@ const clientDistPath = [
 if (clientDistPath) {
   logger.info(`Serving static client assets from: ${clientDistPath}`);
   app.use(express.static(clientDistPath));
-  app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api')) {
-      return next();
-    }
+  app.get('*', (_req, res) => {
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
 } else {
   // Fallback Route if client dist is not built
-  app.use((req, res) => {
+  app.use((_req, res) => {
     res.status(404).json({ error: 'Endpoint not found on VoiceForge Studio API' });
   });
 }

@@ -78,6 +78,23 @@ export const videoEditorApi = {
     return data.asset;
   },
 
+  async uploadBulkMedia(files: File[]): Promise<MediaAsset[]> {
+    const formData = new FormData();
+    for (const f of files) {
+      formData.append('files', f);
+    }
+    const res = await fetch(`${API_BASE}/upload-bulk`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to upload bulk media');
+    }
+    const data = await res.json();
+    return data.assets || [];
+  },
+
   async startExport(project: EditorProject, options: EditorExportOptions): Promise<EditorExportJob> {
     const res = await fetch(`${API_BASE}/export`, {
       method: 'POST',

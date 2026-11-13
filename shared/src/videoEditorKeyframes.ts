@@ -281,12 +281,14 @@ export function evaluateClipKeyframes(
   // Audio Fade In / Fade Out multiplier
   let volume = baseVolume;
   if (clip.audio) {
-    if (clip.audio.fadeInDuration > 0 && localTime < clip.audio.fadeInDuration) {
-      volume *= localTime / clip.audio.fadeInDuration;
+    const fadeIn = clip.audio.fadeInDuration ?? (clip.audio as any).fadeIn ?? 0;
+    if (fadeIn > 0 && localTime < fadeIn) {
+      volume *= localTime / fadeIn;
     }
+    const fadeOut = clip.audio.fadeOutDuration ?? (clip.audio as any).fadeOut ?? 0;
     const timeFromEnd = clip.duration - localTime;
-    if (clip.audio.fadeOutDuration > 0 && timeFromEnd < clip.audio.fadeOutDuration) {
-      volume *= Math.max(0, timeFromEnd / clip.audio.fadeOutDuration);
+    if (fadeOut > 0 && timeFromEnd < fadeOut) {
+      volume *= Math.max(0, timeFromEnd / fadeOut);
     }
   }
 

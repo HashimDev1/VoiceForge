@@ -55,21 +55,20 @@ export const EditorPanelSplitter: React.FC<EditorPanelSplitterProps> = ({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onDoubleClick={onReset}
-      className={`group select-none transition-colors ${
+      className={`group select-none transition-colors rounded-full ${
         direction === 'horizontal'
-          ? 'w-1.5 cursor-col-resize hover:bg-[#40D5CB]/80 bg-[#242A33] relative flex items-center justify-center'
-          : 'h-1.5 cursor-row-resize hover:bg-[#40D5CB]/80 bg-[#242A33] relative flex items-center justify-center'
-      } ${isDragging ? 'bg-[#40D5CB] z-30' : 'z-10'}`}
+          ? 'w-1.5 cursor-col-resize hover:bg-indigo-500 bg-studio-border/60 mx-0.5 relative flex items-center justify-center shrink-0'
+          : 'h-1.5 cursor-row-resize hover:bg-indigo-500 bg-studio-border/60 my-0.5 relative flex items-center justify-center shrink-0'
+      } ${isDragging ? 'bg-indigo-600 z-30 ring-2 ring-indigo-400' : 'z-10'}`}
     >
       {/* Visual gripper dot / pill */}
       <div
         className={`rounded-full transition-colors ${
           direction === 'horizontal'
-            ? 'w-0.5 h-6 bg-[#747F90] group-hover:bg-white'
-            : 'h-0.5 w-6 bg-[#747F90] group-hover:bg-white'
+            ? 'w-0.5 h-6 bg-slate-400 dark:bg-slate-600 group-hover:bg-white'
+            : 'h-0.5 w-6 bg-slate-400 dark:bg-slate-600 group-hover:bg-white'
         } ${isDragging ? 'bg-white' : ''}`}
       />
     </div>
   );
 };
-

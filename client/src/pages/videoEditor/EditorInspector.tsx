@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Move,
   Gauge,
@@ -53,12 +53,14 @@ interface EditorInspectorProps {
   selectedClip: TimelineClip | null;
   onUpdateClip: (clipId: string, patch: Partial<TimelineClip>) => void;
   playhead: number;
+  onSeparateAudio?: (clipId: string) => void;
 }
 
 export const EditorInspector: React.FC<EditorInspectorProps> = ({
   selectedClip,
   onUpdateClip,
-  playhead
+  playhead,
+  onSeparateAudio
 }) => {
   const isTitleClip = selectedClip?.type === 'text' || Boolean(selectedClip?.titleDesign);
   const isAudioClip = selectedClip?.type === 'audio';
@@ -67,6 +69,18 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
   const [activeTab, setActiveTab] = useState<'video' | 'text' | 'audio' | 'speed' | 'animation' | 'adjust'>(
     isTitleClip ? 'text' : isAudioClip ? 'audio' : 'video'
   );
+
+  // Automatically switch tab when selecting audio or text clips
+  useEffect(() => {
+    if (!selectedClip) return;
+    if (selectedClip.type === 'audio') {
+      setActiveTab('audio');
+    } else if (selectedClip.type === 'text' || selectedClip.type === 'caption') {
+      setActiveTab('text');
+    } else if (activeTab === 'audio' || activeTab === 'text') {
+      setActiveTab('video');
+    }
+  }, [selectedClip?.id, selectedClip?.type]);
 
   // Sub-tabs under Video tab: 'basic' | 'crop'
   const [videoSubTab, setVideoSubTab] = useState<'basic' | 'crop'>('basic');
@@ -78,12 +92,14 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
 
   if (!selectedClip) {
     return (
-      <aside className="flex flex-col h-full w-full bg-[#15191F] border border-[#242A33] p-4 text-[#A4AFBD] items-center justify-center text-center select-none">
-        <Sliders className="h-8 w-8 text-[#747F90] mb-2 opacity-50" />
-        <h3 className="font-semibold text-xs text-[#F0F3F7]">
+      <aside className="flex flex-col h-full w-full bg-[#181B20] p-6 text-slate-400 items-center justify-center text-center select-none border-l border-[#262A34]">
+        <div className="w-12 h-12 rounded-2xl bg-[#14171C] border border-[#262A34] flex items-center justify-center text-slate-500 mb-3 shadow-xs">
+          <Sliders className="h-6 w-6 text-[#13E2CA]" />
+        </div>
+        <h3 className="font-sans font-bold text-sm text-white">
           No Clip Selected
         </h3>
-        <p className="text-[11px] text-[#747F90] max-w-[220px] mt-1">
+        <p className="text-xs text-slate-400 max-w-[220px] mt-1 font-mono">
           Select a clip on the multitrack timeline to view and adjust its properties.
         </p>
       </aside>
@@ -164,48 +180,48 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
     }
   };
 
-  // Primary Tabs
-  const primaryTabs: { id: 'video' | 'text' | 'audio' | 'speed' | 'animation' | 'adjust'; label: string }[] = isTitleClip
+  // Primary Tabs matching CapCut Desktop Inspector
+  const primaryTabs: { id: 'video' | 'text' | 'audio' | 'speed' | 'animation' | 'adjust'; label: string; icon: any }[] = isTitleClip
     ? [
-        { id: 'text', label: 'Text' },
-        { id: 'animation', label: 'Animation' },
-        { id: 'video', label: 'Transform' },
-        { id: 'adjust', label: 'Adjust' }
+        { id: 'text', label: 'Text', icon: Type },
+        { id: 'animation', label: 'Animation', icon: Sparkles },
+        { id: 'video', label: 'Basic', icon: Move },
+        { id: 'adjust', label: 'Adjust', icon: Palette }
       ]
     : isAudioClip
     ? [
-        { id: 'audio', label: 'Audio' },
-        { id: 'speed', label: 'Speed' }
+        { id: 'audio', label: 'Audio', icon: Volume2 },
+        { id: 'speed', label: 'Speed', icon: Gauge }
       ]
     : [
-        { id: 'video', label: 'Video' },
-        { id: 'audio', label: 'Audio' },
-        { id: 'speed', label: 'Speed' },
-        { id: 'animation', label: 'Animation' },
-        { id: 'adjust', label: 'Adjust' }
+        { id: 'video', label: 'Video', icon: Move },
+        { id: 'audio', label: 'Audio', icon: Volume2 },
+        { id: 'speed', label: 'Speed', icon: Gauge },
+        { id: 'animation', label: 'Animation', icon: Sparkles },
+        { id: 'adjust', label: 'Adjust', icon: Palette }
       ];
 
   return (
-    <aside className="flex flex-col h-full w-full bg-[#15191F] border border-[#242A33] overflow-hidden select-none text-[#F0F3F7]">
+    <aside className="flex flex-col h-full w-full bg-[#181B20] select-none text-[#E4E7EC] overflow-hidden">
       {/* 1. Header Bar: Selected Clip Info */}
-      <div className="h-9 shrink-0 bg-[#15191F] border-b border-[#242A33] px-3 flex items-center justify-between text-xs">
+      <div className="h-10 shrink-0 bg-[#14171C] border-b border-[#262A34] px-3.5 flex items-center justify-between text-xs">
         <div className="min-w-0 flex items-center gap-2">
-          <span className="font-semibold text-xs text-[#F0F3F7] truncate max-w-[150px]">
+          <span className="font-semibold text-xs text-white truncate max-w-[150px]">
             {selectedClip.name}
           </span>
-          <span className="px-1.5 py-0.5 rounded bg-[#242A33] text-[9px] font-mono font-medium text-[#A4AFBD] border border-[#303740] uppercase">
+          <span className="px-2 py-0.5 rounded-full bg-[#1A3838] text-[#13E2CA] border border-[#13E2CA]/40 font-mono text-[9px] font-bold uppercase">
             {selectedClip.type}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="font-mono text-[10px] text-[#747F90]">
+          <span className="font-mono text-[10px] text-slate-400 font-bold">
             {selectedClip.duration.toFixed(2)}s
           </span>
         </div>
       </div>
 
-      {/* 2. Top Tabs (CapCut Desktop style: Video | Audio | Speed | Animation | Adjust) */}
-      <div className="h-9 shrink-0 bg-[#1B2028] border-b border-[#242A33] px-2 flex items-center gap-1 overflow-x-auto scrollbar-none">
+      {/* 2. Top Tabs - CapCut Horizontal Tab Strip with Teal Underline */}
+      <div className="h-10 shrink-0 border-b border-[#262A34] bg-[#181B20] px-2 flex items-center gap-1 overflow-x-auto vf-scrollbar">
         {primaryTabs.map((t) => {
           const isCurrent = activeTab === t.id;
           return (
@@ -213,57 +229,66 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
               key={t.id}
               type="button"
               onClick={() => setActiveTab(t.id)}
-              className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
+              className={`relative px-3 py-2 text-xs font-sans font-medium transition cursor-pointer whitespace-nowrap ${
                 isCurrent
-                  ? 'bg-[#242A33] text-[#40D5CB] shadow-xs'
-                  : 'text-[#A4AFBD] hover:text-[#F0F3F7] hover:bg-[#242A33]/50'
+                  ? 'text-[#13E2CA] font-bold'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
-              {t.label}
+              <span>{t.label}</span>
+              {isCurrent && (
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#13E2CA] rounded-full" />
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* 3. Sub-tabs (when Video tab active: Basic | Crop) */}
-      {activeTab === 'video' && !isTitleClip && (
-        <div className="h-8 shrink-0 bg-[#15191F] border-b border-[#242A33] px-3 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setVideoSubTab('basic')}
-            className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-              videoSubTab === 'basic' ? 'bg-[#242A33] text-white border border-[#303740]' : 'text-[#747F90] hover:text-white'
-            }`}
-          >
-            Basic
-          </button>
-          <button
-            type="button"
-            onClick={() => setVideoSubTab('crop')}
-            className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-              videoSubTab === 'crop' ? 'bg-[#242A33] text-white border border-[#303740]' : 'text-[#747F90] hover:text-white'
-            }`}
-          >
-            Mask & Crop
-          </button>
+      {/* 3. Sub-tabs (when Video tab active: Basic | Remove BG | Mask | Retouch - CapCut style) */}
+      {activeTab === 'video' && !isTitleClip && !isAudioClip && (
+        <div className="px-3 pt-2.5 pb-1 shrink-0 bg-[#181B20]">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            {[
+              { id: 'basic', label: 'Basic' },
+              { id: 'remove_bg', label: 'Remove BG' },
+              { id: 'crop', label: 'Mask' },
+              { id: 'retouch', label: 'Retouch' }
+            ].map((sub) => {
+              const isSelected = (videoSubTab === 'basic' && sub.id === 'basic') || (videoSubTab === 'crop' && sub.id === 'crop');
+              return (
+                <button
+                  key={sub.id}
+                  type="button"
+                  onClick={() => setVideoSubTab(sub.id === 'crop' ? 'crop' : 'basic')}
+                  className={`px-3 py-1 rounded-full text-xs font-sans transition cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#282D38] text-white font-semibold'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-[#222631]'
+                  }`}
+                >
+                  {sub.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
       {/* 4. Tab Body Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3.5 scrollbar-thin text-xs text-[#F0F3F7]">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3.5 vf-scrollbar text-xs text-slate-200">
         {/* ========================================================
             TAB: VIDEO -> BASIC (Transform & Blend)
             ======================================================== */}
         {activeTab === 'video' && videoSubTab === 'basic' && (
           <>
             {/* TRANSFORM SECTION */}
-            <div className="rounded-lg bg-[#1B2028] border border-[#242A33] overflow-hidden">
+            <div className="rounded-lg bg-[#1E222B] border border-[#262A34] overflow-hidden shadow-xs">
               <div
                 onClick={() => setTransformOpen((prev) => !prev)}
-                className="h-8 px-2.5 flex items-center justify-between bg-[#1F252E] border-b border-[#242A33] cursor-pointer"
+                className="h-8 px-3 flex items-center justify-between bg-[#1A1D24] border-b border-[#262A34] cursor-pointer"
               >
-                <div className="flex items-center gap-1.5 font-semibold text-xs text-[#F0F3F7]">
-                  {transformOpen ? <ChevronDown className="w-3.5 h-3.5 text-[#747F90]" /> : <ChevronRight className="w-3.5 h-3.5 text-[#747F90]" />}
+                <div className="flex items-center gap-1.5 font-sans font-semibold text-xs text-slate-200">
+                  {transformOpen ? <ChevronDown className="w-3.5 h-3.5 text-slate-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-400" />}
                   <span>Transform</span>
                 </div>
                 <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
@@ -271,9 +296,19 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                     type="button"
                     onClick={() => updateTransform({ ...DEFAULT_TRANSFORM })}
                     title="Reset Transform"
-                    className="p-1 rounded text-[#747F90] hover:text-white hover:bg-[#242A33] transition-colors"
+                    className="p-1 rounded text-slate-400 hover:text-white transition cursor-pointer"
                   >
                     <RotateCcw className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleKeyframe('scale', tf.scale)}
+                    title="Keyframe All Transform"
+                    className={`p-1 rounded cursor-pointer ${
+                      hasKeyframeAtCurrent('scale') ? 'text-[#13E2CA]' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Diamond className={`w-3 h-3 ${hasKeyframeAtCurrent('scale') ? 'fill-current' : ''}`} />
                   </button>
                 </div>
               </div>
@@ -283,9 +318,9 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   {/* Scale */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-[#A4AFBD]">Scale</span>
+                      <span className="font-sans text-slate-400 font-medium">Scale</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-[#40D5CB]">
+                        <span className="font-mono text-xs font-bold text-[#13E2CA]">
                           {Math.round(tf.scale * 100)}%
                         </span>
                         <button
@@ -293,7 +328,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                           onClick={() => toggleKeyframe('scale', tf.scale)}
                           title="Keyframe Scale"
                           className={`p-0.5 rounded cursor-pointer ${
-                            hasKeyframeAtCurrent('scale') ? 'text-[#40D5CB]' : 'text-[#747F90] hover:text-white'
+                            hasKeyframeAtCurrent('scale') ? 'text-[#13E2CA]' : 'text-slate-500 hover:text-white'
                           }`}
                         >
                           <Diamond className={`w-3 h-3 ${hasKeyframeAtCurrent('scale') ? 'fill-current' : ''}`} />
@@ -308,7 +343,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                         step="0.05"
                         value={tf.scale}
                         onChange={(e) => updateTransform({ scale: parseFloat(e.target.value) })}
-                        className="flex-1 h-1 bg-[#242A33] rounded appearance-none cursor-pointer accent-[#40D5CB]"
+                        className="flex-1 h-1 bg-[#2D3340] rounded appearance-none cursor-pointer accent-[#13E2CA]"
                       />
                       <input
                         type="number"
@@ -316,23 +351,23 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                         max="300"
                         value={Math.round(tf.scale * 100)}
                         onChange={(e) => updateTransform({ scale: Math.max(0.1, (parseInt(e.target.value) || 100) / 100) })}
-                        className="w-14 rounded bg-[#15191F] border border-[#303740] px-1.5 py-0.5 font-mono text-center text-xs text-white outline-none"
+                        className="w-14 rounded bg-[#14171C] border border-[#262A34] px-1.5 py-0.5 font-mono text-center text-xs text-white outline-none focus:border-[#13E2CA]"
                       />
                     </div>
                   </div>
 
                   {/* Uniform scale switch */}
                   <div className="flex items-center justify-between text-[11px] pt-1">
-                    <span className="text-[#A4AFBD]">Uniform scale</span>
+                    <span className="font-sans text-slate-400 font-medium">Uniform scale</span>
                     <button
                       type="button"
                       onClick={() => setUniformScale((prev) => !prev)}
                       className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${
-                        uniformScale ? 'bg-[#40D5CB]' : 'bg-[#303740]'
+                        uniformScale ? 'bg-[#13E2CA]' : 'bg-[#2D3340]'
                       }`}
                     >
                       <div
-                        className={`w-3 h-3 rounded-full bg-white absolute top-0.5 transition-transform ${
+                        className={`w-3 h-3 rounded-full bg-black absolute top-0.5 transition-transform ${
                           uniformScale ? 'left-4.5' : 'left-0.5'
                         }`}
                       />
@@ -342,7 +377,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   {/* Position X and Y */}
                   <div className="space-y-1.5 pt-1">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-[#A4AFBD]">Position</span>
+                      <span className="font-sans text-slate-400 font-medium">Position</span>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
@@ -353,8 +388,8 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                           title="Keyframe Position"
                           className={`p-0.5 rounded cursor-pointer ${
                             hasKeyframeAtCurrent('positionX') || hasKeyframeAtCurrent('positionY')
-                              ? 'text-[#40D5CB]'
-                              : 'text-[#747F90] hover:text-white'
+                              ? 'text-[#13E2CA]'
+                              : 'text-slate-500 hover:text-white'
                           }`}
                         >
                           <Diamond className={`w-3 h-3 ${hasKeyframeAtCurrent('positionX') ? 'fill-current' : ''}`} />
@@ -362,8 +397,8 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="flex items-center rounded bg-[#15191F] border border-[#303740] px-2 py-1">
-                        <span className="text-[10px] font-mono text-[#747F90] mr-1">X</span>
+                      <div className="flex items-center rounded bg-[#14171C] border border-[#262A34] px-2.5 py-1">
+                        <span className="text-[10px] font-mono text-slate-500 mr-1.5 font-bold">X</span>
                         <input
                           type="number"
                           value={tf.x}
@@ -371,8 +406,8 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                           className="w-full bg-transparent font-mono text-xs text-right text-white outline-none"
                         />
                       </div>
-                      <div className="flex items-center rounded bg-[#15191F] border border-[#303740] px-2 py-1">
-                        <span className="text-[10px] font-mono text-[#747F90] mr-1">Y</span>
+                      <div className="flex items-center rounded bg-[#14171C] border border-[#262A34] px-2.5 py-1">
+                        <span className="text-[10px] font-mono text-slate-500 mr-1.5 font-bold">Y</span>
                         <input
                           type="number"
                           value={tf.y}
@@ -386,15 +421,15 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   {/* Rotate */}
                   <div className="space-y-1.5 pt-1">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-[#A4AFBD]">Rotate</span>
+                      <span className="font-sans text-slate-400 font-medium">Rotate</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-[#40D5CB]">{tf.rotation}°</span>
+                        <span className="font-mono text-xs font-bold text-[#13E2CA]">{tf.rotation}°</span>
                         <button
                           type="button"
                           onClick={() => toggleKeyframe('rotation', tf.rotation)}
                           title="Keyframe Rotation"
                           className={`p-0.5 rounded cursor-pointer ${
-                            hasKeyframeAtCurrent('rotation') ? 'text-[#40D5CB]' : 'text-[#747F90] hover:text-white'
+                            hasKeyframeAtCurrent('rotation') ? 'text-[#13E2CA]' : 'text-slate-500 hover:text-white'
                           }`}
                         >
                           <Diamond className={`w-3 h-3 ${hasKeyframeAtCurrent('rotation') ? 'fill-current' : ''}`} />
@@ -409,7 +444,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                         step="1"
                         value={tf.rotation}
                         onChange={(e) => updateTransform({ rotation: parseInt(e.target.value) })}
-                        className="flex-1 h-1 bg-[#242A33] rounded appearance-none cursor-pointer accent-[#40D5CB]"
+                        className="flex-1 h-1 bg-[#2D3340] rounded appearance-none cursor-pointer accent-[#13E2CA]"
                       />
                       <input
                         type="number"
@@ -417,20 +452,20 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                         max="180"
                         value={tf.rotation}
                         onChange={(e) => updateTransform({ rotation: parseInt(e.target.value) || 0 })}
-                        className="w-14 rounded bg-[#15191F] border border-[#303740] px-1.5 py-0.5 font-mono text-center text-xs text-white outline-none"
+                        className="w-14 rounded bg-[#14171C] border border-[#262A34] px-1.5 py-0.5 font-mono text-center text-xs text-white outline-none focus:border-[#13E2CA]"
                       />
                     </div>
                   </div>
 
-                  {/* Alignment Toolbar (CapCut Desktop style: 6 alignment buttons) */}
-                  <div className="pt-2 border-t border-[#242A33]">
-                    <div className="text-[10px] text-[#747F90] uppercase tracking-wider mb-1.5">Alignment</div>
-                    <div className="grid grid-cols-6 gap-1 bg-[#15191F] p-1 rounded border border-[#303740]">
+                  {/* Alignment Toolbar */}
+                  <div className="pt-2 border-t border-[#262A34]">
+                    <div className="text-[10px] font-sans font-medium text-slate-400 uppercase tracking-wider mb-1.5">Alignment</div>
+                    <div className="grid grid-cols-6 gap-1 bg-[#14171C] p-1 rounded border border-[#262A34]">
                       <button
                         type="button"
                         onClick={() => handleAlign('left')}
                         title="Align Left"
-                        className="h-7 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white flex items-center justify-center cursor-pointer"
+                        className="h-7 rounded hover:bg-[#282D38] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer transition"
                       >
                         <AlignLeft className="w-3.5 h-3.5" />
                       </button>
@@ -438,7 +473,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                         type="button"
                         onClick={() => handleAlign('center-h')}
                         title="Center Horizontally"
-                        className="h-7 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white flex items-center justify-center cursor-pointer"
+                        className="h-7 rounded hover:bg-[#282D38] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer transition"
                       >
                         <AlignHorizontalJustifyCenter className="w-3.5 h-3.5" />
                       </button>
@@ -446,7 +481,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                         type="button"
                         onClick={() => handleAlign('right')}
                         title="Align Right"
-                        className="h-7 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white flex items-center justify-center cursor-pointer"
+                        className="h-7 rounded hover:bg-[#282D38] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer transition"
                       >
                         <AlignRight className="w-3.5 h-3.5" />
                       </button>
@@ -454,7 +489,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                         type="button"
                         onClick={() => handleAlign('top')}
                         title="Align Top"
-                        className="h-7 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white flex items-center justify-center cursor-pointer"
+                        className="h-7 rounded hover:bg-[#282D38] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer transition"
                       >
                         <AlignLeft className="w-3.5 h-3.5 rotate-90" />
                       </button>
@@ -462,7 +497,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                         type="button"
                         onClick={() => handleAlign('center-v')}
                         title="Center Vertically"
-                        className="h-7 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white flex items-center justify-center cursor-pointer"
+                        className="h-7 rounded hover:bg-[#282D38] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer transition"
                       >
                         <AlignVerticalJustifyCenter className="w-3.5 h-3.5" />
                       </button>
@@ -470,22 +505,22 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                         type="button"
                         onClick={() => handleAlign('bottom')}
                         title="Align Bottom"
-                        className="h-7 rounded hover:bg-[#242A33] text-[#A4AFBD] hover:text-white flex items-center justify-center cursor-pointer"
+                        className="h-7 rounded hover:bg-[#282D38] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer transition"
                       >
                         <AlignRight className="w-3.5 h-3.5 rotate-90" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Flip & Fit */}
+                  {/* Flip */}
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
                       type="button"
                       onClick={() => updateTransform({ flipH: !tf.flipH })}
-                      className={`flex items-center justify-center gap-1.5 h-8 rounded border text-xs font-medium cursor-pointer transition-colors ${
+                      className={`flex items-center justify-center gap-1.5 h-7 rounded border text-xs font-sans font-medium cursor-pointer transition ${
                         tf.flipH
-                          ? 'bg-[#40D5CB]/20 text-[#40D5CB] border-[#40D5CB]/50'
-                          : 'bg-[#15191F] text-[#A4AFBD] border-[#303740] hover:text-white'
+                          ? 'bg-[#1A3838] text-[#13E2CA] border-[#13E2CA]/50'
+                          : 'bg-[#14171C] text-slate-300 border-[#262A34] hover:bg-[#282D38]'
                       }`}
                     >
                       <FlipHorizontal className="w-3.5 h-3.5" />
@@ -494,10 +529,10 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                     <button
                       type="button"
                       onClick={() => updateTransform({ flipV: !tf.flipV })}
-                      className={`flex items-center justify-center gap-1.5 h-8 rounded border text-xs font-medium cursor-pointer transition-colors ${
+                      className={`flex items-center justify-center gap-1.5 h-7 rounded border text-xs font-sans font-medium cursor-pointer transition ${
                         tf.flipV
-                          ? 'bg-[#40D5CB]/20 text-[#40D5CB] border-[#40D5CB]/50'
-                          : 'bg-[#15191F] text-[#A4AFBD] border-[#303740] hover:text-white'
+                          ? 'bg-[#1A3838] text-[#13E2CA] border-[#13E2CA]/50'
+                          : 'bg-[#14171C] text-slate-300 border-[#262A34] hover:bg-[#282D38]'
                       }`}
                     >
                       <FlipVertical className="w-3.5 h-3.5" />
@@ -508,24 +543,43 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
               )}
             </div>
 
-            {/* BLEND SECTION */}
-            <div className="rounded-lg bg-[#1B2028] border border-[#242A33] overflow-hidden">
+            {/* BLEND SECTION (CapCut exact style: ☑ Blend) */}
+            <div className="rounded-lg bg-[#1E222B] border border-[#262A34] overflow-hidden shadow-xs">
               <div
                 onClick={() => setBlendOpen((prev) => !prev)}
-                className="h-8 px-2.5 flex items-center justify-between bg-[#1F252E] border-b border-[#242A33] cursor-pointer"
+                className="h-8 px-3 flex items-center justify-between bg-[#1A1D24] border-b border-[#262A34] cursor-pointer"
               >
-                <div className="flex items-center gap-1.5 font-semibold text-xs text-[#F0F3F7]">
-                  {blendOpen ? <ChevronDown className="w-3.5 h-3.5 text-[#747F90]" /> : <ChevronRight className="w-3.5 h-3.5 text-[#747F90]" />}
+                <div className="flex items-center gap-1.5 font-sans font-semibold text-xs text-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={blendOpen}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      setBlendOpen(e.target.checked);
+                    }}
+                    className="accent-[#13E2CA] w-3.5 h-3.5 rounded"
+                  />
                   <span>Blend</span>
+                  {blendOpen ? <ChevronDown className="w-3 h-3 text-slate-400" /> : <ChevronRight className="w-3 h-3 text-slate-400" />}
                 </div>
                 <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                   <button
                     type="button"
                     onClick={() => updateTransform({ opacity: 1.0 })}
                     title="Reset Opacity"
-                    className="p-1 rounded text-[#747F90] hover:text-white hover:bg-[#242A33] transition-colors"
+                    className="p-1 rounded text-slate-400 hover:text-white transition cursor-pointer"
                   >
                     <RotateCcw className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleKeyframe('opacity', tf.opacity ?? 1.0)}
+                    title="Keyframe Opacity"
+                    className={`p-1 rounded cursor-pointer ${
+                      hasKeyframeAtCurrent('opacity') ? 'text-[#13E2CA]' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Diamond className={`w-3 h-3 ${hasKeyframeAtCurrent('opacity') ? 'fill-current' : ''}`} />
                   </button>
                 </div>
               </div>
@@ -535,9 +589,9 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   {/* Opacity Slider */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-[#A4AFBD]">Opacity</span>
+                      <span className="font-sans text-slate-400 font-medium">Opacity</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-[#40D5CB]">
+                        <span className="font-mono text-xs font-bold text-[#13E2CA]">
                           {Math.round((tf.opacity ?? 1.0) * 100)}%
                         </span>
                         <button
@@ -545,7 +599,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                           onClick={() => toggleKeyframe('opacity', tf.opacity ?? 1.0)}
                           title="Keyframe Opacity"
                           className={`p-0.5 rounded cursor-pointer ${
-                            hasKeyframeAtCurrent('opacity') ? 'text-[#40D5CB]' : 'text-[#747F90] hover:text-white'
+                            hasKeyframeAtCurrent('opacity') ? 'text-[#13E2CA]' : 'text-slate-500 hover:text-white'
                           }`}
                         >
                           <Diamond className={`w-3 h-3 ${hasKeyframeAtCurrent('opacity') ? 'fill-current' : ''}`} />
@@ -560,7 +614,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                         step="0.01"
                         value={tf.opacity ?? 1.0}
                         onChange={(e) => updateTransform({ opacity: parseFloat(e.target.value) })}
-                        className="flex-1 h-1 bg-[#242A33] rounded appearance-none cursor-pointer accent-[#40D5CB]"
+                        className="flex-1 h-1 bg-[#2D3340] rounded appearance-none cursor-pointer accent-[#13E2CA]"
                       />
                       <input
                         type="number"
@@ -568,22 +622,22 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                         max="100"
                         value={Math.round((tf.opacity ?? 1.0) * 100)}
                         onChange={(e) => updateTransform({ opacity: Math.max(0, Math.min(1, (parseInt(e.target.value) || 0) / 100)) })}
-                        className="w-14 rounded bg-[#15191F] border border-[#303740] px-1.5 py-0.5 font-mono text-center text-xs text-white outline-none"
+                        className="w-14 rounded bg-[#14171C] border border-[#262A34] px-1.5 py-0.5 font-mono text-center text-xs text-white outline-none focus:border-[#13E2CA]"
                       />
                     </div>
                   </div>
 
                   {/* Fit Mode */}
                   <div className="pt-1">
-                    <label className="text-[10px] text-[#747F90] uppercase tracking-wider block mb-1">Fit Mode</label>
+                    <label className="text-[10px] font-sans font-medium text-slate-400 uppercase tracking-wider block mb-1.5">Fit Mode</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => updateTransform({ fitMode: 'fit' })}
-                        className={`h-7 rounded text-xs font-medium border cursor-pointer ${
+                        className={`h-7 rounded text-xs font-sans font-medium border cursor-pointer transition ${
                           tf.fitMode !== 'fill'
-                            ? 'bg-[#242A33] text-[#40D5CB] border-[#40D5CB]/40'
-                            : 'bg-[#15191F] text-[#747F90] border-[#303740] hover:text-white'
+                            ? 'bg-[#1A3838] text-[#13E2CA] border-[#13E2CA]/50'
+                            : 'bg-[#14171C] text-slate-300 border-[#262A34] hover:bg-[#282D38]'
                         }`}
                       >
                         Fit (Contain)
@@ -591,10 +645,10 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                       <button
                         type="button"
                         onClick={() => updateTransform({ fitMode: 'fill' })}
-                        className={`h-7 rounded text-xs font-medium border cursor-pointer ${
+                        className={`h-7 rounded text-xs font-sans font-medium border cursor-pointer transition ${
                           tf.fitMode === 'fill'
-                            ? 'bg-[#242A33] text-[#40D5CB] border-[#40D5CB]/40'
-                            : 'bg-[#15191F] text-[#747F90] border-[#303740] hover:text-white'
+                            ? 'bg-[#1A3838] text-[#13E2CA] border-[#13E2CA]/50'
+                            : 'bg-[#14171C] text-slate-300 border-[#262A34] hover:bg-[#282D38]'
                         }`}
                       >
                         Fill (Cover)
@@ -611,13 +665,13 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
             TAB: VIDEO -> MASK & CROP
             ======================================================== */}
         {activeTab === 'video' && videoSubTab === 'crop' && (
-          <div className="rounded-lg bg-[#1B2028] border border-[#242A33] p-3 space-y-3">
-            <div className="flex items-center justify-between border-b border-[#242A33] pb-2">
-              <span className="font-semibold text-xs text-white">Edge Crop (% Inset)</span>
+          <div className="rounded-lg bg-[#14171C] border border-[#262A34] p-3 space-y-3 shadow-xs">
+            <div className="flex items-center justify-between border-b border-[#262A34] pb-2">
+              <span className="font-mono font-bold text-xs uppercase tracking-wider text-white">Edge Crop (% Inset)</span>
               <button
                 type="button"
                 onClick={() => updateTransform({ cropTop: 0, cropBottom: 0, cropLeft: 0, cropRight: 0 })}
-                className="text-[11px] text-[#40D5CB] hover:underline cursor-pointer"
+                className="text-[11px] font-mono text-[#13E2CA] font-bold hover:underline cursor-pointer"
               >
                 Reset Crop
               </button>
@@ -625,8 +679,8 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
             {/* Crop Top */}
             <div className="space-y-1">
               <div className="flex justify-between text-[11px]">
-                <span className="text-[#A4AFBD]">Crop Top</span>
-                <span className="font-mono text-[#40D5CB]">{tf.cropTop || 0}%</span>
+                <span className="font-mono text-slate-300 font-bold uppercase">Crop Top</span>
+                <span className="font-mono font-bold text-[#13E2CA]">{tf.cropTop || 0}%</span>
               </div>
               <input
                 type="range"
@@ -634,14 +688,14 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                 max="50"
                 value={tf.cropTop || 0}
                 onChange={(e) => updateTransform({ cropTop: parseInt(e.target.value) })}
-                className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB]"
+                className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
               />
             </div>
             {/* Crop Bottom */}
             <div className="space-y-1">
               <div className="flex justify-between text-[11px]">
-                <span className="text-[#A4AFBD]">Crop Bottom</span>
-                <span className="font-mono text-[#40D5CB]">{tf.cropBottom || 0}%</span>
+                <span className="font-mono text-slate-300 font-bold uppercase">Crop Bottom</span>
+                <span className="font-mono font-bold text-[#13E2CA]">{tf.cropBottom || 0}%</span>
               </div>
               <input
                 type="range"
@@ -649,14 +703,14 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                 max="50"
                 value={tf.cropBottom || 0}
                 onChange={(e) => updateTransform({ cropBottom: parseInt(e.target.value) })}
-                className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB]"
+                className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
               />
             </div>
             {/* Crop Left */}
             <div className="space-y-1">
               <div className="flex justify-between text-[11px]">
-                <span className="text-[#A4AFBD]">Crop Left</span>
-                <span className="font-mono text-[#40D5CB]">{tf.cropLeft || 0}%</span>
+                <span className="font-mono text-slate-300 font-bold uppercase">Crop Left</span>
+                <span className="font-mono font-bold text-[#13E2CA]">{tf.cropLeft || 0}%</span>
               </div>
               <input
                 type="range"
@@ -664,14 +718,14 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                 max="50"
                 value={tf.cropLeft || 0}
                 onChange={(e) => updateTransform({ cropLeft: parseInt(e.target.value) })}
-                className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB]"
+                className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
               />
             </div>
             {/* Crop Right */}
             <div className="space-y-1">
               <div className="flex justify-between text-[11px]">
-                <span className="text-[#A4AFBD]">Crop Right</span>
-                <span className="font-mono text-[#40D5CB]">{tf.cropRight || 0}%</span>
+                <span className="font-mono text-slate-300 font-bold uppercase">Crop Right</span>
+                <span className="font-mono font-bold text-[#13E2CA]">{tf.cropRight || 0}%</span>
               </div>
               <input
                 type="range"
@@ -679,7 +733,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                 max="50"
                 value={tf.cropRight || 0}
                 onChange={(e) => updateTransform({ cropRight: parseInt(e.target.value) })}
-                className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB]"
+                className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
               />
             </div>
           </div>
@@ -691,8 +745,8 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
         {activeTab === 'text' && (
           <div className="space-y-3">
             {/* Main Text Input */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-[#F0F3F7]">Main Title Text</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">Main Title Text</label>
               <input
                 type="text"
                 value={selectedClip.titleDesign?.mainText ?? (selectedClip.text || '')}
@@ -714,13 +768,13 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                     titleDesign: { ...currentTd, mainText: val }
                   });
                 }}
-                className="w-full rounded bg-[#1B2028] border border-[#303740] px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#40D5CB]"
+                className="w-full rounded bg-[#121418] border border-[#262A34] px-3 py-2 text-xs text-white outline-none focus:border-[#13E2CA] shadow-xs"
               />
             </div>
 
             {/* Subtitle Text */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-[#A4AFBD]">Subtitle Text</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider">Subtitle Text</label>
               <input
                 type="text"
                 value={selectedClip.titleDesign?.subtitleText || ''}
@@ -733,16 +787,16 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   }
                 }}
                 placeholder="Optional subtitle..."
-                className="w-full rounded bg-[#1B2028] border border-[#303740] px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#40D5CB]"
+                className="w-full rounded bg-[#121418] border border-[#262A34] px-3 py-2 text-xs text-white outline-none focus:border-[#13E2CA] shadow-xs"
               />
             </div>
 
             {/* Font & Size */}
             {selectedClip.titleDesign && (
-              <div className="rounded-lg bg-[#1B2028] border border-[#242A33] p-3 space-y-3">
+              <div className="rounded-lg bg-[#14171C] border border-[#262A34] p-3 space-y-3 shadow-xs">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] text-[#747F90]">Font</label>
+                    <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Font</label>
                     <select
                       value={selectedClip.titleDesign.fontFamily}
                       onChange={(e) => {
@@ -750,17 +804,17 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                           titleDesign: { ...selectedClip.titleDesign!, fontFamily: e.target.value }
                         });
                       }}
-                      className="w-full rounded bg-[#15191F] border border-[#303740] p-1.5 text-[11px] text-white mt-1"
+                      className="w-full rounded bg-[#121418] border border-[#262A34] p-2 text-xs text-white mt-1 outline-none focus:border-[#13E2CA]"
                     >
                       {['Montserrat', 'Inter', 'Poppins', 'Cinzel', 'Playfair Display', 'Oswald', 'Arial Black', 'Courier New'].map((f) => (
-                        <option key={f} value={f}>{f}</option>
+                        <option key={f} value={f} className="bg-[#181B20] text-white">{f}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <div className="flex justify-between text-[10px] text-[#747F90]">
+                    <div className="flex justify-between text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
                       <span>Size</span>
-                      <span className="text-[#40D5CB]">{selectedClip.titleDesign.fontSize}px</span>
+                      <span className="text-[#13E2CA]">{selectedClip.titleDesign.fontSize}px</span>
                     </div>
                     <input
                       type="range"
@@ -772,15 +826,15 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                           titleDesign: { ...selectedClip.titleDesign!, fontSize: parseInt(e.target.value) }
                         });
                       }}
-                      className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB] mt-2.5"
+                      className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] mt-3 cursor-pointer"
                     />
                   </div>
                 </div>
 
                 {/* Color & Letter Spacing */}
-                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#242A33]">
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#262A34]">
                   <div>
-                    <label className="text-[10px] text-[#747F90]">Color</label>
+                    <label className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">Color</label>
                     <div className="flex items-center gap-2 mt-1">
                       <input
                         type="color"
@@ -790,15 +844,15 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                             titleDesign: { ...selectedClip.titleDesign!, textColor: e.target.value }
                           });
                         }}
-                        className="h-6 w-7 rounded cursor-pointer bg-transparent border border-[#303740]"
+                        className="h-7 w-8 rounded cursor-pointer bg-transparent border border-[#262A34]"
                       />
-                      <span className="font-mono text-[10px] text-[#A4AFBD]">{selectedClip.titleDesign.textColor || '#FFFFFF'}</span>
+                      <span className="font-mono text-[10px] text-slate-300 font-bold">{selectedClip.titleDesign.textColor || '#FFFFFF'}</span>
                     </div>
                   </div>
                   <div>
-                    <div className="flex justify-between text-[10px] text-[#747F90]">
+                    <div className="flex justify-between text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
                       <span>Tracking</span>
-                      <span className="text-[#40D5CB]">{selectedClip.titleDesign.letterSpacing || 0}px</span>
+                      <span className="text-[#13E2CA]">{selectedClip.titleDesign.letterSpacing || 0}px</span>
                     </div>
                     <input
                       type="range"
@@ -810,7 +864,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                           titleDesign: { ...selectedClip.titleDesign!, letterSpacing: parseInt(e.target.value) }
                         });
                       }}
-                      className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB] mt-2.5"
+                      className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] mt-3 cursor-pointer"
                     />
                   </div>
                 </div>
@@ -823,13 +877,13 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
             TAB: AUDIO
             ======================================================== */}
         {activeTab === 'audio' && (
-          <div className="rounded-lg bg-[#1B2028] border border-[#242A33] p-3 space-y-3.5">
+          <div className="rounded-lg bg-[#14171C] border border-[#262A34] p-3 space-y-3 shadow-xs">
             {/* Volume */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#A4AFBD]">Volume</span>
+                <span className="font-mono text-slate-300 font-bold uppercase">Volume</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-[#40D5CB]">
+                  <span className="font-mono text-xs font-bold text-[#13E2CA]">
                     {Math.round(au.volume)}%
                   </span>
                   <button
@@ -837,7 +891,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                     onClick={() => toggleKeyframe('volume', au.volume)}
                     title="Keyframe Volume"
                     className={`p-0.5 rounded cursor-pointer ${
-                      hasKeyframeAtCurrent('volume') ? 'text-[#40D5CB]' : 'text-[#747F90] hover:text-white'
+                      hasKeyframeAtCurrent('volume') ? 'text-[#13E2CA]' : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     <Diamond className={`w-3 h-3 ${hasKeyframeAtCurrent('volume') ? 'fill-current' : ''}`} />
@@ -851,7 +905,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   max="200"
                   value={au.volume}
                   onChange={(e) => updateAudio({ volume: parseInt(e.target.value) })}
-                  className="flex-1 h-1 bg-[#242A33] rounded appearance-none cursor-pointer accent-[#40D5CB]"
+                  className="flex-1 h-1 bg-[#262A34] rounded appearance-none cursor-pointer accent-[#13E2CA]"
                 />
                 <input
                   type="number"
@@ -859,53 +913,59 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   max="200"
                   value={au.volume}
                   onChange={(e) => updateAudio({ volume: parseInt(e.target.value) || 0 })}
-                  className="w-14 rounded bg-[#15191F] border border-[#303740] px-1.5 py-0.5 font-mono text-center text-xs text-white outline-none"
+                  className="w-14 rounded bg-[#121418] border border-[#262A34] px-1.5 py-0.5 font-mono text-center text-xs text-white outline-none focus:border-[#13E2CA]"
                 />
               </div>
             </div>
 
             {/* Fade In & Fade Out */}
-            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#242A33]">
+            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#262A34]">
               <div className="space-y-1">
-                <div className="flex justify-between text-[10px] text-[#747F90]">
+                <div className="flex justify-between text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
                   <span>Fade In</span>
-                  <span className="text-[#40D5CB] font-mono">{(au.fadeIn || 0).toFixed(1)}s</span>
+                  <span className="text-[#13E2CA] font-mono">{(au.fadeInDuration ?? (au as any).fadeIn ?? 0).toFixed(1)}s</span>
                 </div>
                 <input
                   type="range"
                   min="0"
                   max="5"
                   step="0.1"
-                  value={au.fadeIn || 0}
-                  onChange={(e) => updateAudio({ fadeIn: parseFloat(e.target.value) })}
-                  className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB]"
+                  value={au.fadeInDuration ?? (au as any).fadeIn ?? 0}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
+                    updateAudio({ fadeInDuration: val, fadeIn: val } as any);
+                  }}
+                  className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
                 />
               </div>
               <div className="space-y-1">
-                <div className="flex justify-between text-[10px] text-[#747F90]">
+                <div className="flex justify-between text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
                   <span>Fade Out</span>
-                  <span className="text-[#40D5CB] font-mono">{(au.fadeOut || 0).toFixed(1)}s</span>
+                  <span className="text-[#13E2CA] font-mono">{(au.fadeOutDuration ?? (au as any).fadeOut ?? 0).toFixed(1)}s</span>
                 </div>
                 <input
                   type="range"
                   min="0"
                   max="5"
                   step="0.1"
-                  value={au.fadeOut || 0}
-                  onChange={(e) => updateAudio({ fadeOut: parseFloat(e.target.value) })}
-                  className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB]"
+                  value={au.fadeOutDuration ?? (au as any).fadeOut ?? 0}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
+                    updateAudio({ fadeOutDuration: val, fadeOut: val } as any);
+                  }}
+                  className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
                 />
               </div>
             </div>
 
             {/* Mute audio */}
             <div className="flex items-center justify-between pt-1">
-              <span className="text-[11px] text-[#A4AFBD]">Mute clip audio</span>
+              <span className="font-mono text-slate-300 font-bold uppercase text-[11px]">Mute clip audio</span>
               <button
                 type="button"
                 onClick={() => updateAudio({ muted: !au.muted })}
                 className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${
-                  au.muted ? 'bg-[#F06B77]' : 'bg-[#303740]'
+                  au.muted ? 'bg-rose-500' : 'bg-[#262A34]'
                 }`}
               >
                 <div
@@ -915,6 +975,21 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                 />
               </button>
             </div>
+
+            {/* Separate Audio / Extract Audio for Video Clips */}
+            {selectedClip.type === 'video' && onSeparateAudio && (
+              <div className="pt-2 border-t border-[#262A34]">
+                <button
+                  type="button"
+                  onClick={() => onSeparateAudio(selectedClip.id)}
+                  title="Extract audio from this video onto a dedicated audio track"
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded bg-[#182C38] border border-[#13E2CA]/40 text-xs font-mono font-bold text-[#13E2CA] hover:bg-[#13E2CA] hover:text-black transition cursor-pointer shadow-xs"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  <span>Extract Audio to Track</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -922,12 +997,12 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
             TAB: SPEED
             ======================================================== */}
         {activeTab === 'speed' && (
-          <div className="rounded-lg bg-[#1B2028] border border-[#242A33] p-3 space-y-3.5">
+          <div className="rounded-lg bg-[#14171C] border border-[#262A34] p-3 space-y-3 shadow-xs">
             {/* Speed presets */}
             <div>
-              <div className="flex justify-between text-[11px] text-[#A4AFBD] mb-1.5">
+              <div className="flex justify-between text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2">
                 <span>Speed Factor</span>
-                <span className="font-mono text-xs text-[#40D5CB]">{sp.speed}x</span>
+                <span className="text-xs text-[#13E2CA]">{sp.speed}x</span>
               </div>
               <div className="grid grid-cols-5 gap-1">
                 {[0.5, 1.0, 1.5, 2.0, 4.0].map((s) => (
@@ -935,10 +1010,10 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                     key={s}
                     type="button"
                     onClick={() => updateSpeed({ speed: s })}
-                    className={`py-1 rounded text-xs font-mono font-medium border cursor-pointer ${
+                    className={`py-1.5 rounded text-xs font-mono font-bold border cursor-pointer transition ${
                       sp.speed === s
-                        ? 'bg-[#242A33] text-[#40D5CB] border-[#40D5CB]/40'
-                        : 'bg-[#15191F] text-[#747F90] border-[#303740] hover:text-white'
+                        ? 'bg-[#13E2CA] text-black border-[#13E2CA] shadow-xs'
+                        : 'bg-[#181B20] text-slate-300 border-[#262A34] hover:border-[#13E2CA]/50'
                     }`}
                   >
                     {s}x
@@ -952,19 +1027,19 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                 step="0.05"
                 value={sp.speed}
                 onChange={(e) => updateSpeed({ speed: parseFloat(e.target.value) })}
-                className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB] mt-3"
+                className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] mt-3 cursor-pointer"
               />
             </div>
 
             {/* Reverse & Freeze Frame */}
-            <div className="space-y-2 pt-2 border-t border-[#242A33]">
+            <div className="space-y-2 pt-2 border-t border-[#262A34]">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#A4AFBD]">Reverse Playback</span>
+                <span className="font-mono text-slate-300 font-bold uppercase">Reverse Playback</span>
                 <button
                   type="button"
                   onClick={() => updateSpeed({ reverse: !sp.reverse })}
                   className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${
-                    sp.reverse ? 'bg-[#40D5CB]' : 'bg-[#303740]'
+                    sp.reverse ? 'bg-[#13E2CA]' : 'bg-[#262A34]'
                   }`}
                 >
                   <div
@@ -976,12 +1051,12 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
               </div>
 
               <div className="flex items-center justify-between text-[11px] pt-1">
-                <span className="text-[#A4AFBD]">Preserve Pitch</span>
+                <span className="font-mono text-slate-300 font-bold uppercase">Preserve Pitch</span>
                 <button
                   type="button"
                   onClick={() => updateSpeed({ preservePitch: sp.preservePitch === false ? true : false })}
                   className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${
-                    sp.preservePitch !== false ? 'bg-[#40D5CB]' : 'bg-[#303740]'
+                    sp.preservePitch !== false ? 'bg-[#13E2CA]' : 'bg-[#262A34]'
                   }`}
                 >
                   <div
@@ -1001,8 +1076,8 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
         {activeTab === 'animation' && (
           <div className="space-y-3">
             {selectedClip.titleDesign ? (
-              <div className="rounded-lg bg-[#1B2028] border border-[#242A33] p-3 space-y-3">
-                <label className="text-[11px] font-semibold text-white block">Motion Animation Style</label>
+              <div className="rounded-lg bg-[#14171C] border border-[#262A34] p-3 space-y-3 shadow-xs">
+                <label className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider block">Motion Animation Style</label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
                     ['fade', 'Fade In/Out'],
@@ -1029,10 +1104,10 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                             }
                           });
                         }}
-                        className={`p-2 rounded text-left text-xs font-medium border transition-colors cursor-pointer ${
+                        className={`p-2.5 rounded text-left text-xs font-mono font-bold border transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-[#242A33] text-[#40D5CB] border-[#40D5CB]/50'
-                            : 'bg-[#15191F] text-[#A4AFBD] border-[#303740] hover:text-white'
+                            ? 'bg-[#13E2CA]/15 text-[#13E2CA] border-[#13E2CA] shadow-xs'
+                            : 'bg-[#181B20] text-slate-300 border-[#262A34] hover:border-[#13E2CA]/50'
                         }`}
                       >
                         {animLabel}
@@ -1042,9 +1117,9 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg bg-[#1B2028] border border-[#242A33] p-3 space-y-3">
-                <label className="text-[11px] font-semibold text-white block">Clip Transitions</label>
-                <p className="text-[11px] text-[#747F90]">
+              <div className="rounded-lg bg-[#14171C] border border-[#262A34] p-3 space-y-3 shadow-xs">
+                <label className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider block">Clip Transitions</label>
+                <p className="text-[11px] text-slate-400 font-mono">
                   Apply entrance and exit motion animations to this clip:
                 </p>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -1068,7 +1143,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                           }
                         });
                       }}
-                      className="p-2 rounded bg-[#15191F] border border-[#303740] text-left text-xs font-medium text-[#A4AFBD] hover:text-white hover:border-[#40D5CB]/40 cursor-pointer"
+                      className="p-2.5 rounded bg-[#181B20] border border-[#262A34] text-left text-xs font-mono font-bold text-slate-300 hover:border-[#13E2CA] cursor-pointer transition shadow-xs"
                     >
                       {tLabel}
                     </button>
@@ -1083,26 +1158,26 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
             TAB: ADJUST (Color Grading)
             ======================================================== */}
         {activeTab === 'adjust' && (
-          <div className="rounded-lg bg-[#1B2028] border border-[#242A33] p-3 space-y-3.5">
+          <div className="rounded-lg bg-[#14171C] border border-[#262A34] p-3 space-y-3 shadow-xs">
             {/* Quick Color Presets */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-semibold text-white">Color Grading Presets</span>
+                <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">Color Grading Presets</span>
                 <button
                   type="button"
                   onClick={() => updateColor({ ...DEFAULT_COLOR_GRADING })}
-                  className="text-[10px] text-[#40D5CB] hover:underline cursor-pointer"
+                  className="text-[10px] font-mono font-bold text-[#13E2CA] hover:underline cursor-pointer"
                 >
                   Reset
                 </button>
               </div>
-              <div className="grid grid-cols-3 gap-1">
+              <div className="grid grid-cols-3 gap-1.5">
                 {COLOR_PRESETS.map((p) => (
                   <button
                     key={p.name}
                     type="button"
                     onClick={() => updateColor(p.settings)}
-                    className="p-1.5 rounded bg-[#15191F] border border-[#303740] text-[10px] text-center font-medium text-[#A4AFBD] hover:text-white hover:border-[#40D5CB]/40 cursor-pointer truncate"
+                    className="p-2 rounded bg-[#181B20] border border-[#262A34] text-[10px] text-center font-mono font-bold text-slate-300 hover:border-[#13E2CA] cursor-pointer truncate transition shadow-xs"
                   >
                     {p.name}
                   </button>
@@ -1111,12 +1186,12 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
             </div>
 
             {/* Manual Sliders */}
-            <div className="space-y-2.5 pt-2 border-t border-[#242A33]">
+            <div className="space-y-2.5 pt-2 border-t border-[#262A34]">
               {/* Brightness */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-[#A4AFBD]">Brightness</span>
-                  <span className="font-mono text-[#40D5CB]">{cg.brightness || 0}</span>
+                  <span className="font-mono text-slate-300 font-bold uppercase">Brightness</span>
+                  <span className="font-mono font-bold text-[#13E2CA]">{cg.brightness || 0}</span>
                 </div>
                 <input
                   type="range"
@@ -1124,15 +1199,15 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   max="100"
                   value={cg.brightness || 0}
                   onChange={(e) => updateColor({ brightness: parseInt(e.target.value) })}
-                  className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB]"
+                  className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
                 />
               </div>
 
               {/* Contrast */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-[#A4AFBD]">Contrast</span>
-                  <span className="font-mono text-[#40D5CB]">{cg.contrast || 0}</span>
+                  <span className="font-mono text-slate-300 font-bold uppercase">Contrast</span>
+                  <span className="font-mono font-bold text-[#13E2CA]">{cg.contrast || 0}</span>
                 </div>
                 <input
                   type="range"
@@ -1140,15 +1215,15 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   max="100"
                   value={cg.contrast || 0}
                   onChange={(e) => updateColor({ contrast: parseInt(e.target.value) })}
-                  className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB]"
+                  className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
                 />
               </div>
 
               {/* Saturation */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-[#A4AFBD]">Saturation</span>
-                  <span className="font-mono text-[#40D5CB]">{cg.saturation || 0}</span>
+                  <span className="font-mono text-slate-300 font-bold uppercase">Saturation</span>
+                  <span className="font-mono font-bold text-[#13E2CA]">{cg.saturation || 0}</span>
                 </div>
                 <input
                   type="range"
@@ -1156,15 +1231,15 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   max="100"
                   value={cg.saturation || 0}
                   onChange={(e) => updateColor({ saturation: parseInt(e.target.value) })}
-                  className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB]"
+                  className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
                 />
               </div>
 
               {/* Hue */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[11px]">
-                  <span className="text-[#A4AFBD]">Hue</span>
-                  <span className="font-mono text-[#40D5CB]">{cg.hue || 0}°</span>
+                  <span className="font-mono text-slate-300 font-bold uppercase">Hue</span>
+                  <span className="font-mono font-bold text-[#13E2CA]">{cg.hue || 0}°</span>
                 </div>
                 <input
                   type="range"
@@ -1172,7 +1247,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   max="180"
                   value={cg.hue || 0}
                   onChange={(e) => updateColor({ hue: parseInt(e.target.value) })}
-                  className="w-full h-1 bg-[#242A33] rounded accent-[#40D5CB]"
+                  className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
                 />
               </div>
             </div>

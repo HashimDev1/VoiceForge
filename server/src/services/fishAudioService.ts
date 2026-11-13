@@ -427,9 +427,10 @@ export class FishAudioService {
   public static async transcribeAudio(
     audioBuffer: Buffer,
     filename: string,
-    language?: string
+    language?: string,
+    signal?: AbortSignal
   ): Promise<{ text: string; duration?: number; language?: string; language_code?: string; segments?: any[] }> {
-    const apiKey = config.fishApiKey;
+    const apiKey = process.env.FISH_API_KEY ?? config.fishApiKey;
     if (!apiKey || apiKey === 'YOUR_FISH_AUDIO_API_KEY_HERE') {
       throw new Error('Fish Audio API key is required to transcribe audio.');
     }
@@ -437,10 +438,16 @@ export class FishAudioService {
     const ext = (filename || '').toLowerCase();
     const mimeType = ext.endsWith('.wav')
       ? 'audio/wav'
-      : ext.endsWith('.ogg')
+      : ext.endsWith('.ogg') || ext.endsWith('.oga')
       ? 'audio/ogg'
-      : ext.endsWith('.m4a')
+      : ext.endsWith('.opus')
+      ? 'audio/opus'
+      : ext.endsWith('.m4a') || ext.endsWith('.mp4')
       ? 'audio/mp4'
+      : ext.endsWith('.webm')
+      ? 'audio/webm'
+      : ext.endsWith('.flac')
+      ? 'audio/flac'
       : 'audio/mpeg';
 
     const formData = new FormData();
@@ -448,7 +455,7 @@ export class FishAudioService {
     formData.append('audio', audioBlob, filename || 'audio.mp3');
     formData.append('ignore_timestamps', 'false');
 
-    if (language && language.trim()) {
+    if (language && language.trim() && language.trim().toLowerCase() !== 'auto') {
       formData.append('language', language.trim());
     }
 
@@ -460,7 +467,8 @@ export class FishAudioService {
       headers: {
         'Authorization': `Bearer ${apiKey}`
       },
-      body: formData
+      body: formData,
+      signal
     });
 
     if (!response.ok) {
@@ -470,7 +478,10 @@ export class FishAudioService {
         const parsed = JSON.parse(errText);
         errorMsg = parsed.message || parsed.detail || JSON.stringify(parsed);
       } catch {}
-      throw new Error(`Audio transcription failed (${response.status}): ${errorMsg}`);
+      const httpErr: any = new Error(`Fish Audio ASR failed (${response.status}): ${errorMsg}`);
+      httpErr.statusCode = response.status;
+      httpErr.headers = response.headers;
+      throw httpErr;
     }
 
     const data = await response.json();

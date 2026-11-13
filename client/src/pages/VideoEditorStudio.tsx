@@ -9,25 +9,45 @@ import { EditorInspector } from './videoEditor/EditorInspector';
 import { EditorExportModal } from './videoEditor/EditorExportModal';
 import { MotionGraphicsStudio } from './videoEditor/MotionGraphicsStudio';
 import { EditorPanelSplitter } from './videoEditor/EditorPanelSplitter';
+import { SmartBulkArrangeModal } from './videoEditor/smartBulk/SmartBulkArrangeModal';
 import {
   WorkspaceMode,
   WORKSPACE_PRESETS,
-  WORKSPACE_CONSTRAINTS
+  WORKSPACE_CONSTRAINTS,
+  clampLeftWidth,
+  clampInspectorWidth,
+  clampTimelineHeight
 } from './videoEditor/EditorWorkspacePresets';
 import { videoEditorApi } from '../services/videoEditorApi';
 import { MediaAsset } from '../../../shared/src/videoEditorTypes';
-import { AlertCircle, RotateCcw, X } from 'lucide-react';
+import { unlockAudio } from '../lib/audioUnlocker';
+import {
+  AlertCircle,
+  RotateCcw,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+  Sparkles
+} from 'lucide-react';
 
 interface VideoEditorStudioProps {
   onOpenCaptionStudio?: () => void;
+  onExitEditor?: () => void;
   initialProject?: any;
 }
 
-const STORAGE_KEY_DIMENSIONS = 'voiceforge_editor_v2_dimensions';
-const STORAGE_KEY_MODE = 'voiceforge_editor_v2_mode';
+const STORAGE_KEY_DIMENSIONS = 'voiceforge_editor_v3_dimensions';
+const STORAGE_KEY_MODE = 'voiceforge_editor_v3_mode';
 
 export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
   onOpenCaptionStudio,
+  onExitEditor,
   initialProject
 }) => {
   const {
@@ -93,11 +113,60 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
     addMotionGraphicClip,
     updateTitleDesign,
     copyAnimationSettings,
-    pasteAnimationSettings
+    pasteAnimationSettings,
+    bulkArrangeOnTimeline,
+    bulkSetDuration,
+    bulkScaleDuration,
+    bulkSetFitMode,
+    bulkSetTransform,
+    bulkApplyTransition,
+    bulkSetColorGrading,
+    bulkMuteAudio,
+    bulkRippleDeleteSelected,
+    bulkReverseSelected,
+    bulkShuffleSelected,
+    separateAudioFromClip
   } = useVideoEditor(initialProject);
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isMotionStudioOpen, setIsMotionStudioOpen] = useState(false);
+  const [isSmartBulkModalOpen, setIsSmartBulkModalOpen] = useState(false);
+
+  // Collapsible Panel States with LocalStorage Persistence
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('voiceforge_editor_left_collapsed') === 'true';
+    } catch {}
+    return false;
+  });
+  const [isInspectorCollapsed, setIsInspectorCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('voiceforge_editor_inspector_collapsed') === 'true';
+    } catch {}
+    return false;
+  });
+  const [isTimelineCollapsed, setIsTimelineCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('voiceforge_editor_timeline_collapsed') === 'true';
+    } catch {}
+    return false;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('voiceforge_editor_left_collapsed', String(isLeftCollapsed));
+      localStorage.setItem('voiceforge_editor_inspector_collapsed', String(isInspectorCollapsed));
+      localStorage.setItem('voiceforge_editor_timeline_collapsed', String(isTimelineCollapsed));
+    } catch {}
+  }, [isLeftCollapsed, isInspectorCollapsed, isTimelineCollapsed]);
+
+  const handleBulkUploadAssets = async (files: File[]) => {
+    const uploaded = await videoEditorApi.uploadBulkMedia(files);
+    for (const a of uploaded) {
+      addAsset(a);
+    }
+    return uploaded;
+  };
 
   // 5-Region Workspace Layout & Dimension States
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(() => {
@@ -115,7 +184,9 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
       const saved = localStorage.getItem(STORAGE_KEY_DIMENSIONS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (typeof parsed.leftWidth === 'number') return parsed.leftWidth;
+        if (typeof parsed.leftWidth === 'number' && parsed.leftWidth > 0) {
+          return clampLeftWidth(parsed.leftWidth);
+        }
       }
     } catch {}
     return WORKSPACE_PRESETS.default.leftWidth;
@@ -126,7 +197,9 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
       const saved = localStorage.getItem(STORAGE_KEY_DIMENSIONS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (typeof parsed.inspectorWidth === 'number') return parsed.inspectorWidth;
+        if (typeof parsed.inspectorWidth === 'number' && parsed.inspectorWidth > 0) {
+          return clampInspectorWidth(parsed.inspectorWidth);
+        }
       }
     } catch {}
     return WORKSPACE_PRESETS.default.inspectorWidth;
@@ -137,7 +210,9 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
       const saved = localStorage.getItem(STORAGE_KEY_DIMENSIONS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (typeof parsed.timelineHeight === 'number') return parsed.timelineHeight;
+        if (typeof parsed.timelineHeight === 'number' && parsed.timelineHeight > 0) {
+          return clampTimelineHeight(parsed.timelineHeight);
+        }
       }
     } catch {}
     return WORKSPACE_PRESETS.default.timelineHeight;
@@ -157,22 +232,50 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
   const handleSelectWorkspaceMode = (mode: WorkspaceMode) => {
     setWorkspaceMode(mode);
     const preset = WORKSPACE_PRESETS[mode];
-    setLeftWidth(preset.leftWidth);
-    setInspectorWidth(preset.inspectorWidth);
-    setTimelineHeight(preset.timelineHeight);
+    setLeftWidth(clampLeftWidth(preset.leftWidth));
+    setInspectorWidth(clampInspectorWidth(preset.inspectorWidth));
+    setTimelineHeight(clampTimelineHeight(preset.timelineHeight));
     try {
       localStorage.setItem(STORAGE_KEY_MODE, mode);
     } catch {}
   };
 
+  // Reset layout to factory defaults
+  const handleResetLayout = () => {
+    const preset = WORKSPACE_PRESETS[workspaceMode] || WORKSPACE_PRESETS.default;
+    setLeftWidth(preset.leftWidth);
+    setInspectorWidth(preset.inspectorWidth);
+    setTimelineHeight(preset.timelineHeight);
+    setIsLeftCollapsed(false);
+    setIsInspectorCollapsed(false);
+    setIsTimelineCollapsed(false);
+    try {
+      localStorage.removeItem(STORAGE_KEY_DIMENSIONS);
+      localStorage.removeItem('voiceforge_editor_v2_dimensions');
+      localStorage.removeItem('voiceforge_editor_left_collapsed');
+      localStorage.removeItem('voiceforge_editor_inspector_collapsed');
+      localStorage.removeItem('voiceforge_editor_timeline_collapsed');
+    } catch {}
+  };
+
+  // Ensure window is scrolled to top on mount for perfect full-screen viewport alignment
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Handle uploading media files to project
   const handleUploadAsset = async (file: File) => {
     const asset = await videoEditorApi.uploadMedia(file);
     addAsset(asset);
-    // If it's a video and timeline is empty, automatically place it on Main Video Track (V1)
-    const videoTrack = project.tracks.find((t) => t.type === 'video') || project.tracks[1];
-    if (project.clips.length === 0 && videoTrack) {
-      addClipToTrack(videoTrack.id, asset, 0);
+    // If timeline is empty, automatically place it on appropriate track
+    if (project.clips.length === 0) {
+      if (asset.type === 'video') {
+        const videoTrack = project.tracks.find((t) => t.type === 'video') || project.tracks[1];
+        if (videoTrack) addClipToTrack(videoTrack.id, asset, 0);
+      } else if (asset.type === 'audio') {
+        const audioTrack = project.tracks.find((t) => t.type === 'audio') || project.tracks.find((t) => t.id === 'track-a1');
+        if (audioTrack) addClipToTrack(audioTrack.id, asset, 0);
+      }
     }
   };
 
@@ -191,6 +294,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
       // Space: Toggle Play/Pause
       if (e.code === 'Space') {
         e.preventDefault();
+        unlockAudio();
         togglePlay();
       }
 
@@ -316,13 +420,13 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
   ]);
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#0B0E13] overflow-hidden select-none">
+    <div className="flex flex-col h-full w-full bg-[#121418] text-[#E4E7EC] p-0 gap-0 overflow-hidden select-none">
       {/* Auto-Save Recovery Notice Banner */}
       {recoveryAvailable && (
-        <div className="shrink-0 flex items-center justify-between border-b border-amber-500/40 bg-amber-950/80 px-4 py-2 text-xs text-amber-200 z-40">
+        <div className="shrink-0 flex items-center justify-between border-b border-amber-500/40 bg-amber-950/80 px-4 py-1.5 text-xs text-amber-200 z-40">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-amber-400 shrink-0" />
-            <span>
+            <span className="font-medium">
               An unsaved session was recovered from your browser. Would you like to restore it?
             </span>
           </div>
@@ -330,7 +434,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
             <button
               type="button"
               onClick={restoreFromBackup}
-              className="flex items-center gap-1 rounded bg-amber-500 px-2.5 py-1 text-xs font-bold text-black hover:bg-amber-400 cursor-pointer"
+              className="flex items-center gap-1 rounded bg-amber-500 hover:bg-amber-400 px-2.5 py-0.5 text-xs font-mono font-bold text-black cursor-pointer shadow-xs transition"
             >
               <RotateCcw className="h-3 w-3" />
               <span>Restore</span>
@@ -338,7 +442,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
             <button
               type="button"
               onClick={dismissRecovery}
-              className="rounded p-1 text-amber-400 hover:bg-amber-900/60 cursor-pointer"
+              className="rounded p-0.5 text-amber-400 hover:bg-amber-900/60 cursor-pointer"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -346,7 +450,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         </div>
       )}
 
-      {/* REGION A: TOP APPLICATION TOOLBAR (44px fixed height) */}
+      {/* REGION A: TOP APPLICATION TOOLBAR (CapCut Top Bar) */}
       <EditorTopBar
         project={project}
         canUndo={canUndo}
@@ -359,69 +463,107 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         onUpdateMeta={updateProjectMeta}
         onOpenExport={() => setIsExportModalOpen(true)}
         onOpenCaptionStudio={onOpenCaptionStudio}
+        onOpenSmartBulk={() => setIsSmartBulkModalOpen(true)}
+        onExitEditor={onExitEditor}
         workspaceMode={workspaceMode}
         onSelectWorkspaceMode={handleSelectWorkspaceMode}
+        onResetLayout={handleResetLayout}
       />
 
       {/* 5-REGION DESKTOP WORKSPACE LAYOUT */}
       <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative">
-        {/* REGION B: LEFT MEDIA & CREATIVE TOOLS WORKSPACE (Full height down to bottom) */}
-        <div
-          style={{ width: `${leftWidth}px` }}
-          className="h-full shrink-0 min-h-0 flex flex-col overflow-hidden"
-        >
-          <EditorSidebar
-            assets={project.assets}
-            onUploadAsset={handleUploadAsset}
-            onAddClip={(asset) => {
-              let targetTrack;
-              if (asset.type === 'image') {
-                targetTrack =
-                  project.tracks.find((t) => t.type === 'overlay') ||
-                  project.tracks.find((t) => t.type === 'video');
-              } else if (asset.type === 'audio') {
-                const a1HasClips = project.clips.some((c) => c.trackId === 'track-a1');
-                targetTrack = a1HasClips
-                  ? project.tracks.find((t) => t.id === 'track-a2') || project.tracks.find((t) => t.type === 'audio')
-                  : project.tracks.find((t) => t.id === 'track-a1') || project.tracks.find((t) => t.type === 'audio');
-              } else {
-                targetTrack =
-                  project.tracks.find((t) => t.type === asset.type) ||
-                  project.tracks.find((t) => t.type === 'video') ||
-                  project.tracks[0];
-              }
-              if (targetTrack) addClipToTrack(targetTrack.id, asset);
-            }}
-            onAddText={addTextClip}
-            onAddMotionClip={(template, customText) => addMotionGraphicClip(template, customText)}
-            onOpenMotionStudio={() => setIsMotionStudioOpen(true)}
-            selectedClip={selectedClip}
-            onUpdateClip={updateClip}
-            onOpenCaptionStudio={onOpenCaptionStudio}
-          />
-        </div>
+        {/* REGION B: LEFT MEDIA & CREATIVE TOOLS WORKSPACE */}
+        {isLeftCollapsed ? (
+          <div className="w-10 shrink-0 h-full border-r border-[#262A34] bg-[#181B20] flex flex-col items-center py-2.5 gap-2 z-20">
+            <button
+              type="button"
+              onClick={() => setIsLeftCollapsed(false)}
+              title="Expand Media Library"
+              className="p-1.5 rounded bg-[#222631] hover:bg-[#282D38] text-[#13E2CA] cursor-pointer transition-colors"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsSmartBulkModalOpen(true)}
+              title="Smart Bulk Arrange 50–200 media files"
+              className="p-1.5 rounded bg-[#1A3838] border border-[#13E2CA]/40 text-[#13E2CA] hover:bg-[#13E2CA] hover:text-black cursor-pointer transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div
+            style={{ width: `${leftWidth}px`, minWidth: '320px', maxWidth: '560px' }}
+            className="h-full shrink-0 min-h-0 border-r border-[#262A34] bg-[#181B20] flex flex-col overflow-hidden relative"
+          >
+            {/* Quick Collapse Button in Header */}
+            <button
+              type="button"
+              onClick={() => setIsLeftCollapsed(true)}
+              title="Collapse Media Panel"
+              className="absolute top-2 right-2 z-30 p-1 rounded bg-[#222631] hover:bg-[#282D38] text-slate-400 hover:text-white cursor-pointer transition-colors"
+            >
+              <PanelLeftClose className="w-3.5 h-3.5" />
+            </button>
+
+            <EditorSidebar
+              assets={project.assets}
+              onUploadAsset={handleUploadAsset}
+              onOpenSmartBulk={() => setIsSmartBulkModalOpen(true)}
+              onAddClip={(asset) => {
+                let targetTrack;
+                if (asset.type === 'image') {
+                  targetTrack =
+                    project.tracks.find((t) => t.type === 'overlay') ||
+                    project.tracks.find((t) => t.type === 'video');
+                } else if (asset.type === 'audio') {
+                  const a1HasClips = project.clips.some((c) => c.trackId === 'track-a1');
+                  targetTrack = a1HasClips
+                    ? project.tracks.find((t) => t.id === 'track-a2') || project.tracks.find((t) => t.type === 'audio')
+                    : project.tracks.find((t) => t.id === 'track-a1') || project.tracks.find((t) => t.type === 'audio');
+                } else {
+                  targetTrack =
+                    project.tracks.find((t) => t.type === asset.type) ||
+                    project.tracks.find((t) => t.type === 'video') ||
+                    project.tracks[0];
+                }
+                if (targetTrack) addClipToTrack(targetTrack.id, asset);
+              }}
+              onAddText={addTextClip}
+              onAddMotionClip={(template, customText) => addMotionGraphicClip(template, customText)}
+              onOpenMotionStudio={() => setIsMotionStudioOpen(true)}
+              selectedClip={selectedClip}
+              onUpdateClip={updateClip}
+              onOpenCaptionStudio={onOpenCaptionStudio}
+              projectClips={project.clips}
+            />
+          </div>
+        )}
 
         {/* SPLITTER 1: Between Left Media Workspace and Right Workspace */}
-        <EditorPanelSplitter
-          direction="horizontal"
-          onResize={(delta) => {
-            setLeftWidth((w) =>
-              Math.max(
-                WORKSPACE_CONSTRAINTS.minLeftWidth,
-                Math.min(WORKSPACE_CONSTRAINTS.maxLeftWidth, w + delta)
-              )
-            );
-          }}
-          onReset={() => setLeftWidth(WORKSPACE_PRESETS[workspaceMode].leftWidth)}
-          title="Drag to resize Media Panel (Double-click to reset)"
-        />
+        {!isLeftCollapsed && (
+          <EditorPanelSplitter
+            direction="horizontal"
+            onResize={(delta) => {
+              setLeftWidth((w) =>
+                Math.max(
+                  WORKSPACE_CONSTRAINTS.minLeftWidth,
+                  Math.min(WORKSPACE_CONSTRAINTS.maxLeftWidth, w + delta)
+                )
+              );
+            }}
+            onReset={() => setLeftWidth(WORKSPACE_PRESETS[workspaceMode].leftWidth)}
+            title="Drag to resize Media Panel (Double-click to reset)"
+          />
+        )}
 
         {/* RIGHT EDITING WORKSPACE: UPPER ROW (Preview + Inspector) & LOWER ROW (Timeline) */}
         <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
           {/* UPPER ROW: Preview Canvas (Region C) & Inspector (Region D) */}
-          <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
+          <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative">
             {/* REGION C: CENTER VIDEO PREVIEW PLAYER CANVAS */}
-            <div className="flex-1 min-w-0 min-h-0 h-full overflow-hidden">
+            <div className="flex-1 min-w-0 min-h-0 h-full border-r border-[#262A34] bg-[#181B20] overflow-hidden flex flex-col relative">
               <EditorPreviewCanvas
                 project={project}
                 playhead={playhead}
@@ -431,94 +573,170 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
                 selectedClip={selectedClip}
                 onUpdateClip={updateClip}
               />
+
+              {/* Restore Inspector button when inspector is collapsed */}
+              {isInspectorCollapsed && (
+                <button
+                  type="button"
+                  onClick={() => setIsInspectorCollapsed(false)}
+                  title="Expand Inspector"
+                  className="absolute top-2.5 right-2.5 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#222631] hover:bg-[#282D38] border border-[#2D3340] text-xs font-sans text-slate-300 hover:text-white cursor-pointer transition-colors shadow-md"
+                >
+                  <PanelRightOpen className="w-3.5 h-3.5 text-[#13E2CA]" />
+                  <span>Inspector</span>
+                </button>
+              )}
             </div>
 
             {/* SPLITTER 2: Between Preview and Inspector */}
-            <EditorPanelSplitter
-              direction="horizontal"
-              onResize={(delta) => {
-                // Dragging right decreases inspector width; dragging left increases it
-                setInspectorWidth((w) =>
-                  Math.max(
-                    WORKSPACE_CONSTRAINTS.minInspectorWidth,
-                    Math.min(WORKSPACE_CONSTRAINTS.maxInspectorWidth, w - delta)
-                  )
-                );
-              }}
-              onReset={() => setInspectorWidth(WORKSPACE_PRESETS[workspaceMode].inspectorWidth)}
-              title="Drag to resize Inspector Panel (Double-click to reset)"
-            />
+            {!isInspectorCollapsed && (
+              <EditorPanelSplitter
+                direction="horizontal"
+                onResize={(delta) => {
+                  setInspectorWidth((w) =>
+                    Math.max(
+                      WORKSPACE_CONSTRAINTS.minInspectorWidth,
+                      Math.min(WORKSPACE_CONSTRAINTS.maxInspectorWidth, w - delta)
+                    )
+                  );
+                }}
+                onReset={() => setInspectorWidth(WORKSPACE_PRESETS[workspaceMode].inspectorWidth)}
+                title="Drag to resize Inspector Panel (Double-click to reset)"
+              />
+            )}
 
             {/* REGION D: RIGHT PROPERTIES INSPECTOR */}
-            <div
-              style={{ width: `${inspectorWidth}px` }}
-              className="h-full shrink-0 min-h-0 overflow-hidden"
-            >
-              <EditorInspector
-                selectedClip={selectedClip}
-                onUpdateClip={updateClip}
-                playhead={playhead}
-              />
-            </div>
+            {!isInspectorCollapsed && (
+              <div
+                style={{ width: `${inspectorWidth}px`, minWidth: '280px', maxWidth: '500px' }}
+                className="h-full shrink-0 min-h-0 bg-[#181B20] overflow-hidden flex flex-col relative"
+              >
+                {/* Collapse Inspector Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsInspectorCollapsed(true)}
+                  title="Collapse Inspector"
+                  className="absolute top-2 left-2 z-30 p-1 rounded bg-[#222631] hover:bg-[#282D38] text-slate-400 hover:text-white cursor-pointer transition-colors"
+                >
+                  <PanelRightClose className="w-3.5 h-3.5" />
+                </button>
+
+                <EditorInspector
+                  selectedClip={selectedClip}
+                  onUpdateClip={updateClip}
+                  playhead={playhead}
+                  onSeparateAudio={separateAudioFromClip}
+                />
+              </div>
+            )}
           </div>
 
           {/* SPLITTER 3: Horizontal splitter between Upper Region and Timeline */}
-          <EditorPanelSplitter
-            direction="vertical"
-            onResize={(delta) => {
-              // Dragging down decreases timeline height; dragging up increases it
-              setTimelineHeight((h) =>
-                Math.max(
-                  WORKSPACE_CONSTRAINTS.minTimelineHeight,
-                  Math.min(
-                    window.innerHeight * WORKSPACE_CONSTRAINTS.maxTimelineHeightRatio,
-                    h - delta
+          {!isTimelineCollapsed && (
+            <EditorPanelSplitter
+              direction="vertical"
+              onResize={(delta) => {
+                setTimelineHeight((h) =>
+                  Math.max(
+                    WORKSPACE_CONSTRAINTS.minTimelineHeight,
+                    Math.min(
+                      window.innerHeight * WORKSPACE_CONSTRAINTS.maxTimelineHeightRatio,
+                      h - delta
+                    )
                   )
-                )
-              );
-            }}
-            onReset={() => setTimelineHeight(WORKSPACE_PRESETS[workspaceMode].timelineHeight)}
-            title="Drag to resize Timeline (Double-click to reset)"
-          />
-
-          {/* REGION E: MULTITRACK TIMELINE (Spans horizontally under Preview and Inspector) */}
-          <div
-            style={{ height: `${timelineHeight}px` }}
-            className="w-full shrink-0 min-w-0 overflow-hidden"
-          >
-            <EditorTimeline
-              project={project}
-              playhead={playhead}
-              onSeek={seek}
-              selectedClipIds={selectedClipIds}
-              onSelectClip={selectClip}
-              selectedTrackId={selectedTrackId}
-              onSelectTrack={setSelectedTrackId}
-              zoom={zoom}
-              setZoom={setZoom}
-              snapEnabled={snapEnabled}
-              onToggleSnap={() => setSnapEnabled((s) => !s)}
-              activeTool={activeTool}
-              setActiveTool={setActiveTool}
-              onSplitClip={splitClipAtPlayhead}
-              onDeleteClip={deleteClip}
-              onDeleteSelected={deleteSelectedClips}
-              onDuplicateClip={duplicateClip}
-              onRippleDelete={rippleDelete}
-              onFreezeFrame={freezeFrame}
-              onTrimClipStart={trimClipStart}
-              onTrimClipEnd={trimClipEnd}
-              onMoveClip={moveClip}
-              onToggleTrackLock={toggleTrackLock}
-              onToggleTrackMute={toggleTrackMute}
-              onToggleTrackSolo={toggleTrackSolo}
-              onToggleTrackHidden={toggleTrackHidden}
-              onCopySelection={copySelection}
-              onPasteClips={pasteClips}
+                );
+              }}
+              onReset={() => setTimelineHeight(WORKSPACE_PRESETS[workspaceMode].timelineHeight)}
+              title="Drag to resize Timeline (Double-click to reset)"
             />
-          </div>
+          )}
+
+          {/* REGION E: MULTITRACK TIMELINE */}
+          {isTimelineCollapsed ? (
+            <div className="h-9 shrink-0 w-full border-t border-[#262A34] bg-[#181B20] px-4 flex items-center justify-between text-xs">
+              <span className="font-sans font-medium text-slate-400 text-xs">
+                Timeline ({project.clips.length} clips · {project.duration.toFixed(1)}s)
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsTimelineCollapsed(false)}
+                className="flex items-center gap-1.5 text-[#13E2CA] hover:underline font-sans font-semibold text-xs cursor-pointer"
+              >
+                <ChevronUp className="w-4 h-4" />
+                <span>Expand Timeline</span>
+              </button>
+            </div>
+          ) : (
+            <div
+              style={{ height: `${timelineHeight}px`, minHeight: '180px' }}
+              className="w-full shrink-0 min-w-0 border-t border-[#262A34] bg-[#181B20] overflow-hidden flex flex-col relative"
+            >
+              {/* Collapse Timeline Button */}
+              <button
+                type="button"
+                onClick={() => setIsTimelineCollapsed(true)}
+                title="Collapse Timeline"
+                className="absolute top-2 right-2 z-30 p-1 rounded bg-[#222631] hover:bg-[#282D38] text-slate-400 hover:text-white cursor-pointer transition-colors"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+
+              <EditorTimeline
+                project={project}
+                playhead={playhead}
+                onSeek={seek}
+                selectedClipIds={selectedClipIds}
+                onSelectClip={selectClip}
+                selectedTrackId={selectedTrackId}
+                onSelectTrack={setSelectedTrackId}
+                zoom={zoom}
+                setZoom={setZoom}
+                snapEnabled={snapEnabled}
+                onToggleSnap={() => setSnapEnabled((s) => !s)}
+                activeTool={activeTool}
+                setActiveTool={setActiveTool}
+                onSplitClip={splitClipAtPlayhead}
+                onDeleteClip={deleteClip}
+                onDeleteSelected={deleteSelectedClips}
+                onDuplicateClip={duplicateClip}
+                onRippleDelete={rippleDelete}
+                onFreezeFrame={freezeFrame}
+                onTrimClipStart={trimClipStart}
+                onTrimClipEnd={trimClipEnd}
+                onMoveClip={moveClip}
+                onToggleTrackLock={toggleTrackLock}
+                onToggleTrackMute={toggleTrackMute}
+                onToggleTrackSolo={toggleTrackSolo}
+                onToggleTrackHidden={toggleTrackHidden}
+                onCopySelection={copySelection}
+                onPasteClips={pasteClips}
+                onSelectAllClips={selectAllClips}
+                onBulkSetDuration={bulkSetDuration}
+                onBulkScaleDuration={bulkScaleDuration}
+                onBulkSetFitMode={bulkSetFitMode}
+                onBulkApplyTransition={bulkApplyTransition}
+                onBulkMuteAudio={bulkMuteAudio}
+                onBulkRippleDeleteSelected={bulkRippleDeleteSelected}
+                onBulkReverseSelected={bulkReverseSelected}
+                onBulkShuffleSelected={bulkShuffleSelected}
+                onSeparateAudio={separateAudioFromClip}
+              />
+            </div>
+          )}
         </div>
       </div>
+
+      {/* SMART BULK ARRANGE MODAL */}
+      <SmartBulkArrangeModal
+        isOpen={isSmartBulkModalOpen}
+        onClose={() => setIsSmartBulkModalOpen(false)}
+        availableAssets={project.assets}
+        onUploadAssets={handleBulkUploadAssets}
+        onApplyProposal={bulkArrangeOnTimeline}
+        targetTracks={project.tracks}
+        playhead={playhead}
+        projectFps={project.fps || 30}
+      />
 
       {/* EXPORT MODAL */}
       <EditorExportModal
@@ -529,8 +747,8 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
 
       {/* MOTION GRAPHICS STUDIO MODAL */}
       {isMotionStudioOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl h-[90vh] overflow-hidden rounded-xl shadow-2xl border border-[#303740] bg-[#15191F]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl h-[90vh] overflow-hidden rounded-xl border border-[#262A34] bg-[#181B20] text-white shadow-2xl">
             <MotionGraphicsStudio
               onAddMotionClip={(template, customText) => {
                 addMotionGraphicClip(template, customText);
