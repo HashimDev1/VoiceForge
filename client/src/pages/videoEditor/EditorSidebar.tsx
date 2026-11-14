@@ -56,6 +56,7 @@ interface EditorSidebarProps {
   onOpenSmartBulk?: () => void;
   selectedClip: TimelineClip | null;
   onUpdateClip: (clipId: string, patch: Partial<TimelineClip>) => void;
+  onSelectClip?: (clipId: string) => void;
   onOpenCaptionStudio?: () => void;
   projectClips?: TimelineClip[];
 }
@@ -95,6 +96,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   onOpenSmartBulk,
   selectedClip,
   onUpdateClip,
+  onSelectClip,
   onOpenCaptionStudio,
   projectClips = []
 }) => {
@@ -107,6 +109,12 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [previewAudioId, setPreviewAudioId] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Fallback to first visual clip if no clip is explicitly selected
+  const visualClips = projectClips.filter(
+    (c) => c.type === 'video' || c.type === 'image' || c.type === 'overlay'
+  );
+  const activeClip = selectedClip || visualClips[0] || null;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const togglePreviewAudio = (asset: MediaAsset) => {
@@ -624,25 +632,49 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
           <div className="flex-1 flex flex-col p-3 space-y-3 overflow-y-auto vf-scrollbar">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-300">Video Effects & Optical Filters</span>
-              {selectedClip && (selectedClip.effects || []).length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => onUpdateClip(selectedClip.id, { effects: [] })}
-                  className="text-[10px] text-rose-400 hover:underline cursor-pointer"
-                >
-                  Clear All ({selectedClip.effects?.length})
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {visualClips.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const effs = (selectedClip || activeClip)?.effects || [];
+                      visualClips.forEach((c) => onUpdateClip(c.id, { effects: effs }));
+                    }}
+                    title="Apply current clip's effects to all visual clips in project"
+                    className="text-[10px] text-[#13E2CA] hover:underline cursor-pointer font-sans"
+                  >
+                    Apply to All ({visualClips.length})
+                  </button>
+                )}
+                {(selectedClip || activeClip) && ((selectedClip || activeClip)!.effects || []).length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => onUpdateClip((selectedClip || activeClip)!.id, { effects: [] })}
+                    className="text-[10px] text-rose-400 hover:underline cursor-pointer"
+                  >
+                    Clear All ({(selectedClip || activeClip)!.effects?.length})
+                  </button>
+                )}
+              </div>
             </div>
+
+            {!selectedClip && activeClip && (
+              <div className="px-2 py-1 rounded bg-[#13E2CA]/10 border border-[#13E2CA]/30 text-[11px] text-[#13E2CA] flex items-center justify-between">
+                <span>Targeting: <strong className="text-white">{activeClip.name}</strong></span>
+                <span className="text-[9px] text-slate-400">Auto-selected</span>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-2">
               {EFFECT_CATALOG.map((eff) => {
-                const isApplied = (selectedClip?.effects || []).some((e) => e.type === eff.id && e.enabled !== false);
+                const target = selectedClip || activeClip;
+                const isApplied = (target?.effects || []).some((e) => e.type === eff.id && e.enabled !== false);
                 return (
                   <div
                     key={eff.id}
                     onClick={() => {
-                      if (!selectedClip) return;
-                      const currentEffects = selectedClip.effects || [];
+                      if (!target) return;
+                      const currentEffects = target.effects || [];
                       const exists = currentEffects.some((e) => e.type === eff.id);
                       let newEffects;
                       if (exists) {
@@ -658,7 +690,8 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                           }
                         ];
                       }
-                      onUpdateClip(selectedClip.id, { effects: newEffects });
+                      onUpdateClip(target.id, { effects: newEffects });
+                      onSelectClip?.(target.id);
                     }}
                     className={`flex flex-col items-center justify-center p-3 rounded transition cursor-pointer text-center ${
                       isApplied
@@ -687,10 +720,12 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 <div
                   key={trans.id}
                   onClick={() => {
-                    if (selectedClip) {
-                      onUpdateClip(selectedClip.id, {
+                    const target = selectedClip || activeClip;
+                    if (target) {
+                      onUpdateClip(target.id, {
                         transitionIn: { type: trans.id as any, duration: 0.5 }
                       });
+                      onSelectClip?.(target.id);
                     }
                   }}
                   className="flex flex-col items-center justify-center p-3 rounded bg-[#1E222B] border border-[#262A34] hover:border-[#13E2CA] transition cursor-pointer"
@@ -732,33 +767,74 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
           <div className="flex-1 flex flex-col p-3 space-y-3 overflow-y-auto vf-scrollbar">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-300">Color Grading & LUT Filters</span>
-              {selectedClip && selectedClip.colorGrading && (
-                <button
-                  type="button"
-                  onClick={() => onUpdateClip(selectedClip.id, { colorGrading: { ...DEFAULT_COLOR_GRADING } })}
-                  className="text-[10px] text-[#13E2CA] hover:underline cursor-pointer"
-                >
-                  Reset Color
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {visualClips.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const grading = (selectedClip || activeClip)?.colorGrading;
+                      if (grading) {
+                        visualClips.forEach((c) => onUpdateClip(c.id, { colorGrading: grading }));
+                      }
+                    }}
+                    title="Apply current clip's color grading to all visual clips in project"
+                    className="text-[10px] text-[#13E2CA] hover:underline cursor-pointer font-sans"
+                  >
+                    Apply to All ({visualClips.length})
+                  </button>
+                )}
+                {(selectedClip || activeClip)?.colorGrading && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = selectedClip || activeClip;
+                      if (target) onUpdateClip(target.id, { colorGrading: { ...DEFAULT_COLOR_GRADING } });
+                    }}
+                    className="text-[10px] text-rose-400 hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
             </div>
+
+            {!selectedClip && activeClip && (
+              <div className="px-2 py-1 rounded bg-[#13E2CA]/10 border border-[#13E2CA]/30 text-[11px] text-[#13E2CA] flex items-center justify-between">
+                <span>Targeting: <strong className="text-white">{activeClip.name}</strong></span>
+                <span className="text-[9px] text-slate-400">Auto-selected</span>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-2">
-              {COLOR_PRESETS.map((preset) => (
-                <div
-                  key={preset.id}
-                  onClick={() => {
-                    if (selectedClip) {
-                      onUpdateClip(selectedClip.id, {
-                        colorGrading: { ...DEFAULT_COLOR_GRADING, ...preset.settings }
-                      });
-                    }
-                  }}
-                  className="flex flex-col items-center justify-center p-3 rounded bg-[#1E222B] border border-[#262A34] hover:border-[#13E2CA] transition cursor-pointer text-center"
-                >
-                  <Palette className="w-5 h-5 text-[#13E2CA] mb-1" />
-                  <span className="text-xs text-white font-medium">{preset.name}</span>
-                </div>
-              ))}
+              {COLOR_PRESETS.map((preset) => {
+                const target = selectedClip || activeClip;
+                const isSelected = target?.colorGrading?.temperature === preset.settings.temperature &&
+                  target?.colorGrading?.contrast === preset.settings.contrast &&
+                  target?.colorGrading?.saturation === preset.settings.saturation;
+
+                return (
+                  <div
+                    key={preset.id}
+                    onClick={() => {
+                      if (target) {
+                        onUpdateClip(target.id, {
+                          colorGrading: { ...DEFAULT_COLOR_GRADING, ...preset.settings }
+                        });
+                        onSelectClip?.(target.id);
+                      }
+                    }}
+                    className={`flex flex-col items-center justify-center p-3 rounded transition cursor-pointer text-center ${
+                      isSelected
+                        ? 'bg-[#153434] border border-[#13E2CA] shadow-[0_0_8px_rgba(19,226,202,0.25)]'
+                        : 'bg-[#1E222B] border border-[#262A34] hover:border-[#13E2CA]'
+                    }`}
+                  >
+                    <Palette className={`w-5 h-5 mb-1 ${isSelected ? 'text-[#13E2CA]' : 'text-slate-400'}`} />
+                    <span className="text-xs text-white font-medium">{preset.name}</span>
+                    {isSelected && <span className="text-[9px] text-[#13E2CA] mt-0.5">Applied ✓</span>}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

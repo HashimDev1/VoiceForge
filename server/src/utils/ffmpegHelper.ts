@@ -66,12 +66,33 @@ export class FFmpegHelper {
       return this.cachedFfmpegPath;
     }
 
+    const isWin = process.platform === 'win32';
+
+    // On Linux / Docker / Render, check system ffmpeg first (e.g. /usr/bin/ffmpeg from apk or apt)
+    if (!isWin) {
+      const candidates = ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/bin/ffmpeg'];
+      for (const c of candidates) {
+        if (fs.existsSync(c)) {
+          this.cachedFfmpegPath = c;
+          return c;
+        }
+      }
+      try {
+        const { stdout } = await execAsync('which ffmpeg');
+        const p = stdout.trim().split(/\r?\n/)[0]?.trim();
+        if (p && fs.existsSync(p)) {
+          this.cachedFfmpegPath = p;
+          return p;
+        }
+      } catch {}
+    }
+
     // Try ffmpeg-static npm package (portable across Windows, Linux, Docker, Render)
     try {
       const ffmpegStatic = require('ffmpeg-static');
       const staticPath = typeof ffmpegStatic === 'string' ? ffmpegStatic : (ffmpegStatic?.default || null);
       if (staticPath && fs.existsSync(staticPath)) {
-        if (process.platform !== 'win32') {
+        if (!isWin) {
           try {
             fs.chmodSync(staticPath, 0o755);
           } catch {}
@@ -102,7 +123,6 @@ export class FFmpegHelper {
     }
 
     try {
-      const isWin = process.platform === 'win32';
       const cmd = isWin ? 'where ffmpeg' : 'which ffmpeg';
       const { stdout } = await execAsync(cmd);
       const lines = stdout.trim().split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -130,6 +150,42 @@ export class FFmpegHelper {
       return this.cachedFfprobePath;
     }
 
+    const isWin = process.platform === 'win32';
+
+    // On Linux / Docker / Render, check system ffprobe first
+    if (!isWin) {
+      const candidates = ['/usr/bin/ffprobe', '/usr/local/bin/ffprobe', '/bin/ffprobe'];
+      for (const c of candidates) {
+        if (fs.existsSync(c)) {
+          this.cachedFfprobePath = c;
+          return c;
+        }
+      }
+      try {
+        const { stdout } = await execAsync('which ffprobe');
+        const p = stdout.trim().split(/\r?\n/)[0]?.trim();
+        if (p && fs.existsSync(p)) {
+          this.cachedFfprobePath = p;
+          return p;
+        }
+      } catch {}
+    }
+
+    // Try ffprobe-static npm package if present
+    try {
+      const ffprobeStatic = require('ffprobe-static');
+      const staticPath = typeof ffprobeStatic === 'string' ? ffprobeStatic : (ffprobeStatic?.path || ffprobeStatic?.default || null);
+      if (staticPath && fs.existsSync(staticPath)) {
+        if (!isWin) {
+          try {
+            fs.chmodSync(staticPath, 0o755);
+          } catch {}
+        }
+        this.cachedFfprobePath = staticPath;
+        return staticPath;
+      }
+    } catch {}
+
     const userProfile = process.env.USERPROFILE || 'C:\\Users\\Muhammad Hashim';
     const staticFfprobeCandidate = path.join(
       userProfile,
@@ -151,7 +207,6 @@ export class FFmpegHelper {
     }
 
     try {
-      const isWin = process.platform === 'win32';
       const cmd = isWin ? 'where ffprobe' : 'which ffprobe';
       const { stdout } = await execAsync(cmd);
       const lines = stdout.trim().split(/\r?\n/).map((l) => l.trim()).filter(Boolean);

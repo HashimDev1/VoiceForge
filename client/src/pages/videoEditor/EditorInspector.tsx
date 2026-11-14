@@ -56,13 +56,17 @@ interface EditorInspectorProps {
   onUpdateClip: (clipId: string, patch: Partial<TimelineClip>) => void;
   playhead: number;
   onSeparateAudio?: (clipId: string) => void;
+  onApplyColorToAllClips?: (grading: ColorGrading) => void;
+  onApplyEffectsToAllClips?: (effects: ClipEffect[]) => void;
 }
 
 export const EditorInspector: React.FC<EditorInspectorProps> = ({
   selectedClip,
   onUpdateClip,
   playhead,
-  onSeparateAudio
+  onSeparateAudio,
+  onApplyColorToAllClips,
+  onApplyEffectsToAllClips
 }) => {
   const isTitleClip = selectedClip?.type === 'text' || Boolean(selectedClip?.titleDesign);
   const isAudioClip = selectedClip?.type === 'audio';
@@ -1189,9 +1193,21 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
 
             {/* Manual Color Sliders */}
             <div className="space-y-3 pt-2 border-t border-[#262A34]">
-              <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider block">
-                Basic Adjustments
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider block">
+                  Basic Adjustments
+                </span>
+                {onApplyColorToAllClips && (
+                  <button
+                    type="button"
+                    onClick={() => onApplyColorToAllClips(cg)}
+                    title="Apply these color grading settings to all video and image clips"
+                    className="text-[10px] font-mono font-bold text-[#13E2CA] hover:underline cursor-pointer"
+                  >
+                    Apply to All Clips
+                  </button>
+                )}
+              </div>
 
               {/* Brightness */}
               <div className="space-y-1">
@@ -1317,15 +1333,27 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                     Clip Effects & Filters ({(selectedClip.effects || []).length})
                   </span>
                 </div>
-                {(selectedClip.effects || []).length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => onUpdateClip(selectedClip.id, { effects: [] })}
-                    className="text-[10px] font-mono text-rose-400 hover:underline cursor-pointer"
-                  >
-                    Clear All
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {onApplyEffectsToAllClips && (selectedClip.effects || []).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => onApplyEffectsToAllClips(selectedClip.effects || [])}
+                      title="Apply these effects to all video and image clips"
+                      className="text-[10px] font-mono font-bold text-[#13E2CA] hover:underline cursor-pointer"
+                    >
+                      Apply to All Clips
+                    </button>
+                  )}
+                  {(selectedClip.effects || []).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => onUpdateClip(selectedClip.id, { effects: [] })}
+                      className="text-[10px] font-mono text-rose-400 hover:underline cursor-pointer"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* List Applied Effects */}

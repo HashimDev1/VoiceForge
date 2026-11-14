@@ -553,6 +553,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
               onOpenMotionStudio={() => setIsMotionStudioOpen(true)}
               selectedClip={selectedClip}
               onUpdateClip={updateClip}
+              onSelectClip={(id) => setSelectedClipIds([id])}
               onOpenCaptionStudio={onOpenCaptionStudio}
               projectClips={project.clips}
             />
@@ -645,6 +646,20 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
                   onUpdateClip={updateClip}
                   playhead={playhead}
                   onSeparateAudio={separateAudioFromClip}
+                  onApplyColorToAllClips={(grading) => {
+                    project.clips.forEach((c) => {
+                      if (c.type === 'video' || c.type === 'image' || c.type === 'overlay') {
+                        updateClip(c.id, { colorGrading: grading });
+                      }
+                    });
+                  }}
+                  onApplyEffectsToAllClips={(effects) => {
+                    project.clips.forEach((c) => {
+                      if (c.type === 'video' || c.type === 'image' || c.type === 'overlay') {
+                        updateClip(c.id, { effects });
+                      }
+                    });
+                  }}
                 />
               </div>
             )}

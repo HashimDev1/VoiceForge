@@ -472,30 +472,52 @@ export class VideoEditorService {
   }
 
   /**
-   * Builds FFmpeg filter chain strings for Adjust (ColorGrading) and Effects/Filters
+   * Builds FFmpeg filter chain strings for Adjust (ColorGrading) and Effects/Filters.
+   * Uses 100% universal FFmpeg filters (eq, colorchannelmixer, hue, vignette, gblur, unsharp, noise, rgbashift)
+   * that are guaranteed to work across all FFmpeg builds (Ubuntu, Alpine, Render, Windows, Mac).
    */
   public static buildColorAndEffectsFilter(clip: TimelineClip): string {
     let filterStr = '';
     const cg = clip.colorGrading;
     if (cg) {
-      const b = (cg.brightness || 0) / 100;
+      // Exposure is integrated directly into brightness for universal compatibility
+      const totalBrightness = (cg.brightness || 0) + (cg.exposure || 0);
+      const b = totalBrightness / 100;
       const c = 1 + (cg.contrast || 0) / 100;
       const s = Math.max(0, 1 + (cg.saturation || 0) / 100);
       const g = cg.gamma || 1;
       filterStr += `,eq=brightness=${b.toFixed(2)}:contrast=${c.toFixed(2)}:saturation=${s.toFixed(2)}:gamma=${g.toFixed(2)}`;
 
+      // Safe, universal color temperature using colorchannelmixer (works on all FFmpeg versions without needing colortemperature filter)
       if (cg.temperature && cg.temperature !== 0) {
-        const kelvin = Math.round(6500 + cg.temperature * 25);
-        filterStr += `,colortemperature=temperature=${kelvin}`;
+        const tempNorm = Math.max(-100, Math.min(100, cg.temperature));
+        if (tempNorm > 0) {
+          // Warm: boost red, reduce blue
+          const factor = (tempNorm / 100) * 0.35;
+          filterStr += `,colorchannelmixer=rr=${(1 + factor).toFixed(2)}:bb=${(1 - factor).toFixed(2)}`;
+        } else {
+          // Cool: boost blue, reduce red
+          const factor = (Math.abs(tempNorm) / 100) * 0.35;
+          filterStr += `,colorchannelmixer=rr=${(1 - factor).toFixed(2)}:bb=${(1 + factor).toFixed(2)}`;
+        }
+      }
+
+      // Safe, universal tint using colorchannelmixer
+      if (cg.tint && cg.tint !== 0) {
+        const tintNorm = Math.max(-100, Math.min(100, cg.tint));
+        if (tintNorm > 0) {
+          // Magenta: boost red and blue, reduce green
+          const factor = (tintNorm / 100) * 0.2;
+          filterStr += `,colorchannelmixer=gg=${(1 - factor).toFixed(2)}:rr=${(1 + factor * 0.5).toFixed(2)}:bb=${(1 + factor * 0.5).toFixed(2)}`;
+        } else {
+          // Green: boost green
+          const factor = (Math.abs(tintNorm) / 100) * 0.2;
+          filterStr += `,colorchannelmixer=gg=${(1 + factor).toFixed(2)}`;
+        }
       }
 
       if (cg.hue && cg.hue !== 0) {
         filterStr += `,hue=h=${cg.hue}`;
-      }
-
-      if (cg.exposure && cg.exposure !== 0) {
-        const expVal = (cg.exposure / 50).toFixed(2);
-        filterStr += `,exposure=exposure=${expVal}`;
       }
     }
 
@@ -562,14 +584,16 @@ export class VideoEditorService {
     if (!mediaUrl) return '';
     const cleanUrl = mediaUrl.split('?')[0].split('#')[0];
 
-    // 1. Data URLs
+    // 1. Data URLs (Base64)
     if (cleanUrl.startsWith('data:')) {
       if (!tempDir) return '';
-      const matches = cleanUrl.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
-      if (matches && matches[2]) {
-        const ext = matches[1].includes('png') ? 'png' : matches[1].includes('jpeg') || matches[1].includes('jpg') ? 'jpg' : matches[1].includes('webp') ? 'webp' : 'bin';
+      const commaIdx = cleanUrl.indexOf(',');
+      if (commaIdx !== -1) {
+        const header = cleanUrl.slice(0, commaIdx);
+        const base64Data = cleanUrl.slice(commaIdx + 1);
+        const ext = header.includes('png') ? 'png' : header.includes('jpeg') || header.includes('jpg') ? 'jpg' : header.includes('webp') ? 'webp' : 'bin';
         const tmpFile = path.join(tempDir, `data_asset_${randomUUID().slice(0, 8)}.${ext}`);
-        await fs.promises.writeFile(tmpFile, Buffer.from(matches[2], 'base64'));
+        await fs.promises.writeFile(tmpFile, Buffer.from(base64Data, 'base64'));
         return tmpFile;
       }
       return '';
@@ -589,6 +613,24 @@ export class VideoEditorService {
     for (const p of candidatePaths) {
       if (p && fs.existsSync(p)) {
         return p;
+      }
+    }
+
+    // 3. Remote HTTP/HTTPS URL: Download to tempDir so remote assets can be processed reliably on Render
+    if ((cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) && tempDir) {
+      try {
+        const response = await fetch(cleanUrl);
+        if (response.ok) {
+          const buffer = Buffer.from(await response.arrayBuffer());
+          const ext = path.extname(filename) || '.bin';
+          const tmpDownload = path.join(tempDir, `remote_asset_${randomUUID().slice(0, 8)}${ext}`);
+          await fs.promises.writeFile(tmpDownload, buffer);
+          if (fs.existsSync(tmpDownload) && fs.statSync(tmpDownload).size > 0) {
+            return tmpDownload;
+          }
+        }
+      } catch (err: any) {
+        logger.warn(`Failed downloading remote asset ${cleanUrl}: ${err?.message}`);
       }
     }
 
@@ -1079,7 +1121,12 @@ export class VideoEditorService {
       const seenFilenames = new Set<string>();
 
       // Check if project has timeline image clips with adjustments/effects
-      const timelineImageClips = (project.clips || []).filter((c) => c.type === 'image');
+      const timelineImageClips = (project.clips || []).filter((c) => {
+        if (c.type === 'image') return true;
+        const asset = project.assets?.find((a) => a.id === c.assetId);
+        const u = (asset?.url || c.url || '').toLowerCase();
+        return ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif', '.bmp', '.jfif'].some((ext) => u.includes(ext));
+      });
 
       if (timelineImageClips.length > 0) {
         // Render each timeline image clip with all colorGrading (adjustments), effects, crop & transform
@@ -1127,7 +1174,8 @@ export class VideoEditorService {
                   '-y',
                   '-i', resolvedPath,
                   '-vf', filters.join(','),
-                  '-frames:v', '1',
+                  '-vframes', '1',
+                  '-update', '1',
                   renderedClipPath
                 ], { maxBuffer: 10 * 1024 * 1024 });
 
