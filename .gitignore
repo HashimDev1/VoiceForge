@@ -11,3 +11,4 @@ server/data/
 server/models/
 *.onnx
 test_stroke.html
+scratch/
