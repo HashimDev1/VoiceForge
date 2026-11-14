@@ -120,42 +120,64 @@ export class FacelessVideoService {
       height = 1080;
     }
 
-    // 1. Try Pexels API if stock_video style and API key is configured
-    if (style === 'stock_video' && process.env.PEXELS_API_KEY) {
+    // 1. Try Pexels API if API key is configured (Videos or Photos)
+    if (process.env.PEXELS_API_KEY) {
       try {
         const query = encodeURIComponent(prompt.split(',')[0].slice(0, 50));
         const orientation = aspectRatio === '9:16' ? 'portrait' : 'landscape';
-        const res = await fetch(`https://api.pexels.com/videos/search?query=${query}&per_page=3&orientation=${orientation}`, {
-          headers: { Authorization: process.env.PEXELS_API_KEY }
-        });
-        if (res.ok) {
-          const data: any = await res.json();
-          const videoFile = data.videos?.[0]?.video_files?.find((f: any) => f.quality === 'hd' || f.width >= 720);
-          if (videoFile?.link) {
-            const vidFilename = `faceless_stock_${Date.now()}_${sceneIndex + 1}.mp4`;
-            const vidPath = path.join(this.assetsDir, vidFilename);
-            const vidRes = await fetch(videoFile.link);
-            if (vidRes.ok) {
-              const buffer = Buffer.from(await vidRes.arrayBuffer());
-              await fs.promises.writeFile(vidPath, buffer);
-              if (fs.existsSync(vidPath) && fs.statSync(vidPath).size > 10000) {
-                return { localPath: vidPath, mediaType: 'video', name: `Scene ${sceneIndex + 1} (Stock B-Roll)` };
+        
+        if (style === 'stock_video') {
+          const res = await fetch(`https://api.pexels.com/videos/search?query=${query}&per_page=3&orientation=${orientation}`, {
+            headers: { Authorization: process.env.PEXELS_API_KEY }
+          });
+          if (res.ok) {
+            const data: any = await res.json();
+            const videoFile = data.videos?.[0]?.video_files?.find((f: any) => f.quality === 'hd' || f.width >= 720);
+            if (videoFile?.link) {
+              const vidFilename = `faceless_stock_${Date.now()}_${sceneIndex + 1}.mp4`;
+              const vidPath = path.join(this.assetsDir, vidFilename);
+              const vidRes = await fetch(videoFile.link);
+              if (vidRes.ok) {
+                const buffer = Buffer.from(await vidRes.arrayBuffer());
+                await fs.promises.writeFile(vidPath, buffer);
+                if (fs.existsSync(vidPath) && fs.statSync(vidPath).size > 10000) {
+                  return { localPath: vidPath, mediaType: 'video', name: `Scene ${sceneIndex + 1} (Stock B-Roll)` };
+                }
+              }
+            }
+          }
+        } else {
+          // Photos for cinematic / documentary / other styles
+          const photoRes = await fetch(`https://api.pexels.com/v1/search?query=${query}&per_page=3&orientation=${orientation}`, {
+            headers: { Authorization: process.env.PEXELS_API_KEY }
+          });
+          if (photoRes.ok) {
+            const pData: any = await photoRes.json();
+            const photoUrl = pData.photos?.[0]?.src?.large2x || pData.photos?.[0]?.src?.large;
+            if (photoUrl) {
+              const pImgRes = await fetch(photoUrl);
+              if (pImgRes.ok) {
+                const buffer = Buffer.from(await pImgRes.arrayBuffer());
+                await fs.promises.writeFile(outputPath, buffer);
+                if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 5000) {
+                  return { localPath: outputPath, mediaType: 'image', name: `Scene ${sceneIndex + 1} (${style})` };
+                }
               }
             }
           }
         }
       } catch (err: any) {
-        logger.warn(`Pexels API video fetch failed, falling back to AI: ${err?.message}`);
+        logger.warn(`Pexels API fetch failed, falling back to AI: ${err?.message}`);
       }
     }
 
-    // 2. Try Pollinations AI with short timeout
+    // 2. Try Pollinations AI (without width/height to avoid free tier 402 rejection)
     try {
-      const cleanPrompt = encodeURIComponent(prompt.slice(0, 180));
-      const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanPrompt}?width=${width}&height=${height}&nologo=true&seed=${Math.floor(Math.random() * 999999)}`;
+      const cleanPrompt = encodeURIComponent(prompt.slice(0, 160));
+      const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanPrompt}?nologo=true&seed=${Math.floor(Math.random() * 999999)}`;
       
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 7000); // 7s timeout
+      const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
 
       const res = await fetch(pollinationsUrl, {
         signal: controller.signal,
@@ -484,7 +506,7 @@ export class FacelessVideoService {
       try {
         const audioBuffer = await fs.promises.readFile(resolvedAudio);
         const asr = await SpeechRecognitionService.transcribeAudio(audioBuffer, path.basename(resolvedAudio), undefined, {
-          timeoutMs: 40000
+          timeoutMs: 180000
         });
 
         if (asr.segments && asr.segments.length > 0) {
@@ -506,19 +528,72 @@ export class FacelessVideoService {
           });
         }
       } catch (err: any) {
-        logger.warn(`Auto-transcription fallback to fixed intervals: ${err?.message}`);
+        logger.warn(`Auto-transcription fallback to diverse narrative scenes: ${err?.message}`);
       }
     }
 
-    // Safety fallback: if no sentences, create 5-second interval scenes
+    // Safety fallback: if no sentences, create varied narrative scenes matching the style
     if (sentencesWithTiming.length === 0) {
+      const narrativePrompts: Record<FacelessVisualStyle, string[]> = {
+        anime: [
+          'Young anime character looking out across the bustling city at sunrise',
+          'Intense dramatic glance, wind blowing hair, dramatic Makoto Shinkai lighting',
+          'Walking through a quiet neighborhood with cherry blossom trees in full bloom',
+          'Ancient Japanese shrine surrounded by misty mountain forest and lanterns',
+          'Standing on a high school rooftop under an endless starlit twilight sky',
+          'Walking through a light rainstorm on a Tokyo street with glowing reflections',
+          'A quiet moment in an old sunlit library with glowing dust motes',
+          'Watching the distant thunderclouds drifting over the glowing sunset horizon'
+        ],
+        cinematic: [
+          'Dramatic cinematic wide shot of a lone traveler standing on a cliff at twilight',
+          'Close-up dramatic portrait, cinematic lighting, 35mm film photography',
+          'Grand architectural vista bathed in golden hour sunset sunlight',
+          'Moody atmospheric street shot in the evening with shallow depth of field',
+          'Slow tracking perspective moving through an expansive mountain valley landscape',
+          'Reflective water surface mirroring an epic dramatic stormy sky'
+        ],
+        dark_mystery: [
+          'Fog-shrouded dark alleyway at midnight, noir shadows and deep silhouette',
+          'Old investigator studying documents by a single desk lamp in a dim room',
+          'Eerie secluded mansion surrounded by tall dead trees in heavy fog',
+          'Mysterious shadowy figure standing in the rain under an amber streetlamp',
+          'Abandoned vintage warehouse with dust particles illuminated by cold moonlight'
+        ],
+        cyberpunk: [
+          'High-tech neon cyberpunk skyscraper skyline in pouring rain with holographic signs',
+          'Hacker in a futuristic underground tech workshop surrounded by glowing displays',
+          'Flying hover-vehicles speeding through an illuminated mega-city highway',
+          'Bustling night market with glowing cyan and magenta neon signs and street steam'
+        ],
+        pixar_3d: [
+          'Charming 3D animated character on an exciting adventure in a vibrant forest',
+          'Whimsical colorful village with playful stylized architecture and sunny skies',
+          'Curious 3D character discovering a glowing magical artifact in the workshop',
+          'Cozy room with warm golden lighting and playful friendly atmosphere'
+        ],
+        vintage: [
+          '1920s historical archival photograph of a busy cobblestone city avenue',
+          'Old steam train arriving at a bustling vintage railway platform',
+          'Classic antique scholar desk with vintage maps, pocket watch, and brass compass',
+          'Dramatic black and white historical landscape with Kodak film grain'
+        ],
+        stock_video: [
+          'B-roll footage of modern creative workspace and technology in action',
+          'Aerial drone shot flying over majestic mountain valley at golden hour',
+          'Cinematic camera gliding across a tranquil ocean wave at sunset'
+        ]
+      };
+
+      const promptsList = narrativePrompts[style] || narrativePrompts.cinematic;
       const sceneDur = 4.5;
       const count = Math.max(1, Math.ceil(totalDuration / sceneDur));
       for (let i = 0; i < count; i++) {
         const start = i * sceneDur;
         const duration = Math.min(sceneDur, totalDuration - start);
+        const storySentence = promptsList[i % promptsList.length];
         sentencesWithTiming.push({
-          sentence: `Cinematic scene ${i + 1}`,
+          sentence: storySentence,
           start,
           duration: Math.max(1.5, duration)
         });

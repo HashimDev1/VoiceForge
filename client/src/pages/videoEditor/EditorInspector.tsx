@@ -29,8 +29,10 @@ import {
   Shield,
   Sun,
   Wand2,
-  Check
+  Check,
+  Upload
 } from 'lucide-react';
+import { videoEditorApi } from '../../services/videoEditorApi';
 import {
   TimelineClip,
   ClipTransform,
@@ -90,6 +92,8 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
 
   // Sub-tabs under Video tab: 'basic' | 'crop'
   const [videoSubTab, setVideoSubTab] = useState<'basic' | 'crop'>('basic');
+  const replaceInputRef = React.useRef<HTMLInputElement>(null);
+  const [isReplacingMedia, setIsReplacingMedia] = useState(false);
 
   // Collapsible accordion states
   const [transformOpen, setTransformOpen] = useState(true);
@@ -287,6 +291,47 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
             ======================================================== */}
         {activeTab === 'video' && videoSubTab === 'basic' && (
           <>
+            {/* REPLACE VISUAL MEDIA CTA */}
+            <div className="rounded-lg bg-[#1E222B] border border-[#262A34] p-2.5 flex items-center justify-between shadow-xs">
+              <input
+                ref={replaceInputRef}
+                type="file"
+                accept="image/*,video/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setIsReplacingMedia(true);
+                  try {
+                    const asset = await videoEditorApi.uploadMedia(file);
+                    onUpdateClip(selectedClip.id, {
+                      url: asset.url,
+                      name: file.name,
+                      assetId: asset.id,
+                      type: asset.type === 'video' ? 'video' : 'image'
+                    });
+                  } catch (err: any) {
+                    alert('Failed to replace media: ' + (err.message || String(err)));
+                  } finally {
+                    setIsReplacingMedia(false);
+                  }
+                }}
+              />
+              <div className="min-w-0 pr-2">
+                <div className="text-[11px] font-semibold text-slate-200">Replace Scene Visual</div>
+                <div className="text-[10px] text-slate-400 truncate">Swap this clip with an image or video file</div>
+              </div>
+              <button
+                type="button"
+                disabled={isReplacingMedia}
+                onClick={() => replaceInputRef.current?.click()}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1A3838] hover:bg-[#13E2CA] text-[#13E2CA] hover:text-black font-semibold text-xs transition cursor-pointer border border-[#13E2CA]/40"
+              >
+                <Upload className="w-3.5 h-3.5 stroke-[2]" />
+                <span>{isReplacingMedia ? 'Uploading...' : 'Replace'}</span>
+              </button>
+            </div>
+
             {/* TRANSFORM SECTION */}
             <div className="rounded-lg bg-[#1E222B] border border-[#262A34] overflow-hidden shadow-xs">
               <div

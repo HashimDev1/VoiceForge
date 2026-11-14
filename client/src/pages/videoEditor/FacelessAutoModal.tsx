@@ -463,20 +463,27 @@ export const FacelessAutoModal: React.FC<FacelessAutoModalProps> = ({
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold font-sans text-slate-200">
-                    2. Transcript or Subtitles (Optional)
+                  <label className="text-xs font-bold font-sans text-slate-200 flex items-center gap-1.5">
+                    <span>2. Story Script or Transcript</span>
+                    <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-medium">Recommended for story scenes</span>
                   </label>
                   <span className="text-[10px] text-slate-400 font-sans">
-                    Leave blank for automatic Whisper speech transcription
+                    Syncs visuals to your narration
                   </span>
                 </div>
                 <textarea
                   rows={3}
                   value={transcriptText}
                   onChange={(e) => setTranscriptText(e.target.value)}
-                  placeholder="Paste script sentences or subtitles here... (If omitted, VoiceForge will auto-transcribe the audio to isolate sentence timings)."
+                  placeholder="Paste your story script or narration words here... (e.g. 'A lone warrior entered the dark kingdom. The sky turned crimson as dragons circled above.') Each sentence will become a matching AI visual scene!"
                   className="w-full rounded-xl border border-[#2D3340] bg-[#111317] p-3 text-xs text-white placeholder-slate-500 outline-none focus:border-[#13E2CA] transition resize-none font-sans"
                 />
+                <div className="mt-1.5 p-2 rounded-lg bg-[#1A202C]/90 border border-amber-500/30 text-[11px] text-slate-300 flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Why paste your script?</strong> The AI reads your story text to generate specific characters, environments, and dramatic moments. If left blank, scenes will be generated from generic atmospheric themes.
+                  </span>
+                </div>
               </div>
             </div>
           )}
