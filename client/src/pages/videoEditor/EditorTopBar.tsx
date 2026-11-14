@@ -34,6 +34,7 @@ interface EditorTopBarProps {
   onOpenExportZip?: () => void;
   onOpenCaptionStudio?: () => void;
   onOpenSmartBulk?: () => void;
+  onOpenFacelessModal?: () => void;
   onExitEditor?: () => void;
   workspaceMode?: WorkspaceMode;
   onSelectWorkspaceMode?: (mode: WorkspaceMode) => void;
@@ -55,6 +56,7 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({
   onOpenExportZip,
   onOpenCaptionStudio,
   onOpenSmartBulk,
+  onOpenFacelessModal,
   onExitEditor,
   workspaceMode = 'default',
   onSelectWorkspaceMode,
@@ -128,6 +130,19 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({
               >
                 Save Project (Ctrl+S)
               </button>
+              {onOpenFacelessModal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenFacelessModal();
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#282D38] text-purple-300 hover:text-white font-medium transition flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Auto Faceless Video...</span>
+                </button>
+              )}
               {onOpenSmartBulk && (
                 <button
                   type="button"
@@ -319,6 +334,19 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({
             </div>
           )}
         </div>
+
+        {/* Auto Faceless Studio Button */}
+        {onOpenFacelessModal && (
+          <button
+            type="button"
+            onClick={onOpenFacelessModal}
+            title="Auto Faceless Video Studio (AI Visuals, Voiceover, Subtitles)"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-teal-500 hover:from-purple-500 hover:to-teal-400 text-white font-sans font-bold text-xs shadow-md hover:shadow-purple-500/20 transition active:scale-95 cursor-pointer border border-purple-400/40"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+            <span>Auto Faceless</span>
+          </button>
+        )}
 
         {/* VIP / Pro Badge (matching CapCut Desktop screenshot: "Unlock for R200") */}
         <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#222631] text-[11px] font-sans font-medium text-purple-300 border border-purple-500/30">

@@ -10,6 +10,7 @@ import { EditorExportModal } from './videoEditor/EditorExportModal';
 import { MotionGraphicsStudio } from './videoEditor/MotionGraphicsStudio';
 import { EditorPanelSplitter } from './videoEditor/EditorPanelSplitter';
 import { SmartBulkArrangeModal } from './videoEditor/smartBulk/SmartBulkArrangeModal';
+import { FacelessAutoModal } from './videoEditor/FacelessAutoModal';
 import {
   WorkspaceMode,
   WORKSPACE_PRESETS,
@@ -132,6 +133,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
   const [exportModalMode, setExportModalMode] = useState<ExportMediaType>('video');
   const [isMotionStudioOpen, setIsMotionStudioOpen] = useState(false);
   const [isSmartBulkModalOpen, setIsSmartBulkModalOpen] = useState(false);
+  const [isFacelessModalOpen, setIsFacelessModalOpen] = useState(false);
 
   const handleOpenExportVideo = () => {
     setExportModalMode('video');
@@ -482,6 +484,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         onOpenExportZip={handleOpenExportZip}
         onOpenCaptionStudio={onOpenCaptionStudio}
         onOpenSmartBulk={() => setIsSmartBulkModalOpen(true)}
+        onOpenFacelessModal={() => setIsFacelessModalOpen(true)}
         onExitEditor={onExitEditor}
         workspaceMode={workspaceMode}
         onSelectWorkspaceMode={handleSelectWorkspaceMode}
@@ -509,6 +512,14 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
             >
               <Sparkles className="w-4 h-4" />
             </button>
+            <button
+              type="button"
+              onClick={() => setIsFacelessModalOpen(true)}
+              title="Auto Faceless Video Studio"
+              className="p-1.5 rounded bg-purple-900/50 border border-purple-500/50 text-purple-300 hover:bg-purple-600 hover:text-white cursor-pointer transition-colors"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+            </button>
           </div>
         ) : (
           <div
@@ -529,6 +540,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
               assets={project.assets}
               onUploadAsset={handleUploadAsset}
               onOpenSmartBulk={() => setIsSmartBulkModalOpen(true)}
+              onOpenFacelessModal={() => setIsFacelessModalOpen(true)}
               onAddClip={(asset) => {
                 let targetTrack;
                 if (asset.type === 'image') {
@@ -770,6 +782,18 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         targetTracks={project.tracks}
         playhead={playhead}
         projectFps={project.fps || 30}
+      />
+
+      {/* AUTO FACELESS VIDEO STUDIO MODAL */}
+      <FacelessAutoModal
+        isOpen={isFacelessModalOpen}
+        onClose={() => setIsFacelessModalOpen(false)}
+        currentAspectRatio={project.aspectRatio}
+        onProjectLoaded={(newProject) => {
+          setProject(newProject);
+          saveProject();
+          setIsFacelessModalOpen(false);
+        }}
       />
 
       {/* EXPORT MODAL */}

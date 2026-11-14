@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { VideoEditorService } from '../services/videoEditorService';
+import { FacelessVideoService } from '../services/facelessVideoService';
 import { logger } from '../utils/logger';
 import { EditorProject, EditorExportOptions, EditorFrameExportOptions } from '../../../shared/src/videoEditorTypes';
 
@@ -292,6 +293,100 @@ router.get('/exports/:filename', (req: Request, res: Response) => {
     return res.status(404).send('Exported video not found.');
   }
   res.sendFile(filePath);
+});
+
+// ==========================================
+// AUTO FACELESS VIDEO STUDIO ROUTES
+// ==========================================
+
+router.post('/faceless/generate-script', async (req: Request, res: Response) => {
+  try {
+    const { script, voiceId, style, aspectRatio, captionPreset, customPrompts, projectName } = req.body;
+    if (!script || typeof script !== 'string' || script.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'Valid script text is required.' });
+    }
+
+    const result = await FacelessVideoService.generateFromScript({
+      script,
+      voiceId,
+      style: style || 'cinematic',
+      aspectRatio: aspectRatio || '9:16',
+      captionPreset,
+      customPrompts,
+      projectName
+    });
+
+    res.json(result);
+  } catch (err: any) {
+    logger.error('Faceless video generation from script failed:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to generate faceless video' });
+  }
+});
+
+router.post('/faceless/generate-from-audio', async (req: Request, res: Response) => {
+  try {
+    const { audioUrl, transcriptText, style, aspectRatio, captionPreset, customPrompts, projectName } = req.body;
+    if (!audioUrl) {
+      return res.status(400).json({ success: false, error: 'Audio URL is required.' });
+    }
+
+    const result = await FacelessVideoService.generateFromAudio({
+      audioUrl,
+      transcriptText,
+      style: style || 'cinematic',
+      aspectRatio: aspectRatio || '9:16',
+      captionPreset,
+      customPrompts,
+      projectName
+    });
+
+    res.json(result);
+  } catch (err: any) {
+    logger.error('Faceless video generation from audio failed:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to generate visuals from audio' });
+  }
+});
+
+router.post('/faceless/preview-prompts', (req: Request, res: Response) => {
+  try {
+    const { script, style } = req.body;
+    if (!script) {
+      return res.status(400).json({ success: false, error: 'Script or transcript text is required.' });
+    }
+
+    const sentences = FacelessVideoService.breakScriptIntoSentences(script);
+    const scenes = sentences.map((sentence, idx) => ({
+      index: idx,
+      sentence,
+      visualPrompt: FacelessVideoService.buildVisualPrompt(sentence, style || 'cinematic')
+    }));
+
+    res.json({ success: true, scenes });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/faceless/config', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    styles: [
+      { id: 'cinematic', name: 'Cinematic Photorealism', description: '8K photorealistic, 35mm lens, volumetric lighting, Arri Alexa' },
+      { id: 'dark_mystery', name: 'Dark Mystery & True Crime', description: 'Moody noir thriller, dramatic shadows, foggy atmospheric haze' },
+      { id: 'cyberpunk', name: 'Cyberpunk & Sci-Fi Tech', description: 'Neon glowing cyan and magenta, futuristic cityscape, rainy reflections' },
+      { id: 'anime', name: 'Anime & Manga Art', description: 'Makoto Shinkai aesthetic, vibrant sky, detailed illustration' },
+      { id: 'pixar_3d', name: '3D Animation (Pixar/Disney)', description: 'Stylized 3D render, warm soft studio lighting, Octane render' },
+      { id: 'vintage', name: 'Vintage Documentary', description: '1920s historical photo, Kodak Portra film grain, archival sepia' },
+      { id: 'stock_video', name: '4K Stock Video B-Roll', description: 'High-definition real B-roll video footage with smooth drone motion' }
+    ],
+    aspectRatios: ['9:16', '16:9', '1:1'],
+    captionPresets: [
+      { id: 'hormozi_bold', name: 'Hormozi Viral Yellow' },
+      { id: 'viral_pop', name: 'TikTok Bounce Pop' },
+      { id: 'neon_glow', name: 'Cyberpunk Neon Cyan' },
+      { id: 'clean_minimal', name: 'Cinematic Minimal Lower Third' }
+    ]
+  });
 });
 
 export default router;

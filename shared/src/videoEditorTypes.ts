@@ -389,3 +389,58 @@ export interface EditorExportJob {
   createdAt: string;
 }
 
+// ==========================================
+// AUTO FACELESS VIDEO STUDIO TYPES
+// ==========================================
+
+export type FacelessVisualStyle =
+  | 'cinematic'
+  | 'dark_mystery'
+  | 'cyberpunk'
+  | 'anime'
+  | 'pixar_3d'
+  | 'vintage'
+  | 'stock_video';
+
+export interface FacelessScenePrompt {
+  index: number;
+  sentence: string;
+  start: number;
+  duration: number;
+  visualPrompt: string;
+  style: FacelessVisualStyle;
+  assetUrl?: string;
+  mediaType?: 'image' | 'video';
+}
+
+export interface FacelessScriptRequest {
+  script: string;
+  voiceId?: string;
+  style: FacelessVisualStyle;
+  aspectRatio: AspectRatio;
+  captionPreset?: string;
+  customPrompts?: string[];
+  projectName?: string;
+}
+
+export interface FacelessAudioRequest {
+  audioUrl?: string;
+  audioAssetId?: string;
+  transcriptText?: string;
+  transcript?: string;
+  style: FacelessVisualStyle;
+  aspectRatio: AspectRatio;
+  captionPreset?: string;
+  customPrompts?: string[];
+  projectName?: string;
+}
+
+export interface FacelessGenerationResult {
+  success: boolean;
+  project: EditorProject;
+  scenesCount: number;
+  totalDuration: number;
+  voiceoverUrl?: string;
+  error?: string;
+}
+

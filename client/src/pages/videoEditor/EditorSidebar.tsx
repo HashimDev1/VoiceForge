@@ -54,6 +54,7 @@ interface EditorSidebarProps {
   onAddMotionClip?: (template: MotionTitleTemplate, customText?: string) => void;
   onOpenMotionStudio?: () => void;
   onOpenSmartBulk?: () => void;
+  onOpenFacelessModal?: () => void;
   selectedClip: TimelineClip | null;
   onUpdateClip: (clipId: string, patch: Partial<TimelineClip>) => void;
   onSelectClip?: (clipId: string) => void;
@@ -94,6 +95,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   onAddMotionClip,
   onOpenMotionStudio,
   onOpenSmartBulk,
+  onOpenFacelessModal,
   selectedClip,
   onUpdateClip,
   onSelectClip,
@@ -251,10 +253,23 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 <ChevronDown className="w-3 h-3" />
               </div>
 
-              <div className="flex items-center justify-between px-2.5 py-1 text-slate-500 text-[11px] font-sans">
-                <span>AI media</span>
-                <ChevronDown className="w-3 h-3" />
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenFacelessModal) {
+                    onOpenFacelessModal();
+                  } else {
+                    setLeftNavSection('library');
+                  }
+                }}
+                className="w-full flex items-center justify-between px-2.5 py-1 text-slate-300 hover:text-[#13E2CA] hover:bg-[#1E222B] rounded text-[11px] font-sans transition cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-purple-400" />
+                  <span>AI media</span>
+                </div>
+                <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1 py-0.2 rounded font-mono">PRO</span>
+              </button>
 
               <div className="flex items-center justify-between px-2.5 py-1 text-slate-500 text-[11px] font-sans">
                 <span>Spaces</span>
@@ -305,6 +320,19 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                   >
                     <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
                     <span>Smart Bulk</span>
+                  </button>
+                )}
+
+                {/* Auto Faceless Studio Button */}
+                {onOpenFacelessModal && (
+                  <button
+                    type="button"
+                    onClick={onOpenFacelessModal}
+                    className="flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-sans text-xs font-bold shadow-sm transition active:scale-95 shrink-0"
+                    title="Auto Faceless Video Studio (Script or Voiceover -> Full Video)"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300 stroke-[2.5]" />
+                    <span>Auto Faceless</span>
                   </button>
                 )}
 

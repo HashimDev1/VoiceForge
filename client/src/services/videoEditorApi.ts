@@ -7,7 +7,11 @@ import {
   EditorFrameExportResult,
   EditorImagesZipResult,
   CustomFontAsset,
-  MotionTitleTemplate
+  MotionTitleTemplate,
+  FacelessScriptRequest,
+  FacelessAudioRequest,
+  FacelessGenerationResult,
+  FacelessVisualStyle
 } from '../../../shared/src/videoEditorTypes';
 
 const API_BASE = '/api/editor';
@@ -197,5 +201,48 @@ export const videoEditorApi = {
     if (!res.ok) return false;
     const data = await res.json();
     return data.success;
+  },
+
+  async generateFacelessFromScript(req: FacelessScriptRequest): Promise<FacelessGenerationResult> {
+    const res = await fetch(`${API_BASE}/faceless/generate-script`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to generate faceless video from script');
+    }
+    return await res.json();
+  },
+
+  async generateFacelessFromAudio(req: FacelessAudioRequest): Promise<FacelessGenerationResult> {
+    const res = await fetch(`${API_BASE}/faceless/generate-from-audio`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to generate visuals from audio');
+    }
+    return await res.json();
+  },
+
+  async previewFacelessPrompts(script: string, style: FacelessVisualStyle): Promise<Array<{ index: number; sentence: string; visualPrompt: string }>> {
+    const res = await fetch(`${API_BASE}/faceless/preview-prompts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ script, style })
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.scenes || [];
+  },
+
+  async getFacelessConfig(): Promise<any> {
+    const res = await fetch(`${API_BASE}/faceless/config`);
+    if (!res.ok) return null;
+    return await res.json();
   }
 };
