@@ -36,6 +36,7 @@ import {
   ClipTransform,
   ClipSpeed,
   ColorGrading,
+  ClipEffect,
   ClipAudioSettings,
   Keyframe,
   KeyframeProperty,
@@ -46,7 +47,8 @@ import {
   DEFAULT_SPEED,
   DEFAULT_COLOR_GRADING,
   DEFAULT_AUDIO_SETTINGS,
-  COLOR_PRESETS
+  COLOR_PRESETS,
+  EFFECT_CATALOG
 } from '../../../../shared/src/videoEditorDefaults';
 
 interface EditorInspectorProps {
@@ -1155,10 +1157,10 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
         )}
 
         {/* ========================================================
-            TAB: ADJUST (Color Grading)
+            TAB: ADJUST (Color Grading & Applied Effects)
             ======================================================== */}
         {activeTab === 'adjust' && (
-          <div className="rounded-lg bg-[#14171C] border border-[#262A34] p-3 space-y-3 shadow-xs">
+          <div className="rounded-lg bg-[#14171C] border border-[#262A34] p-3 space-y-4 shadow-xs">
             {/* Quick Color Presets */}
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -1168,7 +1170,7 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   onClick={() => updateColor({ ...DEFAULT_COLOR_GRADING })}
                   className="text-[10px] font-mono font-bold text-[#13E2CA] hover:underline cursor-pointer"
                 >
-                  Reset
+                  Reset Color
                 </button>
               </div>
               <div className="grid grid-cols-3 gap-1.5">
@@ -1185,8 +1187,12 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
               </div>
             </div>
 
-            {/* Manual Sliders */}
-            <div className="space-y-2.5 pt-2 border-t border-[#262A34]">
+            {/* Manual Color Sliders */}
+            <div className="space-y-3 pt-2 border-t border-[#262A34]">
+              <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider block">
+                Basic Adjustments
+              </span>
+
               {/* Brightness */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[11px]">
@@ -1235,6 +1241,40 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                 />
               </div>
 
+              {/* Temperature */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px]">
+                  <span className="font-mono text-slate-300 font-bold uppercase">Temperature (Warm/Cool)</span>
+                  <span className={`font-mono font-bold ${(cg.temperature || 0) > 0 ? 'text-amber-400' : (cg.temperature || 0) < 0 ? 'text-cyan-400' : 'text-[#13E2CA]'}`}>
+                    {cg.temperature || 0}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="-100"
+                  max="100"
+                  value={cg.temperature || 0}
+                  onChange={(e) => updateColor({ temperature: parseInt(e.target.value) })}
+                  className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
+                />
+              </div>
+
+              {/* Exposure */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px]">
+                  <span className="font-mono text-slate-300 font-bold uppercase">Exposure</span>
+                  <span className="font-mono font-bold text-[#13E2CA]">{cg.exposure || 0}</span>
+                </div>
+                <input
+                  type="range"
+                  min="-100"
+                  max="100"
+                  value={cg.exposure || 0}
+                  onChange={(e) => updateColor({ exposure: parseInt(e.target.value) })}
+                  className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
+                />
+              </div>
+
               {/* Hue */}
               <div className="space-y-1">
                 <div className="flex justify-between text-[11px]">
@@ -1249,6 +1289,144 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
                   onChange={(e) => updateColor({ hue: parseInt(e.target.value) })}
                   className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
                 />
+              </div>
+
+              {/* Gamma */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px]">
+                  <span className="font-mono text-slate-300 font-bold uppercase">Gamma</span>
+                  <span className="font-mono font-bold text-[#13E2CA]">{(cg.gamma || 1).toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="50"
+                  max="200"
+                  value={Math.round((cg.gamma || 1) * 100)}
+                  onChange={(e) => updateColor({ gamma: parseInt(e.target.value) / 100 })}
+                  className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Active Effects & Filters Section */}
+            <div className="space-y-3 pt-3 border-t border-[#262A34]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-[#13E2CA]" />
+                  <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">
+                    Clip Effects & Filters ({(selectedClip.effects || []).length})
+                  </span>
+                </div>
+                {(selectedClip.effects || []).length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => onUpdateClip(selectedClip.id, { effects: [] })}
+                    className="text-[10px] font-mono text-rose-400 hover:underline cursor-pointer"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              {/* List Applied Effects */}
+              <div className="space-y-2">
+                {(selectedClip.effects || []).map((eff) => {
+                  const meta = EFFECT_CATALOG.find((c) => c.id === eff.type) || {
+                    name: eff.type,
+                    category: 'effect'
+                  };
+                  return (
+                    <div
+                      key={eff.id}
+                      className="p-2.5 rounded bg-[#181B20] border border-[#262A34] space-y-2 shadow-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={eff.enabled !== false}
+                            onChange={(e) => {
+                              const nextEffects = (selectedClip.effects || []).map((item) =>
+                                item.id === eff.id ? { ...item, enabled: e.target.checked } : item
+                              );
+                              onUpdateClip(selectedClip.id, { effects: nextEffects });
+                            }}
+                            className="rounded bg-[#262A34] border-[#3B4252] text-[#13E2CA] accent-[#13E2CA] cursor-pointer"
+                          />
+                          <span className={`text-xs font-bold ${eff.enabled !== false ? 'text-white' : 'text-slate-500 line-through'}`}>
+                            {meta.name}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextEffects = (selectedClip.effects || []).filter((item) => item.id !== eff.id);
+                            onUpdateClip(selectedClip.id, { effects: nextEffects });
+                          }}
+                          className="text-slate-400 hover:text-rose-400 p-0.5 transition cursor-pointer"
+                          title="Remove effect"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Intensity slider */}
+                      <div className="space-y-1 pl-5">
+                        <div className="flex justify-between text-[10px]">
+                          <span className="font-mono text-slate-400">Intensity</span>
+                          <span className="font-mono font-bold text-[#13E2CA]">
+                            {typeof eff.intensity === 'number' ? Math.round(eff.intensity) : 50}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="100"
+                          value={typeof eff.intensity === 'number' ? Math.round(eff.intensity) : 50}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            const nextEffects = (selectedClip.effects || []).map((item) =>
+                              item.id === eff.id ? { ...item, intensity: val } : item
+                            );
+                            onUpdateClip(selectedClip.id, { effects: nextEffects });
+                          }}
+                          className="w-full h-1 bg-[#262A34] rounded accent-[#13E2CA] cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Quick Add Effect Dropdown / Grid */}
+              <div className="pt-1">
+                <span className="text-[10px] font-mono text-slate-400 block mb-1.5">Add Effect:</span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {EFFECT_CATALOG.filter(
+                    (cat) => !(selectedClip.effects || []).some((e) => e.type === cat.id)
+                  ).slice(0, 6).map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        const nextEffects = [
+                          ...(selectedClip.effects || []),
+                          {
+                            id: `eff-${Date.now()}-${cat.id}`,
+                            type: cat.id,
+                            intensity: cat.defaultIntensity || 50,
+                            enabled: true
+                          }
+                        ];
+                        onUpdateClip(selectedClip.id, { effects: nextEffects });
+                      }}
+                      className="px-2 py-1.5 rounded bg-[#181B20] border border-[#262A34] text-[10px] text-slate-300 hover:border-[#13E2CA] hover:text-[#13E2CA] transition text-left truncate flex items-center justify-between cursor-pointer"
+                    >
+                      <span className="truncate">{cat.name}</span>
+                      <Plus className="w-3 h-3 text-[#13E2CA] shrink-0" />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

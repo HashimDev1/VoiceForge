@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Globe, Filter, Play, Pause, BookmarkPlus, Check, Loader2, Sparkles, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FishAudioRemoteModel, Voice } from '../../../shared/src/types';
 import { ApiClient } from '../services/api';

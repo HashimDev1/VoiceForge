@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { VideoEditorService } from '../services/videoEditorService';
 import { logger } from '../utils/logger';
-import { EditorProject, EditorExportOptions } from '../../../shared/src/videoEditorTypes';
+import { EditorProject, EditorExportOptions, EditorFrameExportOptions } from '../../../shared/src/videoEditorTypes';
 
 const router = Router();
 
@@ -256,6 +256,34 @@ router.get('/export/status/:jobId', (req: Request, res: Response) => {
 router.post('/export/cancel/:jobId', (req: Request, res: Response) => {
   const cancelled = VideoEditorService.cancelExport(req.params.jobId);
   res.json({ success: cancelled });
+});
+
+router.post('/export-frame', async (req: Request, res: Response) => {
+  try {
+    const { project, options } = req.body as { project: EditorProject; options: EditorFrameExportOptions };
+    if (!project) {
+      return res.status(400).json({ success: false, error: 'Project is required.' });
+    }
+    const result = await VideoEditorService.exportFrame(project, options || { time: 0, format: 'png' });
+    res.json(result);
+  } catch (err: any) {
+    logger.error('Frame export failed:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to export frame' });
+  }
+});
+
+router.post('/export-images-zip', async (req: Request, res: Response) => {
+  try {
+    const { project } = req.body as { project: EditorProject };
+    if (!project) {
+      return res.status(400).json({ success: false, error: 'Project is required.' });
+    }
+    const result = await VideoEditorService.exportImagesZip(project);
+    res.json(result);
+  } catch (err: any) {
+    logger.error('Images zip export failed:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to export images zip' });
+  }
 });
 
 router.get('/exports/:filename', (req: Request, res: Response) => {

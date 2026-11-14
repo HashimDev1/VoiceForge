@@ -30,6 +30,8 @@ interface EditorTopBarProps {
   lastSavedText: string;
   onUpdateMeta: (patch: Partial<EditorProject>) => void;
   onOpenExport: () => void;
+  onOpenExportImage?: () => void;
+  onOpenExportZip?: () => void;
   onOpenCaptionStudio?: () => void;
   onOpenSmartBulk?: () => void;
   onExitEditor?: () => void;
@@ -49,6 +51,8 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({
   lastSavedText,
   onUpdateMeta,
   onOpenExport,
+  onOpenExportImage,
+  onOpenExportZip,
   onOpenCaptionStudio,
   onOpenSmartBulk,
   onExitEditor,
@@ -146,6 +150,41 @@ export const EditorTopBar: React.FC<EditorTopBarProps> = ({
                   className="w-full text-left px-3 py-1.5 hover:bg-[#282D38] text-slate-200 transition"
                 >
                   Open Caption Studio...
+                </button>
+              )}
+              <div className="my-1 border-t border-[#2D3340]" />
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenExport();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-[#282D38] text-[#13E2CA] font-medium transition"
+              >
+                Export Video (MP4)...
+              </button>
+              {onOpenExportImage && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenExportImage();
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#282D38] text-slate-200 transition"
+                >
+                  Export Still Frame (PNG/JPG)...
+                </button>
+              )}
+              {onOpenExportZip && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenExportZip();
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#282D38] text-slate-200 transition"
+                >
+                  Export All Media Images (ZIP)...
                 </button>
               )}
               <div className="my-1 border-t border-[#2D3340]" />

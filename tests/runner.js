@@ -28,6 +28,7 @@ try {
   execSync(`${tsNodeCmd} tests/motionGraphics.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/bulkTimelineEngine.test.ts`, { stdio: 'inherit' });
   execSync(`${tsNodeCmd} tests/editorAudioSuite.test.ts`, { stdio: 'inherit' });
+  execSync(`${tsNodeCmd} tests/colorEffectsExport.test.ts`, { stdio: 'inherit' });
   console.log('\n✅ ALL UNIT TESTS PASSED SUCCESSFULLY!');
 } catch (err) {
   console.error('\n❌ TEST RUNNER FAILED:', err.message);

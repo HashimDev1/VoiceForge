@@ -349,6 +349,35 @@ export interface EditorExportOptions {
   filename?: string;
 }
 
+export type ExportMediaType = 'video' | 'image' | 'images_zip';
+
+export interface EditorFrameExportOptions {
+  projectId?: string;
+  time: number; // playhead position in seconds
+  format: 'png' | 'jpeg' | 'webp';
+  resolution?: 'original' | '1080p' | '720p' | '4k';
+  filename?: string;
+}
+
+export interface EditorFrameExportResult {
+  success: boolean;
+  frameUrl?: string;
+  filename?: string;
+  width?: number;
+  height?: number;
+  fileSize?: number;
+  error?: string;
+}
+
+export interface EditorImagesZipResult {
+  success: boolean;
+  zipUrl?: string;
+  filename?: string;
+  imageCount: number;
+  fileSize?: number;
+  error?: string;
+}
+
 export interface EditorExportJob {
   id: string;
   status: 'pending' | 'rendering' | 'completed' | 'failed' | 'cancelled';

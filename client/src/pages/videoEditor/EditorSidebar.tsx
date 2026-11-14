@@ -40,7 +40,8 @@ import {
 import {
   TRANSITION_CATALOG,
   EFFECT_CATALOG,
-  COLOR_PRESETS
+  COLOR_PRESETS,
+  DEFAULT_COLOR_GRADING
 } from '../../../../shared/src/videoEditorDefaults';
 import { STARTER_MOTION_TEMPLATES } from '../../../../shared/src/motionGraphicsEngine';
 import { naturalSort } from '../../../../shared/src/bulkTimelineParser';
@@ -621,24 +622,56 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
         {/* ========================================================= */}
         {activeTab === 'effects' && (
           <div className="flex-1 flex flex-col p-3 space-y-3 overflow-y-auto vf-scrollbar">
-            <span className="text-xs font-semibold text-slate-300">Video Effects</span>
-            <div className="grid grid-cols-2 gap-2">
-              {EFFECT_CATALOG.map((eff) => (
-                <div
-                  key={eff.id}
-                  onClick={() => {
-                    if (selectedClip) {
-                      onUpdateClip(selectedClip.id, {
-                        effects: [...(selectedClip.effects || []), { id: `eff-${Date.now()}`, type: eff.id as any, intensity: 1 }]
-                      });
-                    }
-                  }}
-                  className="flex flex-col items-center justify-center p-3 rounded bg-[#1E222B] border border-[#262A34] hover:border-[#13E2CA] transition cursor-pointer"
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-300">Video Effects & Optical Filters</span>
+              {selectedClip && (selectedClip.effects || []).length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onUpdateClip(selectedClip.id, { effects: [] })}
+                  className="text-[10px] text-rose-400 hover:underline cursor-pointer"
                 >
-                  <Sliders className="w-5 h-5 text-[#13E2CA] mb-1" />
-                  <span className="text-xs text-white font-medium">{eff.name}</span>
-                </div>
-              ))}
+                  Clear All ({selectedClip.effects?.length})
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {EFFECT_CATALOG.map((eff) => {
+                const isApplied = (selectedClip?.effects || []).some((e) => e.type === eff.id && e.enabled !== false);
+                return (
+                  <div
+                    key={eff.id}
+                    onClick={() => {
+                      if (!selectedClip) return;
+                      const currentEffects = selectedClip.effects || [];
+                      const exists = currentEffects.some((e) => e.type === eff.id);
+                      let newEffects;
+                      if (exists) {
+                        newEffects = currentEffects.filter((e) => e.type !== eff.id);
+                      } else {
+                        newEffects = [
+                          ...currentEffects,
+                          {
+                            id: `eff-${Date.now()}-${eff.id}`,
+                            type: eff.id as any,
+                            intensity: eff.defaultIntensity || 50,
+                            enabled: true
+                          }
+                        ];
+                      }
+                      onUpdateClip(selectedClip.id, { effects: newEffects });
+                    }}
+                    className={`flex flex-col items-center justify-center p-3 rounded transition cursor-pointer text-center ${
+                      isApplied
+                        ? 'bg-[#153434] border border-[#13E2CA] shadow-[0_0_8px_rgba(19,226,202,0.25)]'
+                        : 'bg-[#1E222B] border border-[#262A34] hover:border-[#13E2CA]'
+                    }`}
+                  >
+                    <Sliders className={`w-5 h-5 mb-1 ${isApplied ? 'text-[#13E2CA]' : 'text-slate-400'}`} />
+                    <span className="text-xs text-white font-medium">{eff.name}</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">{isApplied ? 'Active ✓' : eff.category}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -697,7 +730,18 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
         {/* ========================================================= */}
         {(activeTab === 'filters' || activeTab === 'adjustment') && (
           <div className="flex-1 flex flex-col p-3 space-y-3 overflow-y-auto vf-scrollbar">
-            <span className="text-xs font-semibold text-slate-300">Color Grading & LUT Filters</span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-300">Color Grading & LUT Filters</span>
+              {selectedClip && selectedClip.colorGrading && (
+                <button
+                  type="button"
+                  onClick={() => onUpdateClip(selectedClip.id, { colorGrading: { ...DEFAULT_COLOR_GRADING } })}
+                  className="text-[10px] text-[#13E2CA] hover:underline cursor-pointer"
+                >
+                  Reset Color
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {COLOR_PRESETS.map((preset) => (
                 <div
@@ -705,11 +749,11 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                   onClick={() => {
                     if (selectedClip) {
                       onUpdateClip(selectedClip.id, {
-                        colorGrading: { ...preset.values }
+                        colorGrading: { ...DEFAULT_COLOR_GRADING, ...preset.settings }
                       });
                     }
                   }}
-                  className="flex flex-col items-center justify-center p-3 rounded bg-[#1E222B] border border-[#262A34] hover:border-[#13E2CA] transition cursor-pointer"
+                  className="flex flex-col items-center justify-center p-3 rounded bg-[#1E222B] border border-[#262A34] hover:border-[#13E2CA] transition cursor-pointer text-center"
                 >
                   <Palette className="w-5 h-5 text-[#13E2CA] mb-1" />
                   <span className="text-xs text-white font-medium">{preset.name}</span>

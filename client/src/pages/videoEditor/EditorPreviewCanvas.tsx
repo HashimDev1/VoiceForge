@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Sparkles,
   Move,
-  RotateCw as RotateIcon
+  RotateCw as RotateIcon,
+  Camera
 } from 'lucide-react';
 import {
   EditorProject,
@@ -42,6 +43,7 @@ interface EditorPreviewCanvasProps {
   onSeek: (time: number) => void;
   selectedClip: TimelineClip | null;
   onUpdateClip: (clipId: string, patch: Partial<TimelineClip>) => void;
+  onExportFrame?: () => void;
 }
 
 export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
@@ -51,7 +53,8 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
   onTogglePlay,
   onSeek,
   selectedClip,
-  onUpdateClip
+  onUpdateClip,
+  onExportFrame
 }) => {
   const [showSafeZones, setShowSafeZones] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -537,16 +540,57 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
             const evalTransform = evaluateClipKeyframes(clip, playhead);
 
             // Compute CSS Filters
-            const b = 1 + (cg.brightness || 0) / 100 + evalTransform.transitionFlash;
+            const b = (1 + (cg.brightness || 0) / 100 + evalTransform.transitionFlash) * (1 + (cg.exposure || 0) / 100);
             const c = 1 + (cg.contrast || 0) / 100;
             const s = 1 + (cg.saturation || 0) / 100;
             const hue = cg.hue || 0;
             const blurVal = evalTransform.transitionBlurPx;
 
-            let filterStr = `brightness(${b}) contrast(${c}) saturate(${s}) hue-rotate(${hue}deg)`;
+            const filterParts: string[] = [
+              `brightness(${Math.max(0, b)})`,
+              `contrast(${Math.max(0, c)})`,
+              `saturate(${Math.max(0, s)})`,
+              `hue-rotate(${hue}deg)`
+            ];
+
             if (blurVal > 0) {
-              filterStr += ` blur(${blurVal}px)`;
+              filterParts.push(`blur(${blurVal}px)`);
             }
+
+            // Check applied effects
+            let vignetteEffect: { intensity: number } | null = null;
+            let grainEffect: { intensity: number } | null = null;
+
+            for (const eff of (clip.effects || [])) {
+              if (eff.enabled === false) continue;
+              const intensity = typeof eff.intensity === 'number' ? eff.intensity : 50;
+
+              if (eff.type === 'vignette') {
+                vignetteEffect = { intensity };
+              } else if (eff.type === 'gaussian_blur' || eff.type === 'motion_blur') {
+                const px = Math.max(1, (intensity / 100) * 12);
+                filterParts.push(`blur(${px.toFixed(1)}px)`);
+              } else if (eff.type === 'glow') {
+                filterParts.push(`drop-shadow(0 0 ${Math.max(2, (intensity / 100) * 16)}px rgba(255,255,255,0.7))`);
+              } else if (eff.type === 'chromatic_aberration' || eff.type === 'rgb_split') {
+                const shift = Math.max(1, Math.round((intensity / 100) * 8));
+                filterParts.push(`drop-shadow(${shift}px 0 0 rgba(255,0,0,0.6)) drop-shadow(-${shift}px 0 0 rgba(0,255,255,0.6))`);
+              } else if (eff.type === 'film_grain' || eff.type === 'noise') {
+                grainEffect = { intensity };
+              }
+            }
+
+            // Temperature adjustment (warm amber or cool cyan)
+            if (cg.temperature && cg.temperature !== 0) {
+              if (cg.temperature > 0) {
+                const sepiaAmount = Math.min(0.6, (cg.temperature / 100) * 0.4);
+                filterParts.push(`sepia(${sepiaAmount.toFixed(2)})`);
+              } else {
+                filterParts.push(`hue-rotate(${Math.round(cg.temperature * 0.15)}deg)`);
+              }
+            }
+
+            const filterStr = filterParts.join(' ');
 
             // Transform matrix
             const finalScale = evalTransform.scale * evalTransform.transitionScale;
@@ -577,6 +621,24 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
                   clipPath
                 }}
               >
+                {/* Vignette Overlay if active */}
+                {vignetteEffect && (
+                  <div
+                    className="absolute inset-0 pointer-events-none z-10"
+                    style={{
+                      background: `radial-gradient(circle, transparent 35%, rgba(0,0,0,${Math.min(0.95, (vignetteEffect.intensity / 100) * 0.85)}) 100%)`
+                    }}
+                  />
+                )}
+                {/* Grain Overlay if active */}
+                {grainEffect && (
+                  <div
+                    className="absolute inset-0 pointer-events-none z-10 opacity-20 mix-blend-overlay bg-repeat"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
+                    }}
+                  />
+                )}
                 {/* Media Element: Video */}
                 {clip.type === 'video' && clip.url ? (
                   <video
@@ -948,6 +1010,16 @@ export const EditorPreviewCanvas: React.FC<EditorPreviewCanvasProps> = ({
           <span className="px-2 py-0.5 rounded bg-[#222631] text-[10px] font-mono text-slate-300 border border-[#2D3340]">
             {project.aspectRatio}
           </span>
+          {onExportFrame && (
+            <button
+              type="button"
+              onClick={onExportFrame}
+              title="Export Still Frame (Snapshot PNG/JPG)"
+              className="p-1 rounded hover:bg-[#282D38] text-slate-400 hover:text-[#13E2CA] transition cursor-pointer"
+            >
+              <Camera className="h-3.5 w-3.5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {

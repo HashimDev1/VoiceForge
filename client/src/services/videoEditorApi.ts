@@ -3,6 +3,9 @@ import {
   MediaAsset,
   EditorExportOptions,
   EditorExportJob,
+  EditorFrameExportOptions,
+  EditorFrameExportResult,
+  EditorImagesZipResult,
   CustomFontAsset,
   MotionTitleTemplate
 } from '../../../shared/src/videoEditorTypes';
@@ -121,6 +124,32 @@ export const videoEditorApi = {
     if (!res.ok) return false;
     const data = await res.json();
     return data.success;
+  },
+
+  async exportFrame(project: EditorProject, options: EditorFrameExportOptions): Promise<EditorFrameExportResult> {
+    const res = await fetch(`${API_BASE}/export-frame`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project, options })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to export frame');
+    }
+    return await res.json();
+  },
+
+  async exportImagesZip(project: EditorProject): Promise<EditorImagesZipResult> {
+    const res = await fetch(`${API_BASE}/export-images-zip`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to export images zip');
+    }
+    return await res.json();
   },
 
   async listFonts(): Promise<CustomFontAsset[]> {

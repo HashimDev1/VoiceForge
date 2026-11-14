@@ -19,7 +19,7 @@ import {
   clampTimelineHeight
 } from './videoEditor/EditorWorkspacePresets';
 import { videoEditorApi } from '../services/videoEditorApi';
-import { MediaAsset } from '../../../shared/src/videoEditorTypes';
+import { MediaAsset, ExportMediaType } from '../../../shared/src/videoEditorTypes';
 import { unlockAudio } from '../lib/audioUnlocker';
 import {
   AlertCircle,
@@ -129,8 +129,24 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
   } = useVideoEditor(initialProject);
 
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportModalMode, setExportModalMode] = useState<ExportMediaType>('video');
   const [isMotionStudioOpen, setIsMotionStudioOpen] = useState(false);
   const [isSmartBulkModalOpen, setIsSmartBulkModalOpen] = useState(false);
+
+  const handleOpenExportVideo = () => {
+    setExportModalMode('video');
+    setIsExportModalOpen(true);
+  };
+
+  const handleOpenExportImage = () => {
+    setExportModalMode('image');
+    setIsExportModalOpen(true);
+  };
+
+  const handleOpenExportZip = () => {
+    setExportModalMode('images_zip');
+    setIsExportModalOpen(true);
+  };
 
   // Collapsible Panel States with LocalStorage Persistence
   const [isLeftCollapsed, setIsLeftCollapsed] = useState<boolean>(() => {
@@ -461,7 +477,9 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         isSaving={isSaving}
         lastSavedText={lastSavedText}
         onUpdateMeta={updateProjectMeta}
-        onOpenExport={() => setIsExportModalOpen(true)}
+        onOpenExport={handleOpenExportVideo}
+        onOpenExportImage={handleOpenExportImage}
+        onOpenExportZip={handleOpenExportZip}
         onOpenCaptionStudio={onOpenCaptionStudio}
         onOpenSmartBulk={() => setIsSmartBulkModalOpen(true)}
         onExitEditor={onExitEditor}
@@ -572,6 +590,7 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
                 onSeek={seek}
                 selectedClip={selectedClip}
                 onUpdateClip={updateClip}
+                onExportFrame={handleOpenExportImage}
               />
 
               {/* Restore Inspector button when inspector is collapsed */}
@@ -743,6 +762,8 @@ export const VideoEditorStudio: React.FC<VideoEditorStudioProps> = ({
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         project={project}
+        playhead={playhead}
+        initialMode={exportModalMode}
       />
 
       {/* MOTION GRAPHICS STUDIO MODAL */}
