@@ -247,9 +247,12 @@ router.post('/export', async (req: Request, res: Response) => {
 });
 
 router.get('/export/status/:jobId', (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   const job = VideoEditorService.getExportJob(req.params.jobId);
   if (!job) {
-    return res.status(404).json({ success: false, error: 'Export job not found.' });
+    return res.status(404).json({ success: false, error: 'Export job not found or expired.' });
   }
   res.json({ success: true, job });
 });

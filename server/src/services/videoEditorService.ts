@@ -755,19 +755,19 @@ export class VideoEditorService {
         if (resolvedPath && fs.existsSync(resolvedPath)) {
           const isImage = clip.type === 'image' || ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif', '.bmp'].some(ext => resolvedPath.toLowerCase().endsWith(ext));
 
+          const speed = Math.max(0.25, Math.min(4.0, clip.speed?.speed || 1));
+          const sourceStart = Math.max(0, clip.sourceStart || 0);
+          const effectiveDuration = clip.duration;
+          const sourceDuration = effectiveDuration * speed;
+
           if (isImage) {
-            inputArgs.push('-loop', '1', '-i', resolvedPath);
+            inputArgs.push('-loop', '1', '-t', effectiveDuration.toFixed(3), '-i', resolvedPath);
           } else {
             inputArgs.push('-i', resolvedPath);
           }
 
           const clipInput = inputIndex;
           inputIndex++;
-
-          const speed = Math.max(0.25, Math.min(4.0, clip.speed?.speed || 1));
-          const sourceStart = Math.max(0, clip.sourceStart || 0);
-          const effectiveDuration = clip.duration;
-          const sourceDuration = effectiveDuration * speed;
 
           let clipChain = '';
           if (isImage) {
@@ -894,6 +894,26 @@ export class VideoEditorService {
 
       const child = execFile(ffmpeg, finalArgs, { maxBuffer: 50 * 1024 * 1024 });
       this.activeExportProcesses.set(jobId, child);
+
+      // Real-time FFmpeg progress listener
+      child.stderr?.on('data', (chunk) => {
+        const text = chunk.toString();
+        const timeMatch = text.match(/time=(\d{2}):(\d{2}):(\d{2}\.\d{2})/);
+        if (timeMatch && totalDuration > 0) {
+          const h = parseFloat(timeMatch[1]);
+          const m = parseFloat(timeMatch[2]);
+          const s = parseFloat(timeMatch[3]);
+          const currentSec = h * 3600 + m * 60 + s;
+          const pct = Math.min(99, Math.max(65, Math.round(65 + (currentSec / totalDuration) * 34)));
+          job.progress = pct;
+
+          const speedMatch = text.match(/speed=\s*([\d\.]+)x/);
+          const speedText = speedMatch ? ` (Speed: ${speedMatch[1]}x)` : '';
+          const curTimeStr = `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3].split('.')[0]}`;
+          const totTimeStr = `${Math.floor(totalDuration / 60).toString().padStart(2, '0')}:${Math.floor(totalDuration % 60).toString().padStart(2, '0')}`;
+          job.stage = `Encoding video: ${curTimeStr} / ${totTimeStr}${speedText} [${pct}%]`;
+        }
+      });
 
       await new Promise<void>((resolve, reject) => {
         child.on('close', (code) => {
